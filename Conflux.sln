@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Testing", "Conflux.Testing\Conflux.Testing.csproj", "{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Core", "Conflux.Core\Conflux.Core.csproj", "{CC2B3CBB-3552-42D5-B628-08BADB5511C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC2B3CBB-3552-42D5-B628-08BADB5511C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC2B3CBB-3552-42D5-B628-08BADB5511C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC2B3CBB-3552-42D5-B628-08BADB5511C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC2B3CBB-3552-42D5-B628-08BADB5511C9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

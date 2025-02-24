@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  conflux-db:
+    image: postgres:17.3
+    restart: always
+    environment:
+        POSTGRES_USER: conflux-dev
+        POSTGRES_PASSWORD: conflux-dev
+        POSTGRES_DB: conflux-dev
+    ports:
+        - 5432:5432

@@ -10,7 +10,7 @@
           ]
         }
       ],
-      "dest": "dest/api"
+      "dest": ""
     }
   ],
   "build": {
@@ -37,8 +37,8 @@
       "modern"
     ],
     "globalMetadata": {
-      "_appName": "ROR.Net",
-      "_appTitle": "ROR.Net",
+      "_appName": "Conflux",
+      "_appTitle": "Conflux",
       "_enableSearch": true,
       "pdf": false,
       "_disableContribution": true

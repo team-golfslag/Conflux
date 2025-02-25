@@ -4,4 +4,4 @@ _layout: landing
 
 # Conflux
 
-To view the Conflux documentation, click [here](Conflux.html).
+To view the Conflux.Core documentation, click [here](Conflux.Core.html).

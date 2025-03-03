@@ -8,5 +8,10 @@ services:
         POSTGRES_USER: conflux-dev
         POSTGRES_PASSWORD: conflux-dev
         POSTGRES_DB: conflux-dev
+    volumes:
+        - datavolume:/var/lib/postgresql/data
     ports:
         - 5432:5432
+
+volumes:
+    datavolume:

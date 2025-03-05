@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    [Migration("20250305102205_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250305115724_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

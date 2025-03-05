@@ -1,21 +1,24 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Domain;
 
+/// <summary>
+/// Represents a project.
+/// </summary>
 public class Project
 {
     [Key]
     public Guid Id { get; set; }
+
     public string Title { get; set; }
 
-    // Many-to-many relationship with Person
+    [Column(TypeName = "text")]
+    public string? Description { get; set; }
+
     public List<Person> People { get; set; } = [];
 
-    // Many-to-many relationship with Product
     public List<Product> Products { get; set; } = [];
 
-    // Relationship to a Party (one-to-one or one-to-many depending on your design)
     public Party Party { get; set; }
 }

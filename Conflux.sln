@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Testing", "Conflux.Testing\Conflux.Testing.csproj", "{D24C34B8-3EEA-46BA-AC5D-589ADE7CE96E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Core", "Conflux.Core\Conflux.Core.csproj", "{CC2B3CBB-3552-42D5-B628-08BADB5511C9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.API", "Conflux.API\Conflux.API.csproj", "{CC2B3CBB-3552-42D5-B628-08BADB5511C9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Domain", "Conflux.Domain\Conflux.Domain.csproj", "{494F4691-5E3F-4866-A0BF-4D9EFD0D4557}"
 EndProject

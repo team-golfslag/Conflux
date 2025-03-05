@@ -10,5 +10,7 @@ public class Product
     [Key]
     public string Url { get; set; }
 
-    public string Title { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public required string Title { get; set; }
 }

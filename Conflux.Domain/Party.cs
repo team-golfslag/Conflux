@@ -10,5 +10,7 @@ public class Party
     [Key]
     public Guid Id { get; set; }
 
-    public string Name { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public required string Name { get; set; }
 }

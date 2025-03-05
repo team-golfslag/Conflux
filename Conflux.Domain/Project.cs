@@ -11,9 +11,10 @@ public class Project
     [Key]
     public Guid Id { get; set; }
 
-    public string Title { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public required string Title { get; set; }
 
-    [Column(TypeName = "text")]
     public string? Description { get; set; }
 
     public List<Person> People { get; set; } = [];

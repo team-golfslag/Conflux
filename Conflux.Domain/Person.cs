@@ -1,6 +1,7 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Conflux.Core;
+namespace Conflux.Domain;
 
 public class Person
 {

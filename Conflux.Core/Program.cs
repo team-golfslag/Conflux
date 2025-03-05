@@ -1,17 +1,14 @@
-using System;
 using Conflux.Data;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContextPool<ConfluxContext>(opt =>
-                                                      opt.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
+builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
+                                                      builder.Configuration.GetConnectionString("Database"),
+                                                      npgsqlOptions =>
+                                                          npgsqlOptions.MigrationsAssembly("Conflux.Core")));
 
 WebApplication app = builder.Build();
 if (app.Environment.IsDevelopment())

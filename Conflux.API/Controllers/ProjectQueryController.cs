@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Core.Controllers;
 
+/// <summary>
+/// Represents the controller for querying projects
+/// </summary>
 [Route("projects/query/[controller]")]
 [ApiController]
 public class ProjectQueryController : ControllerBase

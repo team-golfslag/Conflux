@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
                                                       builder.Configuration.GetConnectionString("Database"),
@@ -16,6 +17,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.MapControllers();
 
 // Ensure the database is created and seeded
 using IServiceScope scope = app.Services.CreateScope();

@@ -33,7 +33,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public async Task SeedDataAsync()
     {
         Party party = new() { Name = "Partij" };
-        Project project = new() { Title = "Project" };
+        Project project = new() { Title = "Projekt" };
         Person person = new() { Name = "Persoon", Age = 5 };
         Product product = new() { Title = "Produkt", Url = "https://conflux.com" };
 

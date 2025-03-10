@@ -11,7 +11,7 @@ concurrency:
 jobs:
   end-to-end:
     name: Build .NET and Analyse with SonarCloud
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Set up JDK 17
         uses: actions/setup-java@v4

@@ -20,14 +20,14 @@ public class ConfluxContextTests
         await _postgres.StartAsync();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-                                                   .UseNpgsql(_postgres.GetConnectionString()).Options;
-        
+            .UseNpgsql(_postgres.GetConnectionString()).Options;
+
         ConfluxContext context = new(options);
 
         // Assert
         Assert.NotNull(context);
     }
-    
+
     /// <summary>
     /// Given a database context
     /// When SeedDataAsync is called
@@ -40,7 +40,7 @@ public class ConfluxContextTests
         await _postgres.StartAsync();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-                                                   .UseNpgsql(_postgres.GetConnectionString()).Options;
+            .UseNpgsql(_postgres.GetConnectionString()).Options;
 
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
@@ -48,8 +48,11 @@ public class ConfluxContextTests
         // Act
         await context.SeedDataAsync();
 
-        List<Project> projects = await context.Projects.Include(p => p.People).Include(p => p.Products)
-                                               .Include(p => p.Party).ToListAsync();
+        List<Project> projects = await context.Projects
+            .Include(p => p.People)
+            .Include(p => p.Products)
+            .Include(p => p.Party)
+            .ToListAsync();
 
         // Assertions
         Assert.Single(projects);

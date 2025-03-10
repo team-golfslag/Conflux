@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
-namespace Conflux.Data.Testing;
+namespace Conflux.Data.Tests;
 
 public class ConfluxContextTests
 {

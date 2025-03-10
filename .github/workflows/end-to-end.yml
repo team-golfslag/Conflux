@@ -62,6 +62,8 @@ jobs:
         shell: powershell
         run: |
           dotnet build --no-incremental
+      - name: Pull Docker Image (Postgres)
+        run: docker pull postgres:15.1
       - name: Test the project
         shell: powershell
         run: |

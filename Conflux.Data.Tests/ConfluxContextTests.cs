@@ -19,7 +19,7 @@ public class ConfluxContextTests
         // Arrange & Act
         await _postgres.StartAsync();
 
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseNpgsql(_postgres.GetConnectionString()).Options;
 
         ConfluxContext context = new(options);
@@ -39,7 +39,7 @@ public class ConfluxContextTests
         // Arrange
         await _postgres.StartAsync();
 
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseNpgsql(_postgres.GetConnectionString()).Options;
 
         ConfluxContext context = new(options);
@@ -48,10 +48,10 @@ public class ConfluxContextTests
         // Act
         await context.SeedDataAsync();
 
-        List<Project> projects = await context.Projects
+        var projects = await context.Projects
             .Include(p => p.People)
             .Include(p => p.Products)
-            .Include(p => p.Party)
+            .Include(p => p.Parties)
             .ToListAsync();
 
         // Assertions
@@ -64,6 +64,6 @@ public class ConfluxContextTests
         Assert.Equal("Projekt", project.Title);
         Assert.Equal("Persoon", project.People[0].Name);
         Assert.Equal("Produkt", project.Products[0].Title);
-        Assert.Equal("Partij", project.Party.Name);
+        Assert.Equal("Partij", project.Parties[0].Name);
     }
 }

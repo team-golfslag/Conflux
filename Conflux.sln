@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Data", "Conflux.Dat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Data.Tests", "Conflux.Data.Tests\Conflux.Data.Tests.csproj", "{888487E5-6900-4F9D-A312-7E0095FA75B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.API.Tests", "Conflux.API.Tests\Conflux.API.Tests.csproj", "{F2487650-86A9-4E19-AB88-3C9B9153E298}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{888487E5-6900-4F9D-A312-7E0095FA75B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{888487E5-6900-4F9D-A312-7E0095FA75B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{888487E5-6900-4F9D-A312-7E0095FA75B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2487650-86A9-4E19-AB88-3C9B9153E298}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2487650-86A9-4E19-AB88-3C9B9153E298}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2487650-86A9-4E19-AB88-3C9B9153E298}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2487650-86A9-4E19-AB88-3C9B9153E298}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

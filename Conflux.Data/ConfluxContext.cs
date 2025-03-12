@@ -32,14 +32,28 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     /// </summary>
     public async Task SeedDataAsync()
     {
-        Party party = new() { Name = "Partij" };
-        Project project = new() { Title = "Projekt" };
-        Person person = new() { Name = "Persoon", Age = 5 };
-        Product product = new() { Title = "Produkt", Url = "https://conflux.com" };
+        Party party = new()
+        {
+            Name = "Partij",
+        };
+        Project project = new()
+        {
+            Title = "Projekt",
+        };
+        Person person = new()
+        {
+            Name = "Persoon",
+            Age = 5,
+        };
+        Product product = new()
+        {
+            Title = "Produkt",
+            Url = "https://conflux.com",
+        };
 
         project.People.Add(person);
         project.Products.Add(product);
-        project.Party = party;
+        project.Parties.Add(party);
 
         await Projects.AddAsync(project);
         await SaveChangesAsync();

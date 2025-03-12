@@ -10,11 +10,11 @@ namespace Conflux.Core.Controllers;
 /// </summary>
 [Route("projects/query/[controller]")]
 [ApiController]
-public class ProjectQueryController : ControllerBase
+public class ProjectsQueryController : ControllerBase
 {
     private readonly ConfluxContext _context;
 
-    public ProjectQueryController(ConfluxContext context)
+    public ProjectsQueryController(ConfluxContext context)
     {
         _context = context;
     }
@@ -29,7 +29,7 @@ public class ProjectQueryController : ControllerBase
         (await _context.Projects
             .Include(p => p.People)
             .Include(p => p.Products)
-            .Include(p => p.Party)
+            .Include(p => p.Parties)
             .ToListAsync())
         .Where(
             project => project.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase));
@@ -45,7 +45,7 @@ public class ProjectQueryController : ControllerBase
         return await _context.Projects
             .Include(p => p.Products)
             .Include(p => p.People)
-            .Include(p => p.Party)
+            .Include(p => p.Parties)
             .ToListAsync();
     }
 }

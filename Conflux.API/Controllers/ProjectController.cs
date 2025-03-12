@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Conflux.Core.Controllers;
 
+/// <summary>
+/// Represents the controller for managing projects
+/// </summary>
 [Route("project")]
 [ApiController]
 public class ProjectController : ControllerBase
@@ -16,6 +19,11 @@ public class ProjectController : ControllerBase
         _context = context;
     }
 
+    /// <summary>
+    /// Creates a new project
+    /// </summary>
+    /// <param name="projectDto">The DTO which to convert to a <see cref="Project"/></param>
+    /// <returns>The request response</returns>
     [HttpPost]
     [Route("create")]
     public ActionResult CreateProject(ProjectDTO projectDto)

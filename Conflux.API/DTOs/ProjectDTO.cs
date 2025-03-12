@@ -4,6 +4,9 @@ using Conflux.Domain;
 
 namespace Conflux.Core.DTOs;
 
+/// <summary>
+/// The Data Transfer Object for <see cref="Project"/>
+/// </summary>
 public class ProjectDTO
 {
     [JsonPropertyName("id")] public Guid? Id { get; set; }
@@ -19,17 +22,17 @@ public class ProjectDTO
 
     [JsonPropertyName("end_date")] public DateOnly? EndDate { get; set; }
 
-    public Project ToProject()
-    {
-        DateTime startDate = StartDate.ToDateTime(TimeOnly.MinValue);
-        DateTime endDate = EndDate.ToDateTime(TimeOnly.MinValue);
-        return new()
+    /// <summary>
+    /// Converts a <see cref="ProjectDTO"/> to a <see cref="Project"/>
+    /// </summary>
+    /// <returns>The converted <see cref="Project"/></returns>
+    public Project ToProject() =>
+        new()
         {
             Id = Guid.NewGuid(),
             Title = Title,
             Description = Description,
-            StartDate = startDate,
-            EndDate = endDate,
+            StartDate = StartDate,
+            EndDate = EndDate,
         };
-    }
 }

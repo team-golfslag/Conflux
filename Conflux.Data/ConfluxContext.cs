@@ -1,4 +1,5 @@
 using Conflux.Domain;
+using Conflux.RepositoryConnections.NWOpen;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Data;
@@ -32,30 +33,14 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     /// </summary>
     public async Task SeedDataAsync()
     {
-        Party party = new()
-        {
-            Name = "Partij",
-        };
-        Project project = new()
-        {
-            Title = "Projekt",
-        };
-        Person person = new()
-        {
-            Name = "Persoon",
-            Age = 5,
-        };
-        Product product = new()
-        {
-            Title = "Produkt",
-            Url = "https://conflux.com",
-        };
+        TemporaryProjectRetriever projectRetriever = TemporaryProjectRetriever.GetInstance();
+        var projects = projectRetriever.MapProjectsAsync().Result;
 
-        project.People.Add(person);
-        project.Products.Add(product);
-        project.Parties.Add(party);
+        await Parties.AddRangeAsync(projects.SelectMany(p => p.Parties));
+        await Products.AddRangeAsync(projects.SelectMany(p => p.Products).DistinctBy(p => p.Url));
+        await People.AddRangeAsync(projects.SelectMany(p => p.People));
+        await Projects.AddRangeAsync(projects);
 
-        await Projects.AddAsync(project);
         await SaveChangesAsync();
     }
 }

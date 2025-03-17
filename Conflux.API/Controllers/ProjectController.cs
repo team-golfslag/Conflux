@@ -1,9 +1,10 @@
-using Conflux.Core.DTOs;
+using Conflux.API.DTOs;
+using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Conflux.Core.Controllers;
+namespace Conflux.API.Controllers;
 
 /// <summary>
 /// Represents the controller for managing projects
@@ -13,11 +14,24 @@ namespace Conflux.Core.Controllers;
 public class ProjectController : ControllerBase
 {
     private readonly ConfluxContext _context;
+    private readonly ProjectService _projectService;
 
     public ProjectController(ConfluxContext context)
     {
         _context = context;
+        _projectService = new(_context);
     }
+    
+    /// <summary>
+    /// Gets a project by its GUID.
+    /// </summary>
+    [HttpGet]
+    [Route("{id:guid}")]
+    public ActionResult<Project> GetProjectById([FromRoute] Guid id)
+    {
+        Project? project = _context.Projects.Find(id);
+        return project == null ? NotFound() : Ok(project);
+    } 
 
     /// <summary>
     /// Creates a new project
@@ -26,11 +40,25 @@ public class ProjectController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPost]
     [Route("create")]
-    public ActionResult CreateProject(ProjectDTO projectDto)
+    public ActionResult CreateProject([FromBody] ProjectDto projectDto)
     {
         Project project = projectDto.ToProject();
         _context.Projects.Add(project);
         _context.SaveChanges();
-        return Created();
+        return CreatedAtAction(nameof(GetProjectById), new { id = project.Id }, project);
+    }
+
+    /// <summary>
+    /// Updates a project by its GUID
+    /// </summary>
+    /// <param name="id">The GUID of the project to update</param>
+    /// <param name="projectDto">The new project details</param>
+    /// <returns>The request response</returns>
+    [HttpPost]
+    [Route("update/{id:guid}")]
+    public async Task<ActionResult> UpdateProject([FromRoute] Guid id, ProjectUpdateDto projectDto)
+    {
+        Project? updateProject = await _projectService.UpdateProjectAsync(id, projectDto);
+        return updateProject == null ? NotFound() : Ok(updateProject);
     }
 }

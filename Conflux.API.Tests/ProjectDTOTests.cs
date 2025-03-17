@@ -1,10 +1,10 @@
-﻿using Conflux.Core.DTOs;
+﻿using Conflux.API.DTOs;
 using Conflux.Domain;
 using Xunit;
 
 namespace Conflux.API.Tests;
 
-public class ProjectDTOTests
+public class ProjectDtoTests
 {
     /// <summary>
     /// Given a valid ProjectDTO with Title, Description, StartDate, and EndDate,
@@ -15,7 +15,7 @@ public class ProjectDTOTests
     public void ToProject_ShouldConvertDTOToProject()
     {
         // Arrange
-        ProjectDTO dto = new() 
+        ProjectDto dto = new() 
         {
             Title = "Test Project",
             Description = "Test Description",

@@ -3,7 +3,7 @@ using Conflux.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Conflux.Core.Controllers;
+namespace Conflux.API.Controllers;
 
 /// <summary>
 /// Represents the controller for querying projects

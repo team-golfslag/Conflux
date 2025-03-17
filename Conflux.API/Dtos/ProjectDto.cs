@@ -2,12 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Conflux.Domain;
 
-namespace Conflux.Core.DTOs;
+namespace Conflux.API.DTOs;
 
 /// <summary>
 /// The Data Transfer Object for <see cref="Project"/>
 /// </summary>
-public class ProjectDTO
+public class ProjectDto
 {
     [JsonPropertyName("id")] public Guid? Id { get; set; }
 
@@ -23,7 +23,7 @@ public class ProjectDTO
     [JsonPropertyName("end_date")] public DateOnly? EndDate { get; set; }
 
     /// <summary>
-    /// Converts a <see cref="ProjectDTO"/> to a <see cref="Project"/>
+    /// Converts a <see cref="ProjectDto"/> to a <see cref="Project"/>
     /// </summary>
     /// <returns>The converted <see cref="Project"/></returns>
     public Project ToProject() =>

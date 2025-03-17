@@ -34,12 +34,12 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public async Task SeedDataAsync()
     {
         TemporaryProjectRetriever projectRetriever = TemporaryProjectRetriever.GetInstance();
-        var projects = projectRetriever.MapProjectsAsync().Result;
+        SeedData seedData = projectRetriever.MapProjectsAsync().Result;
 
-        await Parties.AddRangeAsync(projects.SelectMany(p => p.Parties));
-        await Products.AddRangeAsync(projects.SelectMany(p => p.Products).DistinctBy(p => p.Url));
-        await People.AddRangeAsync(projects.SelectMany(p => p.People));
-        await Projects.AddRangeAsync(projects);
+        await People.AddRangeAsync(seedData.People);
+        await Products.AddRangeAsync(seedData.Products);
+        await Parties.AddRangeAsync(seedData.Parties);
+        await Projects.AddRangeAsync(seedData.Projects);
 
         await SaveChangesAsync();
     }

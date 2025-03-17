@@ -9,5 +9,5 @@ public class Person
 {
     [Key] public Guid Id { get; set; }
 
-    [Required] [StringLength(100)] public required string Name { get; set; }
+    [Required] public required string Name { get; set; }
 }

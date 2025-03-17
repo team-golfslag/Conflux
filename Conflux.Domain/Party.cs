@@ -9,7 +9,5 @@ public class Party
 {
     [Key] public Guid Id { get; set; }
 
-    [Required] [MaxLength(100)] public required string Name { get; set; }
-
-    public override int GetHashCode() => Name.GetHashCode();
+    [Required] public required string Name { get; set; }
 }

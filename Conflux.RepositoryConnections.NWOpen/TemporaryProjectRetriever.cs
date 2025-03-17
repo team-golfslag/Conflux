@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using NWOpen.Net.Models;
 using NWOpen.Net.Services;
-using Project = Conflux.Domain.Project;
 
 namespace Conflux.RepositoryConnections.NWOpen;
 
@@ -44,12 +43,12 @@ public class TemporaryProjectRetriever
     /// </summary>
     /// <param name="numberOfResults">The number of results to map</param>
     /// <returns>The mapped projects</returns>
-    public Task<List<Project>> MapProjectsAsync(int numberOfResults = 100)
+    public Task<SeedData> MapProjectsAsync(int numberOfResults = 100)
     {
         NWOpenResult? result = _service.Query().WithNumberOfResults(numberOfResults).Execute().Result;
-        if (result == null) return Task.FromResult(new List<Project>());
+        if (result == null) return Task.FromResult(new SeedData());
 
-        var projects = result.Projects!.Select(NwOpenMapper.MapProject).ToList();
+        SeedData projects = NwOpenMapper.MapProjects(result.Projects);
 
         return Task.FromResult(projects);
     }

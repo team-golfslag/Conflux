@@ -11,16 +11,16 @@ builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
     npgsqlOptions =>
         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddCors(options =>
     {
-        policy.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        options.AddPolicy("AllowAll", policy =>
+        {
+            policy.WithOrigins("localhost:5173")
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
     });
-});
-
 
 WebApplication app = builder.Build();
 if (app.Environment.IsDevelopment())

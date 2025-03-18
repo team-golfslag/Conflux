@@ -67,6 +67,7 @@ jobs:
                   /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
                   /d:sonar.coverage.exclusions="**/Conflux.Data/Migrations/**/*"
                   /d:sonar.cpd.exclusions="**/Conflux.Data/Migrations/**/*"
+                  /d:sonar.exclusions="**/Conflux.Data/Migrations/**/*"
 
             - name: Build the project
               shell: bash

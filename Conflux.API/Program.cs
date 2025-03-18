@@ -7,9 +7,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
-                                                      builder.Configuration.GetConnectionString("Database"),
-                                                      npgsqlOptions =>
-                                                          npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+    builder.Configuration.GetConnectionString("Database"),
+    npgsqlOptions =>
+        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 
 WebApplication app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -20,6 +31,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.UseCors("AllowAll");
 
 // Ensure the database is created and seeded
 using IServiceScope scope = app.Services.CreateScope();

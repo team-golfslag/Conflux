@@ -74,8 +74,9 @@ public static class NwOpenMapper
 
         Product mappedProduct = new()
         {
+            Id = Guid.NewGuid(),
             Title = product.Title ?? "No title",
-            Url = product.UrlOpenAccess ?? Guid.NewGuid().ToString(),
+            Url = product.UrlOpenAccess,
         };
         
         project.Products.Add(mappedProduct);

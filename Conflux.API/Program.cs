@@ -7,9 +7,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
-                                                      builder.Configuration.GetConnectionString("Database"),
-                                                      npgsqlOptions =>
-                                                          npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+    builder.Configuration.GetConnectionString("Database"),
+    npgsqlOptions =>
+        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
 WebApplication app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -28,7 +28,8 @@ ConfluxContext context = services.GetRequiredService<ConfluxContext>();
 await context.Database.MigrateAsync();
 
 // Seed the database for development, if necessary
-if (app.Environment.IsDevelopment() && !await context.People.AnyAsync()) await context.SeedDataAsync();
+if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
+    await context.SeedDataAsync();
 
 app.MapSwagger();
 

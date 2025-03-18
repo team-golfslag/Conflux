@@ -3,6 +3,7 @@ using System;
 using Conflux.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    partial class ConfluxContextModelSnapshot : ModelSnapshot
+    [Migration("20250317183108_RemoveCharLimitConstraints")]
+    partial class RemoveCharLimitConstraints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,18 +62,14 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("Conflux.Domain.Product", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("Url")
+                        .HasColumnType("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Url")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
+                    b.HasKey("Url");
 
                     b.ToTable("Products");
                 });
@@ -116,13 +115,13 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("ProductProject", b =>
                 {
-                    b.Property<Guid>("ProductsId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ProductsUrl")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("ProductsId", "ProjectId");
+                    b.HasKey("ProductsUrl", "ProjectId");
 
                     b.HasIndex("ProjectId");
 
@@ -155,7 +154,7 @@ namespace Conflux.Data.Migrations
                 {
                     b.HasOne("Conflux.Domain.Product", null)
                         .WithMany()
-                        .HasForeignKey("ProductsId")
+                        .HasForeignKey("ProductsUrl")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

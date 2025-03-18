@@ -7,10 +7,9 @@ namespace Conflux.Domain;
 /// </summary>
 public class Product
 {
-    [Key]
-    public string Url { get; set; }
+    [Key] public Guid Id { get; set; }
 
-    [Required]
-    [MaxLength(100)]
+    public string? Url { get; set; }
+
     public required string Title { get; set; }
 }

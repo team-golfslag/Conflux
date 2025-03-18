@@ -17,7 +17,7 @@ if (allowedOrigins is null)
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowLocalhost", policy =>
     {
         policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
@@ -35,7 +35,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
-app.UseCors("AllowAll");
+app.UseCors("AllowLocalhost");
 
 // Ensure the database is created and seeded
 using IServiceScope scope = app.Services.CreateScope();

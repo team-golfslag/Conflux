@@ -8,7 +8,7 @@ namespace Conflux.API.Controllers;
 /// <summary>
 /// Represents the controller for querying projects
 /// </summary>
-[Route("projects/query/[controller]")]
+[Route("projects/")]
 [ApiController]
 public class ProjectsQueryController : ControllerBase
 {

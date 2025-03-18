@@ -11,6 +11,21 @@ builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
     npgsqlOptions =>
         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
+string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+if (allowedOrigins is null)
+    throw new InvalidOperationException("Allowed origins must be specified in configuration.");
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+
 WebApplication app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -20,6 +35,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.UseCors("AllowLocalhost");
 
 // Ensure the database is created and seeded
 using IServiceScope scope = app.Services.CreateScope();

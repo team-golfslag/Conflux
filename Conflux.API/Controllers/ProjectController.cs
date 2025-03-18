@@ -3,6 +3,7 @@ using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.API.Controllers;
 
@@ -29,7 +30,11 @@ public class ProjectController : ControllerBase
     [Route("{id:guid}")]
     public ActionResult<Project> GetProjectById([FromRoute] Guid id)
     {
-        Project? project = _context.Projects.Find(id);
+        Project? project = _context.Projects
+            .Include(p => p.People)
+            .Include(p => p.Products)
+            .Include(p => p.Parties)
+            .FirstOrDefault(p => p.Id == id);
         return project == null ? NotFound() : Ok(project);
     } 
 

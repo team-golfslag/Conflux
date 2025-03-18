@@ -40,7 +40,8 @@ ConfluxContext context = services.GetRequiredService<ConfluxContext>();
 await context.Database.MigrateAsync();
 
 // Seed the database for development, if necessary
-if (app.Environment.IsDevelopment() && !await context.People.AnyAsync()) await context.SeedDataAsync();
+if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
+    await context.SeedDataAsync();
 
 app.MapSwagger();
 

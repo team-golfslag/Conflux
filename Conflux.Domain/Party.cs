@@ -7,10 +7,7 @@ namespace Conflux.Domain;
 /// </summary>
 public class Party
 {
-    [Key]
-    public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; }
 
-    [Required]
-    [MaxLength(100)]
-    public required string Name { get; set; }
+    [Required] public required string Name { get; set; }
 }

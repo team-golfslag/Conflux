@@ -72,12 +72,14 @@ public static class NwOpenMapper
             return;
         }
 
-        Products.Add(
-            new()
-            {
-                Title = product.Title ?? "No title",
-                Url = product.UrlOpenAccess ?? Guid.NewGuid().ToString(),
-            });
+        Product mappedProduct = new()
+        {
+            Title = product.Title ?? "No title",
+            Url = product.UrlOpenAccess ?? Guid.NewGuid().ToString(),
+        };
+        
+        project.Products.Add(mappedProduct);
+        Products.Add(mappedProduct);
     }
 
     /// <summary>
@@ -112,10 +114,13 @@ public static class NwOpenMapper
             return;
         }
 
-        Parties.Add(new()
+        Party mappedParty = new()
         {
             Id = Guid.NewGuid(),
             Name = projectMember.Organisation,
-        });
+        };
+        
+        project.Parties.Add(mappedParty);
+        Parties.Add(mappedParty);
     }
 }

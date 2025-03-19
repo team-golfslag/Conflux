@@ -6,3 +6,5 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=team-golfslag_Conflux&metric=alert_status)](https://sonarcloud.io/project/overview?id=team-golfslag_Conflux)
 [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=team-golfslag_Conflux&metric=coverage)](https://sonarcloud.io/project/overview?id=team-golfslag_Conflux)
+
+We are using the license described in our LICENSE file please read through before using our software.

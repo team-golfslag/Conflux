@@ -14,6 +14,11 @@ public static class NwOpenMapper
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
 
+    /// <summary>
+    /// Maps a list of NWOpen projects to domain projects
+    /// </summary>
+    /// <param name="projects">The list of NWOpen projects to be mapped</param>
+    /// <returns>A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and parties</returns>
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
         foreach (NwOpenProject project in projects) MapProject(project);
@@ -31,7 +36,6 @@ public static class NwOpenMapper
     /// Maps an NWOpen project to a domain project.
     /// </summary>
     /// <param name="project">The NWOpen project to map</param>
-    /// <returns>The mapped domain project</returns>
     private static void MapProject(NwOpenProject project)
     {
         Project mappedProject = new()
@@ -62,7 +66,6 @@ public static class NwOpenMapper
     /// </summary>
     /// <param name="project">The project to which the product is added</param>
     /// <param name="product">The NWOpen product to map</param>
-    /// <returns>The mapped domain product</returns>
     private static void MapProduct(Project project, NwOpenProduct product)
     {
         var products = Products.Where(p => p.Url == product.UrlOpenAccess).ToList();
@@ -78,7 +81,7 @@ public static class NwOpenMapper
             Title = product.Title ?? "No title",
             Url = product.UrlOpenAccess,
         };
-        
+
         project.Products.Add(mappedProduct);
         Products.Add(mappedProduct);
     }
@@ -88,7 +91,6 @@ public static class NwOpenMapper
     /// </summary>
     /// <param name="project">The project to which the person is added</param>
     /// <param name="projectMember">The member to map to a person</param>
-    /// <returns>The mapped Person</returns>
     private static void MapPerson(Project project, NwOpenProjectMember projectMember)
     {
         Person person = new()
@@ -105,7 +107,6 @@ public static class NwOpenMapper
     /// </summary>
     /// <param name="project">The project to which the party is added</param>
     /// <param name="projectMember">The member from which the party is retrieved</param>
-    /// <returns>The mapped Party</returns>
     private static void MapParty(Project project, NwOpenProjectMember projectMember)
     {
         var parties = Parties.Where(p => p.Name == projectMember.Organisation).ToList();
@@ -120,7 +121,7 @@ public static class NwOpenMapper
             Id = Guid.NewGuid(),
             Name = projectMember.Organisation,
         };
-        
+
         project.Parties.Add(mappedParty);
         Parties.Add(mappedParty);
     }

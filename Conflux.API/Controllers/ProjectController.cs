@@ -69,6 +69,12 @@ public class ProjectController : ControllerBase
         return updateProject == null ? NotFound() : Ok(updateProject);
     }
 
+    /// <summary>
+    /// Updates a project by adding the given person.
+    /// </summary>
+    /// <param name="projectId">The GUID of the project to update</param>
+    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <returns>The request response</returns>
     [HttpPost]
     [Route("{projectId:guid}/addPerson/{personId:guid}")]
     public ActionResult<Project> AddPersonToProject([FromRoute] Guid projectId, Guid personId)

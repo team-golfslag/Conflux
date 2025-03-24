@@ -16,11 +16,13 @@ public class ProjectController : ControllerBase
 {
     private readonly ConfluxContext _context;
     private readonly ProjectService _projectService;
+    private readonly PersonController _personController;
 
     public ProjectController(ConfluxContext context)
     {
         _context = context;
         _projectService = new(_context);
+        _personController = new(_context);
     }
     
     /// <summary>
@@ -65,5 +67,18 @@ public class ProjectController : ControllerBase
     {
         Project? updateProject = await _projectService.UpdateProjectAsync(id, projectDto);
         return updateProject == null ? NotFound() : Ok(updateProject);
+    }
+
+    [HttpPost]
+    [Route("{projectId:guid}/addPerson/{personId:guid}")]
+    public ActionResult<Project> AddPersonToProject([FromRoute] Guid projectId, Guid personId)
+    {
+        Project? project = _context.Projects.FirstOrDefault(p => p.Id == projectId);
+        Person? person = _context.People.FirstOrDefault(p => p.Id == personId);
+        if (project == null || person == null) return NotFound();
+        
+        project.People.Add(person);
+        _context.SaveChanges();
+        return GetProjectById(project.Id);
     }
 }

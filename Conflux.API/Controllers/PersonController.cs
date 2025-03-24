@@ -22,32 +22,29 @@ public class PersonController : ControllerBase
     }
     
     /// <summary>
-    /// Gets a project by its GUID.
+    /// Gets a person by its GUID.
     /// </summary>
     [HttpGet]
     [Route("{id:guid}")]
-    public ActionResult<Project> GetProjectById([FromRoute] Guid id)
+    public ActionResult<Person> GetPersonById([FromRoute] Guid id)
     {
-        Project? project = _context.Projects
-            .Include(p => p.People)
-            .Include(p => p.Products)
-            .Include(p => p.Parties)
+        Person? person = _context.People
             .FirstOrDefault(p => p.Id == id);
-        return project == null ? NotFound() : Ok(project);
+        return person == null ? NotFound() : Ok(person);
     } 
 
     /// <summary>
-    /// Creates a new project
+    /// Creates a new person
     /// </summary>
-    /// <param name="projectDto">The DTO which to convert to a <see cref="Project"/></param>
+    /// <param name="personDto">The DTO which to convert to a <see cref="Person"/></param>
     /// <returns>The request response</returns>
     [HttpPost]
     [Route("create")]
-    public ActionResult CreateProject([FromBody] ProjectDto projectDto)
+    public ActionResult CreateProject([FromBody] PersonDto personDto)
     {
-        Project project = projectDto.ToProject();
-        _context.Projects.Add(project);
+        Person person = personDto.ToPerson();
+        _context.People.Add(person);
         _context.SaveChanges();
-        return CreatedAtAction(nameof(GetProjectById), new { id = project.Id }, project);
+        return CreatedAtAction(nameof(GetPersonById), new { id = person.Id }, person);
     }
 }

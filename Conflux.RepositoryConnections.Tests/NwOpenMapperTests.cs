@@ -161,7 +161,78 @@ public class NwOpenMapperTests
         Assert.Equal(2, seedData.Projects.Count);
         Assert.Single(seedData.Products);
     }
-
+    
+    /// <summary>
+    /// Test to see if valid urls of products are converted correctly and return true.
+    /// Also tests urls that should return false
+    /// </summary>
+    [Fact]
+    public void ValidUrlsTestDoi()
+    {
+        // Arrange
+        
+        var projectList = new List<NwOpenProject>
+        {
+            new()
+            {
+                Products =
+                [
+                    new()
+                    {
+                        Title = "title 1",
+                        UrlOpenAccess = "doi: 10.1000/182",
+                    },
+                    new()
+                    {
+                        Title = "title 2",
+                        UrlOpenAccess = "doi: ThisShouldFail:)",
+                    },
+                    new()
+                    {
+                        Title = "title 3",
+                        UrlOpenAccess = "https://www.doi.org/the-identifier/resources/handbook/",
+                    },
+                    new()
+                    {
+                        Title = "title 4",
+                        UrlOpenAccess = "http://localhost:3000/myOwnServer",
+                    },
+                    new()
+                    {
+                        Title = "title 5",
+                        UrlOpenAccess = null,
+                    },
+                ],
+                ProjectId = "",
+                Title = "",
+                FundingScheme = "",
+                Department = "",
+                SubDepartment = "",
+                SummaryNl = "",
+                SummaryEn = "",
+            },
+        };
+        
+        // Act
+        SeedData seedData = NwOpenMapper.MapProjects(projectList);
+        
+        // Asserts
+        Assert.True(seedData.Products[0].IsValidUrl);
+        Assert.Equal("https://doi.org/10.1000/182", seedData.Products[0].Url);
+        
+        Assert.False(seedData.Products[1].IsValidUrl);
+        Assert.Equal("https://doi.org/ThisShouldFail:)", seedData.Products[1].Url);
+        
+        Assert.True(seedData.Products[2].IsValidUrl);
+        Assert.Equal("https://www.doi.org/the-identifier/resources/handbook/", seedData.Products[2].Url);
+        
+        Assert.False(seedData.Products[3].IsValidUrl);
+        Assert.Equal("http://localhost:3000/myOwnServer", seedData.Products[3].Url);
+        
+        Assert.False(seedData.Products[4].IsValidUrl);
+        Assert.Null(seedData.Products[4].Url);
+    }
+    
     /// <summary>
     /// Helper to reset all the static lists in NwOpenMapper before each test.
     /// </summary>

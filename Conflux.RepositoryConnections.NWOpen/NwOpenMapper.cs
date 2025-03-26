@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using Conflux.Domain;
+using DoiTools.Net;
 using Product = Conflux.Domain.Product;
 using Project = Conflux.Domain.Project;
 using NwOpenProject = NWOpen.Net.Models.Project;
@@ -72,15 +74,53 @@ public static class NwOpenMapper
             return;
         }
 
+        var (productUrl, isValid) = CheckIsValidUrl(product.UrlOpenAccess);
         Product mappedProduct = new()
         {
             Id = Guid.NewGuid(),
             Title = product.Title ?? "No title",
-            Url = product.UrlOpenAccess,
+            Url = productUrl,
+            IsValidUrl = isValid,
         };
         
         project.Products.Add(mappedProduct);
         Products.Add(mappedProduct);
+    }
+    
+    /// <summary>
+    /// checks if a url is a doi and if it leads to an existing web page. It converts the url to a standard doi url and if the url is valid.
+    /// </summary>
+    /// <param name="url"> a nullable string to a doi or an HTTP url</param>
+    /// <returns> a tuple of a corrected url and a isValidUrl bool</returns>
+    private static (string?, bool) CheckIsValidUrl(string? url)
+    {
+
+        if (string.IsNullOrEmpty(url)) return (url, false);
+        
+        HttpClient client = new();
+        if (url.StartsWith("doi:")) // case 1: is a doi.
+        {
+            url = Regex.Replace(url, @"doi:[ ]?", "https://doi.org/"); //some urls have a trailing space.
+             
+            bool isValid = Doi.TryParse(url, out Doi? doi);
+            if (isValid)
+            {
+                return ("https://doi.org/" + doi!.ToString(), isValid);
+            }
+            return (url, false);
+        }
+        
+        try //case 2: not a doi, but may still be valid. This checks for the OK, not for the body.
+        {
+            var response = client.GetAsync(url);
+            response.Wait();
+            response.Result.EnsureSuccessStatusCode(); // throws error if not OK
+            return (url, true);
+        }
+        catch
+        {
+            return (url, false);
+        }
     }
 
     /// <summary>

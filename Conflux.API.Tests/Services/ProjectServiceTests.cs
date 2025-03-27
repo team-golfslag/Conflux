@@ -25,19 +25,13 @@ public class ProjectServiceTests : IAsyncLifetime
     /// <summary>
     /// Given a project service
     /// When GetProjectByIdAsync is called with an existing project ID
-    /// The the project should be returned
+    /// The project should be returned
     /// </summary>
     [Fact]
     public async Task GetProjectByIdAsync_ShouldReturnProject_WhenProjectExists()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
-        
+        ConfluxContext context = await Arrange();
         ProjectService projectService = new(context);
         
         Guid projectId = Guid.NewGuid();
@@ -63,6 +57,27 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.Equal(projectId, project.Id);
         Assert.Equal(testProject.Title, project.Title);
     }
+
+    /// <summary>
+    /// Given a project service
+    /// When GetProjectByIdAsync is called with an non-existing project ID
+    /// Then null should be returned
+    /// </summary>
+    [Fact]
+    public async Task GetProjectByIdAsync_ShouldReturnNull_WhenProjectDoesNotExist()
+    {
+        // Arrange
+        ConfluxContext context = await Arrange();
+        ProjectService projectService = new(context);
+        
+        Guid projectId = Guid.NewGuid();
+        
+        // Act
+        Project? project = await projectService.GetProjectByIdAsync(projectId);
+        
+        // Assert
+        Assert.Null(project);
+    }
     
 
     /// <summary>
@@ -74,12 +89,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
+        ConfluxContext context = await Arrange();
 
         // No project is added to the database, so it definitely doesn't exist
         ProjectService service = new(context);
@@ -106,12 +116,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
+        ConfluxContext context = await Arrange();
 
         // Insert a test project
         Project originalProject = new()
@@ -154,5 +159,21 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.Equal("Updated Description", reloaded.Description);
         Assert.Equal(new DateOnly(2024, 2, 1), reloaded.StartDate);
         Assert.Equal(new DateOnly(2024, 3, 1), reloaded.EndDate);
+    }
+
+    /// <summary>
+    /// This is a method that replaces the complete arrange part of all tests
+    /// since it the same for all tests in this class.
+    /// </summary>
+    /// <returns>The context</returns>
+    private async Task<ConfluxContext> Arrange()
+    {
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseNpgsql(_postgres.GetConnectionString())
+            .Options;
+
+        await using ConfluxContext context = new(options);
+        await context.Database.EnsureCreatedAsync();
+        return context;
     }
 }

@@ -8,22 +8,26 @@ using Microsoft.EntityFrameworkCore;
 namespace Conflux.API.Controllers;
 
 /// <summary>
-/// Represents the controller for managing projects
+/// Represents the controller for managing people
 /// </summary>
 [Route("person")]
 [ApiController]
 public class PersonController : ControllerBase
 {
     private readonly ConfluxContext _context;
+    private readonly PersonService _personService;
 
     public PersonController(ConfluxContext context)
     {
         _context = context;
+        _personService = new (_context);
     }
     
     /// <summary>
-    /// Gets a person by its GUID.
+    /// Gets the person by his GUID
     /// </summary>
+    /// <param name="id">The GUID of the person</param>
+    /// <returns>The request response</returns>
     [HttpGet]
     [Route("{id:guid}")]
     public ActionResult<Person> GetPersonById([FromRoute] Guid id)
@@ -40,11 +44,9 @@ public class PersonController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPost]
     [Route("create")]
-    public ActionResult CreateProject([FromBody] PersonDto personDto)
+    public async Task<ActionResult> CreatePerson([FromBody] PersonDto personDto)
     {
-        Person person = personDto.ToPerson();
-        _context.People.Add(person);
-        _context.SaveChanges();
-        return CreatedAtAction(nameof(GetPersonById), new { id = person.Id }, person);
+        Person? person = await _personService.CreatePersonAsync(personDto);
+        return person == null ? BadRequest() : Ok(person);
     }
 }

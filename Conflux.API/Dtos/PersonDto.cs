@@ -5,7 +5,7 @@ using Conflux.Domain;
 namespace Conflux.API.DTOs;
 
 /// <summary>
-/// The Data Transfer Object for <see cref="Project"/>
+/// The Data Transfer Object for <see cref="Person"/>
 /// </summary>
 public class PersonDto
 {

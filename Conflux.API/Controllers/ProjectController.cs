@@ -1,4 +1,5 @@
 using Conflux.API.DTOs;
+using Conflux.API.Results;
 using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
@@ -30,13 +31,9 @@ public class ProjectController : ControllerBase
     /// </summary>
     [HttpGet]
     [Route("{id:guid}")]
-    public ActionResult<Project> GetProjectById([FromRoute] Guid id)
+    public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id)
     {
-        Project? project = _context.Projects
-            .Include(p => p.People)
-            .Include(p => p.Products)
-            .Include(p => p.Parties)
-            .FirstOrDefault(p => p.Id == id);
+        Project? project = await _projectService.GetProjectByIdAsync(id);
         return project == null ? NotFound() : Ok(project);
     } 
 
@@ -70,21 +67,22 @@ public class ProjectController : ControllerBase
     }
 
     /// <summary>
-    /// Updates a project by adding the given person.
+    /// Updates a project by adding the person with the provided personId.
     /// </summary>
     /// <param name="projectId">The GUID of the project to update</param>
     /// <param name="personId">The GUID of the person to add to the project</param>
     /// <returns>The request response</returns>
     [HttpPost]
     [Route("{projectId:guid}/addPerson/{personId:guid}")]
-    public ActionResult<Project> AddPersonToProject([FromRoute] Guid projectId, Guid personId)
+    public async Task<ActionResult> AddPersonToProject([FromRoute] Guid projectId, Guid personId)
     {
-        Project? project = _context.Projects.FirstOrDefault(p => p.Id == projectId);
-        Person? person = _context.People.FirstOrDefault(p => p.Id == personId);
-        if (project == null || person == null) return NotFound();
-        
-        project.People.Add(person);
-        _context.SaveChanges();
-        return GetProjectById(project.Id);
+        ProjectResult result = await _projectService.AddPersonToProjectAsync(projectId, personId);
+        return result.ProjectResultType switch
+        {
+            ProjectResultType.Success            => Ok(result.Project),
+            ProjectResultType.PersonAlreadyAdded => BadRequest("Person already added."),
+            ProjectResultType.PersonNotFound     => NotFound("Error: Person not found."),
+            ProjectResultType.ProjectNotFound    => NotFound("Error: Project not found."),
+        };
     }
 }

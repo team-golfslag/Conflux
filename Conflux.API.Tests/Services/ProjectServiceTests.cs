@@ -21,6 +21,49 @@ public class ProjectServiceTests : IAsyncLifetime
     {
         await _postgres.DisposeAsync();
     }
+    
+    /// <summary>
+    /// Given a project service
+    /// When GetProjectByIdAsync is called with an existing project ID
+    /// The the project should be returned
+    /// </summary>
+    [Fact]
+    public async Task GetProjectByIdAsync_ShouldReturnProject_WhenProjectExists()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseNpgsql(_postgres.GetConnectionString())
+            .Options;
+
+        await using ConfluxContext context = new(options);
+        await context.Database.EnsureCreatedAsync();
+        
+        ProjectService projectService = new(context);
+        
+        Guid projectId = Guid.NewGuid();
+        
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new DateOnly(2023, 1, 1),
+            EndDate = new DateOnly(2023, 12, 31)
+        };
+
+        context.Projects.Add(testProject);
+        await context.SaveChangesAsync();
+        
+        // Act
+        Project? project = await projectService.GetProjectByIdAsync(projectId);
+        
+        // Assert
+        Assert.NotNull(project);
+        Assert.Equal(projectId, project.Id);
+        Assert.Equal(testProject.Title, project.Title);
+    }
+    
 
     /// <summary>
     /// Given a project service

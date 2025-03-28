@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.API.Services;
+
 /// <summary>
 /// Represents the project service
 /// </summary>
@@ -65,9 +66,9 @@ public class ProjectService
     public async Task<ProjectResult> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
         Project? project = await _context.Projects.Include(p => p.People).FirstOrDefaultAsync(p => p.Id == projectId);
-        Person? person = _context.People.FirstOrDefault(p => p.Id == personId);
-        
         if (project == null) return new (ProjectResultType.ProjectNotFound, null);
+        
+        Person? person = _context.People.FirstOrDefault(p => p.Id == personId);
         if (person == null) return new(ProjectResultType.PersonNotFound, project);
         if (project.People.Any(p => p.Id == person.Id)) return new (ProjectResultType.PersonAlreadyAdded, project);
         

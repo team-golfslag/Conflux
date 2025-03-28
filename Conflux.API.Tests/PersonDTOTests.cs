@@ -11,6 +11,7 @@ public class PersonDTOTests
     /// When the ToPerson() method is called,
     /// Then a new Person is created with a new Id and the same Name.
     /// </summary>
+    [Fact]
     public void ToPerson_ShouldConvertDTOToPerson()
     {
         // Arrange

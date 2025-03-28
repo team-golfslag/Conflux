@@ -12,10 +12,18 @@ namespace Conflux.API.Tests.Services;
 public class ProjectServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
+    private ConfluxContext _context;
 
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseNpgsql(_postgres.GetConnectionString())
+            .Options;
+        
+        await using ConfluxContext context = new(options);
+        await context.Database.EnsureCreatedAsync();
+        _context = context;
     }
 
     public async Task DisposeAsync()
@@ -32,8 +40,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetProjectByIdAsync_ShouldReturnProject_WhenProjectExists()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-        ProjectService projectService = new(context);
+        ProjectService projectService = new(_context);
         
         Guid projectId = Guid.NewGuid();
         
@@ -47,8 +54,8 @@ public class ProjectServiceTests : IAsyncLifetime
             EndDate = new DateOnly(2023, 12, 31)
         };
 
-        context.Projects.Add(testProject);
-        await context.SaveChangesAsync();
+        _context.Projects.Add(testProject);
+        await _context.SaveChangesAsync();
         
         // Act
         Project? project = await projectService.GetProjectByIdAsync(projectId);
@@ -68,8 +75,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task GetProjectByIdAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-        ProjectService projectService = new(context);
+        ProjectService projectService = new(_context);
         
         Guid projectId = Guid.NewGuid();
         
@@ -90,10 +96,8 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-
         // No project is added to the database, so it definitely doesn't exist
-        ProjectService service = new(context);
+        ProjectService service = new(_context);
 
         // Act
         Project? result = await service.UpdateProjectAsync(Guid.NewGuid(), new()
@@ -117,8 +121,6 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-
         // Insert a test project
         Project originalProject = new()
         {
@@ -129,10 +131,10 @@ public class ProjectServiceTests : IAsyncLifetime
             EndDate = new DateOnly(2023, 12, 31)
         };
 
-        context.Projects.Add(originalProject);
-        await context.SaveChangesAsync();
+        _context.Projects.Add(originalProject);
+        await _context.SaveChangesAsync();
 
-        ProjectService service = new(context);
+        ProjectService service = new(_context);
 
         // Prepare update DTO
         ProjectUpdateDto updateDto = new()
@@ -154,7 +156,7 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.Equal(new DateOnly(2024, 3, 1), updatedProject.EndDate);
 
         // Double-check by re-querying from the database
-        Project? reloaded = await context.Projects.FindAsync(originalProject.Id);
+        Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Equal("Updated Title", reloaded!.Title);
         Assert.Equal("Updated Description", reloaded.Description);
@@ -166,8 +168,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-        ProjectService projectService = new(context);
+        ProjectService projectService = new(_context);
         
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -182,8 +183,8 @@ public class ProjectServiceTests : IAsyncLifetime
             EndDate = new DateOnly(2023, 12, 31)
         };
         
-        context.Projects.Add(testProject);
-        await context.SaveChangesAsync();
+        _context.Projects.Add(testProject);
+        await _context.SaveChangesAsync();
         
         // Insert a test person
         Person testPerson = new()
@@ -192,8 +193,8 @@ public class ProjectServiceTests : IAsyncLifetime
             Name = "Test Person",
         };
         
-        context.People.Add(testPerson);
-        await context.SaveChangesAsync();
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
         
         // Act
         ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
@@ -212,8 +213,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-        ProjectService projectService = new(context);
+        ProjectService projectService = new(_context);
         
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -231,8 +231,7 @@ public class ProjectServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonDoesNotExist()
     {
         // Arrange
-        ConfluxContext context = await Arrange();
-        ProjectService projectService = new(context);
+        ProjectService projectService = new(_context);
         
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -247,8 +246,8 @@ public class ProjectServiceTests : IAsyncLifetime
             EndDate = new DateOnly(2023, 12, 31)
         };
         
-        context.Projects.Add(testProject);
-        await context.SaveChangesAsync();
+        _context.Projects.Add(testProject);
+        await _context.SaveChangesAsync();
         
         // Act
         ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
@@ -265,22 +264,9 @@ public class ProjectServiceTests : IAsyncLifetime
     [Fact]
     public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
     {
+        // Arrange
+        ProjectService projectService = new(_context);
         
-    }
 
-    /// <summary>
-    /// This is a method that replaces the complete arrange part of all tests
-    /// since it the same for all tests in this class.
-    /// </summary>
-    /// <returns>The context</returns>
-    private async Task<ConfluxContext> Arrange()
-    {
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
-        return context;
     }
 }

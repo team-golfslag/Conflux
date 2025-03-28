@@ -66,10 +66,10 @@ public class ProjectService
     public async Task<ProjectResult> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
         Project? project = await _context.Projects.Include(p => p.People).FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project == null) return new (ProjectResultType.ProjectNotFound, null);
+        if (project is null) return new (ProjectResultType.ProjectNotFound, null);
         
         Person? person = _context.People.FirstOrDefault(p => p.Id == personId);
-        if (person == null) return new(ProjectResultType.PersonNotFound, project);
+        if (person is null) return new(ProjectResultType.PersonNotFound, project);
         if (project.People.Any(p => p.Id == person.Id)) return new (ProjectResultType.PersonAlreadyAdded, project);
         
         project.People.Add(person);

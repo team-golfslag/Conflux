@@ -267,6 +267,39 @@ public class ProjectServiceTests : IAsyncLifetime
         // Arrange
         ProjectService projectService = new(_context);
         
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+        
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+        };
+        
+        _context.Projects.Add(testProject);
+                
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+                
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+        
+        await projectService.AddPersonToProjectAsync(projectId, personId);
+         
+        // Act
+        ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
 
+        // Assert
+        Assert.NotNull(projectResult);
+        Assert.NotNull(projectResult.Project);
+        Assert.Equal(projectId, projectResult.Project.Id);
+        Assert.Equal(testProject.Title, projectResult.Project.Title);
+        Assert.NotNull(projectResult.Project.People[0]);
+        Assert.Equal(ProjectResultType.PersonAlreadyAdded, projectResult.ProjectResultType);
     }
 }

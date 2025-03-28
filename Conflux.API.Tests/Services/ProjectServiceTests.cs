@@ -1,4 +1,5 @@
 using Conflux.API.DTOs;
+using Conflux.API.Results;
 using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
@@ -159,6 +160,112 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.Equal("Updated Description", reloaded.Description);
         Assert.Equal(new DateOnly(2024, 2, 1), reloaded.StartDate);
         Assert.Equal(new DateOnly(2024, 3, 1), reloaded.EndDate);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
+    {
+        // Arrange
+        ConfluxContext context = await Arrange();
+        ProjectService projectService = new(context);
+        
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+        
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new DateOnly(2023, 1, 1),
+            EndDate = new DateOnly(2023, 12, 31)
+        };
+        
+        context.Projects.Add(testProject);
+        await context.SaveChangesAsync();
+        
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+        
+        context.People.Add(testPerson);
+        await context.SaveChangesAsync();
+        
+        // Act
+        ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
+        
+        // Assert
+        Assert.NotNull(projectResult);
+        Assert.NotNull(projectResult.Project);
+        Assert.Equal(projectId, projectResult.Project.Id);
+        Assert.Equal(testProject.Title, projectResult.Project.Title);
+        Assert.Equal(ProjectResultType.Success, projectResult.ProjectResultType);
+        Assert.Equal(projectResult.Project.People[0].Id, testPerson.Id);
+        Assert.Equal(projectResult.Project.People[0].Name, testPerson.Name);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
+    {
+        // Arrange
+        ConfluxContext context = await Arrange();
+        ProjectService projectService = new(context);
+        
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+        
+        // Act
+        ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
+        
+        // Assert
+        Assert.NotNull(projectResult);
+        Assert.Null(projectResult.Project);
+        Assert.Equal(ProjectResultType.ProjectNotFound, projectResult.ProjectResultType);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonDoesNotExist()
+    {
+        // Arrange
+        ConfluxContext context = await Arrange();
+        ProjectService projectService = new(context);
+        
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+        
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new DateOnly(2023, 1, 1),
+            EndDate = new DateOnly(2023, 12, 31)
+        };
+        
+        context.Projects.Add(testProject);
+        await context.SaveChangesAsync();
+        
+        // Act
+        ProjectResult projectResult = await projectService.AddPersonToProjectAsync(projectId, personId);
+        
+        // Assert
+        Assert.NotNull(projectResult);
+        Assert.NotNull(projectResult.Project);
+        Assert.Equal(projectId, projectResult.Project.Id);
+        Assert.Equal(testProject.Title, projectResult.Project.Title);
+        Assert.Equal(ProjectResultType.PersonNotFound, projectResult.ProjectResultType);
+        Assert.Null(projectResult.Project.People[0]);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
+    {
+        
     }
 
     /// <summary>

@@ -258,7 +258,7 @@ public class ProjectServiceTests : IAsyncLifetime
         Assert.Equal(projectId, projectResult.Project.Id);
         Assert.Equal(testProject.Title, projectResult.Project.Title);
         Assert.Equal(ProjectResultType.PersonNotFound, projectResult.ProjectResultType);
-        Assert.Null(projectResult.Project.People[0]);
+        Assert.Empty(projectResult.Project.People);
     }
 
     [Fact]

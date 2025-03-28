@@ -21,7 +21,7 @@ public class ProjectServiceTests : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
         
-        await using ConfluxContext context = new(options);
+        ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
     }
@@ -68,7 +68,7 @@ public class ProjectServiceTests : IAsyncLifetime
 
     /// <summary>
     /// Given a project service
-    /// When GetProjectByIdAsync is called with an non-existing project ID
+    /// When GetProjectByIdAsync is called with a non-existing project ID
     /// Then null should be returned
     /// </summary>
     [Fact]
@@ -150,7 +150,7 @@ public class ProjectServiceTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(updatedProject);
-        Assert.Equal("Updated Title", updatedProject!.Title);
+        Assert.Equal("Updated Title", updatedProject.Title);
         Assert.Equal("Updated Description", updatedProject.Description);
         Assert.Equal(new DateOnly(2024, 2, 1), updatedProject.StartDate);
         Assert.Equal(new DateOnly(2024, 3, 1), updatedProject.EndDate);
@@ -158,7 +158,7 @@ public class ProjectServiceTests : IAsyncLifetime
         // Double-check by re-querying from the database
         Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
-        Assert.Equal("Updated Title", reloaded!.Title);
+        Assert.Equal("Updated Title", reloaded.Title);
         Assert.Equal("Updated Description", reloaded.Description);
         Assert.Equal(new DateOnly(2024, 2, 1), reloaded.StartDate);
         Assert.Equal(new DateOnly(2024, 3, 1), reloaded.EndDate);

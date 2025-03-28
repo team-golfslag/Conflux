@@ -1,4 +1,5 @@
 using Conflux.API.DTOs;
+using Conflux.API.Results;
 using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
@@ -16,11 +17,13 @@ public class ProjectController : ControllerBase
 {
     private readonly ConfluxContext _context;
     private readonly ProjectService _projectService;
+    private readonly PersonController _personController;
 
     public ProjectController(ConfluxContext context)
     {
         _context = context;
         _projectService = new(_context);
+        _personController = new(_context);
     }
     
     /// <summary>
@@ -28,13 +31,9 @@ public class ProjectController : ControllerBase
     /// </summary>
     [HttpGet]
     [Route("{id:guid}")]
-    public ActionResult<Project> GetProjectById([FromRoute] Guid id)
+    public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id)
     {
-        Project? project = _context.Projects
-            .Include(p => p.People)
-            .Include(p => p.Products)
-            .Include(p => p.Parties)
-            .FirstOrDefault(p => p.Id == id);
+        Project? project = await _projectService.GetProjectByIdAsync(id);
         return project == null ? NotFound() : Ok(project);
     } 
 
@@ -65,5 +64,25 @@ public class ProjectController : ControllerBase
     {
         Project? updateProject = await _projectService.UpdateProjectAsync(id, projectDto);
         return updateProject == null ? NotFound() : Ok(updateProject);
+    }
+
+    /// <summary>
+    /// Updates a project by adding the person with the provided personId.
+    /// </summary>
+    /// <param name="projectId">The GUID of the project to update</param>
+    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <returns>The request response</returns>
+    [HttpPost]
+    [Route("{projectId:guid}/addPerson/{personId:guid}")]
+    public async Task<ActionResult> AddPersonToProject([FromRoute] Guid projectId, Guid personId)
+    {
+        ProjectResult result = await _projectService.AddPersonToProjectAsync(projectId, personId);
+        return result.ProjectResultType switch
+        {
+            ProjectResultType.Success            => Ok(result.Project),
+            ProjectResultType.PersonAlreadyAdded => BadRequest("Person already added."),
+            ProjectResultType.PersonNotFound     => NotFound("Error: Person not found."),
+            ProjectResultType.ProjectNotFound    => NotFound("Error: Project not found."),
+        };
     }
 }

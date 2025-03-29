@@ -2,16 +2,15 @@ using System.Net;
 using System.Net.Http.Json;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
 
-public class ProjectsControllerTests : IClassFixture<WebApplicationFactory<Program>>
+public class ProjectsControllerTests : IClassFixture<ConfluxWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public ProjectsControllerTests(WebApplicationFactory<Program> factory)
+    public ProjectsControllerTests(ConfluxWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }

@@ -23,13 +23,15 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddControllers();
         builder.Services.AddSwaggerGen();
-        builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
-            builder.Configuration.GetConnectionString("Database"),
-            npgsqlOptions =>
-                npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+        if (builder.Environment.EnvironmentName != "Testing")
+            builder.Services.AddDbContextPool<ConfluxContext>(opt =>
+                opt.UseNpgsql(
+                    builder.Configuration.GetConnectionString("Database"),
+                    npgsqlOptions =>
+                        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-        if (allowedOrigins is null)
+        if (allowedOrigins is null  || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");
 
         builder.Services.AddCors(options =>
@@ -50,10 +52,10 @@ public class Program
             app.UseSwaggerUI();
         }
 
-// Add exception handling middleware
-        app.UseExceptionHandler(appbuilder =>
+        // Add exception handling middleware
+        app.UseExceptionHandler(appBuilder =>
         {
-            appbuilder.Run(async context =>
+            appBuilder.Run(async context =>
             {
                 IExceptionHandlerFeature? exception = context.Features.Get<IExceptionHandlerFeature>();
                 if (exception?.Error is ProjectNotFoundException)
@@ -83,7 +85,7 @@ public class Program
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
         ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-        await context.Database.MigrateAsync();
+        if (context.Database.IsRelational()) await context.Database.MigrateAsync();
 
         // Seed the database for development, if necessary
         if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())

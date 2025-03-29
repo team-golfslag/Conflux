@@ -1,10 +1,9 @@
-﻿using Conflux.API.DTOs;
-using Conflux.Domain;
+﻿using Conflux.Domain.Logic.DTOs;
 using Xunit;
 
-namespace Conflux.API.Tests;
+namespace Conflux.Domain.Logic.Tests.DTOs;
 
-public class ProjectDtoTests
+public class ProjectPutDTOTests
 {
     /// <summary>
     /// Given a valid ProjectDTO with Title, Description, StartDate, and EndDate,
@@ -15,8 +14,9 @@ public class ProjectDtoTests
     public void ToProject_ShouldConvertDTOToProject()
     {
         // Arrange
-        ProjectDto dto = new() 
+        ProjectPostDTO postDto = new()
         {
+            Id = Guid.NewGuid(),
             Title = "Test Project",
             Description = "Test Description",
             StartDate = new DateOnly(2025, 1, 1),
@@ -24,14 +24,15 @@ public class ProjectDtoTests
         };
 
         // Act
-        Project project = dto.ToProject();
+        Project project = postDto.ToProject();
 
         // Assert
         Assert.NotNull(project);
-        Assert.Equal(dto.Title, project.Title);
-        Assert.Equal(dto.Description, project.Description);
-        Assert.Equal(dto.StartDate, project.StartDate);
-        Assert.Equal(dto.EndDate, project.EndDate);
+        Assert.NotEqual(postDto.Id, project.Id);
+        Assert.Equal(postDto.Title, project.Title);
+        Assert.Equal(postDto.Description, project.Description);
+        Assert.Equal(postDto.StartDate, project.StartDate);
+        Assert.Equal(postDto.EndDate, project.EndDate);
         Assert.NotEqual(Guid.Empty, project.Id);
     }
 }

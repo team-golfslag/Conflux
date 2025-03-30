@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Xunit;
@@ -128,7 +129,11 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };
-        await _client.PostAsJsonAsync("/projects", project);
+        JsonContent content = JsonContent.Create(project, options: new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        });
+        await _client.PostAsync("/projects", content);
 
         // Act
         const string url = "/projects?query=dated&start_date=2024-01-01T00:00:00Z&end_date=2024-12-31T23:59:59Z";
@@ -152,7 +157,11 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             StartDate = new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };
-        await _client.PostAsJsonAsync("/projects", project);
+        JsonContent content = JsonContent.Create(project, options: new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        });
+        await _client.PostAsync("/projects", content);
 
         // Act
         const string url = "/projects?query=outdated&start_date=2022-01-01T00:00:00Z&end_date=2022-12-31T23:59:59Z";

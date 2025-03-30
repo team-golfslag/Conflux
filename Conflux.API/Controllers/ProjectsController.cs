@@ -34,8 +34,8 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     public async Task<IEnumerable<Project>> GetProjectByQuery(
         [FromQuery] string? query,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
+        [FromQuery(Name = "start_date")] DateTime? startDate,
+        [FromQuery(Name = "end_date")] DateTime? endDate)
     {
         IQueryable<Project> projects = _context.Projects
             .Include(p => p.People)
@@ -55,14 +55,17 @@ public class ProjectsController : ControllerBase
         if (startDate.HasValue)
         {
             startDate = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
-            projects = projects.Where(project => project.StartDate >= startDate);
+            projects = projects.Where(project => project.StartDate != null && project.StartDate >= startDate);
         }
 
         if (endDate.HasValue)
         {
             endDate = DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc);
-            projects = projects.Where(project => project.EndDate <= endDate);
+            projects = projects.Where(project => project.EndDate != null && project.EndDate <= endDate);
         }
+
+        if (startDate.HasValue && endDate.HasValue)
+            projects = projects.Where(project => project.StartDate <= endDate && project.EndDate >= startDate);
 
         return await projects.ToListAsync();
     }

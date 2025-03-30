@@ -29,7 +29,7 @@ public class ProjectPostDTO
             Id = Guid.NewGuid(),
             Title = Title,
             Description = Description,
-            StartDate = StartDate,
-            EndDate = EndDate,
+            StartDate = StartDate.HasValue ? DateTime.SpecifyKind(StartDate.Value, DateTimeKind.Utc) : null,
+            EndDate = EndDate.HasValue ? DateTime.SpecifyKind(EndDate.Value, DateTimeKind.Utc) : null,
         };
 }

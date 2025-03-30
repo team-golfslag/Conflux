@@ -18,8 +18,8 @@ public class ProjectPostDTOTests
         {
             Title = "Title",
             Description = "Description",
-            StartDate = new DateOnly(2021, 1, 1),
-            EndDate = new DateOnly(2021, 12, 31),
+            StartDate = new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2021, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act

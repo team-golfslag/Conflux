@@ -11,7 +11,7 @@ public class ProjectPutDTO
 
     public string? Description { get; init; }
 
-    public DateOnly? StartDate { get; init; }
+    public DateTime? StartDate { get; init; }
 
-    public DateOnly? EndDate { get; init; }
+    public DateTime? EndDate { get; init; }
 }

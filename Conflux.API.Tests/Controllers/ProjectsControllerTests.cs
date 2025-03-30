@@ -6,11 +6,11 @@ using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
 
-public class ProjectsControllerTests : IClassFixture<ConfluxWebApplicationFactory>
+public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public ProjectsControllerTests(ConfluxWebApplicationFactory factory)
+    public ProjectsControllerTests(TestWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }

@@ -47,7 +47,7 @@ public class ProjectsServiceTests : IAsyncLifetime
             {
                 Title = "Non-existent project",
                 Description = "Will not update",
-                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                StartDate = DateTime.UtcNow,
                 EndDate = null,
             }));
     }
@@ -74,8 +74,8 @@ public class ProjectsServiceTests : IAsyncLifetime
             Id = Guid.NewGuid(),
             Title = "Original Title",
             Description = "Original Description",
-            StartDate = new DateOnly(2023, 1, 1),
-            EndDate = new DateOnly(2023, 12, 31),
+            StartDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
         context.Projects.Add(originalProject);
@@ -88,8 +88,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Title = "Updated Title",
             Description = "Updated Description",
-            StartDate = new DateOnly(2024, 2, 1),
-            EndDate = new DateOnly(2024, 3, 1),
+            StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act
@@ -99,16 +99,16 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(updatedProject);
         Assert.Equal("Updated Title", updatedProject.Title);
         Assert.Equal("Updated Description", updatedProject.Description);
-        Assert.Equal(new DateOnly(2024, 2, 1), updatedProject.StartDate);
-        Assert.Equal(new DateOnly(2024, 3, 1), updatedProject.EndDate);
+        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
+        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
         // Double-check by re-querying from the database
         Project? reloaded = await context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Equal("Updated Title", reloaded.Title);
         Assert.Equal("Updated Description", reloaded.Description);
-        Assert.Equal(new DateOnly(2024, 2, 1), reloaded.StartDate);
-        Assert.Equal(new DateOnly(2024, 3, 1), reloaded.EndDate);
+        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
+        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }
 
     /// <summary>
@@ -133,8 +133,8 @@ public class ProjectsServiceTests : IAsyncLifetime
             Id = Guid.NewGuid(),
             Title = "Original Title",
             Description = "Original Description",
-            StartDate = new DateOnly(2023, 1, 1),
-            EndDate = new DateOnly(2023, 12, 31),
+            StartDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
         context.Projects.Add(originalProject);
@@ -147,8 +147,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Title = "Patched Title",
             Description = "Patched Description",
-            StartDate = new DateOnly(2024, 2, 1),
-            EndDate = new DateOnly(2024, 3, 1),
+            StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act
@@ -158,15 +158,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(patchedProject);
         Assert.Equal("Patched Title", patchedProject.Title);
         Assert.Equal("Patched Description", patchedProject.Description);
-        Assert.Equal(new DateOnly(2024, 2, 1), patchedProject.StartDate);
-        Assert.Equal(new DateOnly(2024, 3, 1), patchedProject.EndDate);
+        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
+        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
 
         // Double-check by re-querying from the database
         Project? reloaded = await context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Equal("Patched Title", reloaded.Title);
         Assert.Equal("Patched Description", reloaded.Description);
-        Assert.Equal(new DateOnly(2024, 2, 1), reloaded.StartDate);
-        Assert.Equal(new DateOnly(2024, 3, 1), reloaded.EndDate);
+        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
+        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }
 }

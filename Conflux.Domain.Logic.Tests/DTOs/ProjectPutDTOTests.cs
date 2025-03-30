@@ -19,8 +19,8 @@ public class ProjectPutDTOTests
             Id = Guid.NewGuid(),
             Title = "Test Project",
             Description = "Test Description",
-            StartDate = new DateOnly(2025, 1, 1),
-            EndDate = new DateOnly(2025, 12, 31),
+            StartDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act

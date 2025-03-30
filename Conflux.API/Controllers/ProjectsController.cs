@@ -24,21 +24,48 @@ public class ProjectsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all projects whose title contains the query, ignoring case
+    /// Gets all projects whose title or description contains the query (case-insensitive),
+    /// and optionally filters by start and/or end date.
     /// </summary>
-    /// <param name="query">The string on which to compare</param>
-    /// <returns>Projects whose title contains the query</returns>
+    /// <param name="query">The string to search in the title or description</param>
+    /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
+    /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
+    /// <returns>Filtered list of projects</returns>
     [HttpGet]
-    public async Task<IEnumerable<Project>> GetProjectByName(string query) =>
-        await _context.Projects
+    public async Task<IEnumerable<Project>> GetProjectByQuery(
+        [FromQuery] string? query,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        IQueryable<Project> projects = _context.Projects
             .Include(p => p.People)
             .Include(p => p.Products)
-            .Include(p => p.Parties)
-            .Where(
-#pragma warning disable CA1862 // Contains with StringComparison.CurrentCultureIgnoreCase cannot be converted to SQL
-                project => project.Title.Contains(query.ToLowerInvariant()))
+            .Include(p => p.Parties);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            string loweredQuery = query.ToLowerInvariant();
+#pragma warning disable CA1862
+            projects = projects.Where(project =>
+                project.Title.ToLower().Contains(loweredQuery) ||
+                (project.Description ?? "").ToLower().Contains(loweredQuery));
 #pragma warning restore CA1862
-            .ToListAsync();
+        }
+
+        if (startDate.HasValue)
+        {
+            startDate = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
+            projects = projects.Where(project => project.StartDate >= startDate);
+        }
+
+        if (endDate.HasValue)
+        {
+            endDate = DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc);
+            projects = projects.Where(project => project.EndDate <= endDate);
+        }
+
+        return await projects.ToListAsync();
+    }
 
     /// <summary>
     /// Gets all projects

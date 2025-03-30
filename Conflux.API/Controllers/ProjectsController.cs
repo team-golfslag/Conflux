@@ -27,7 +27,7 @@ public class ProjectsController : ControllerBase
     /// Gets all projects whose title or description contains the query (case-insensitive),
     /// and optionally filters by start and/or end date.
     /// </summary>
-    /// <param name="query">The string to search in the title or description</param>
+    /// <param name="query">Optional: The string to search in the title or description</param>
     /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
     /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
     /// <returns>Filtered list of projects</returns>

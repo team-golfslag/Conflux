@@ -95,4 +95,73 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>();
         Assert.Equal("After patch", updated?.Description);
     }
+
+    [Fact]
+    public async Task GetProjects_ByQuery_ReturnsMatchingProjects()
+    {
+        // Arrange
+        ProjectPostDTO project = new()
+        {
+            Title = "Solar Panel Research",
+            Description = "Test description",
+        };
+        await _client.PostAsJsonAsync("/projects", project);
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/projects?query=solar");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        Assert.NotNull(projects);
+        Assert.Contains(projects, p => p.Title.Contains("Solar Panel Research"));
+    }
+
+    [Fact]
+    public async Task GetProjects_ByDateRange_ReturnsMatchingProjects()
+    {
+        // Arrange
+        ProjectPostDTO project = new()
+        {
+            Title = "Dated Project",
+            Description = "Project with specific dates",
+            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2024, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+        await _client.PostAsJsonAsync("/projects", project);
+
+        // Act
+        const string url = "/projects?query=dated&start_date=2024-01-01T00:00:00Z&end_date=2024-12-31T23:59:59Z";
+        HttpResponseMessage response = await _client.GetAsync(url);
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        Assert.NotNull(projects);
+        Assert.Contains(projects, p => p.Title == "Dated Project");
+    }
+
+    [Fact]
+    public async Task GetProjects_ByNonMatchingDateRange_ReturnsEmpty()
+    {
+        // Arrange
+        ProjectPostDTO project = new()
+        {
+            Title = "Outdated Project",
+            Description = "Old project",
+            StartDate = new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+        await _client.PostAsJsonAsync("/projects", project);
+
+        // Act
+        const string url = "/projects?query=outdated&start_date=2022-01-01T00:00:00Z&end_date=2022-12-31T23:59:59Z";
+        HttpResponseMessage response = await _client.GetAsync(url);
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        Assert.NotNull(projects);
+        Assert.Empty(projects);
+    }
 }

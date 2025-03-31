@@ -48,7 +48,7 @@ public class ProjectsService
         if (!string.IsNullOrWhiteSpace(query))
         {
             string loweredQuery = query.ToLowerInvariant();
-#pragma warning disable CA1862
+#pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
             projects = projects.Where(project =>
                 project.Title.ToLower().Contains(loweredQuery) ||
                 (project.Description ?? "").ToLower().Contains(loweredQuery));

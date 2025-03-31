@@ -99,11 +99,12 @@ public class ProjectsService
 
 
     /// <summary>
-    /// Adds a project to the database.
+    /// Updates a project to the database via PUT.
     /// </summary>
     /// <param name="id">The GUID of the project</param>
     /// <param name="dto">The Data Transfer Object for the project</param>
     /// <returns>The added project</returns>
+    /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> PutProjectAsync(Guid id, ProjectPutDTO dto)
     {
         Project project = await _context.Projects.FindAsync(id)

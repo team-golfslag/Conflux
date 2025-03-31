@@ -28,4 +28,21 @@ public class PersonDTOTests
         Assert.Equal(dto.Name, person.Name);
         Assert.NotEqual(Guid.Empty, person.Id);
     }
+
+    public void ProjectDTO_ShouldGetSet()
+    {
+        // Arrange
+        Guid personId = Guid.NewGuid();
+        
+        PersonDto dto = new()
+        {
+            Id = personId,
+            Name = "John Doe",
+        };
+        
+        // Act
+        
+        // Assert
+        Assert.Equal(personId, dto.Id);
+    }
 }

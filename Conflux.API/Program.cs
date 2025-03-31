@@ -1,52 +1,106 @@
+using System.Text.Json;
 using Conflux.Data;
+using Conflux.Domain.Logic.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+namespace Conflux.API;
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddControllers();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContextPool<ConfluxContext>(opt => opt.UseNpgsql(
-    builder.Configuration.GetConnectionString("Database"),
-    npgsqlOptions =>
-        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
-
-string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-if (allowedOrigins is null)
-    throw new InvalidOperationException("Allowed origins must be specified in configuration.");
-
-builder.Services.AddCors(options =>
+#pragma warning disable S1118 // Since we run integration tests in Conflux.API.Tests, we need a public Program class
+public class Program
+#pragma warning restore S1118
 {
-    options.AddPolicy("AllowLocalhost", policy =>
+    public static async Task Main(string[] args)
     {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
-});
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+        builder.Services.AddControllers().AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+            options.JsonSerializerOptions.WriteIndented = true;
+        });
 
-WebApplication app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddControllers();
+        builder.Services.AddSwaggerGen();
+        if (builder.Environment.EnvironmentName != "Testing")
+            builder.Services.AddDbContextPool<ConfluxContext>(opt =>
+                opt.UseNpgsql(
+                    builder.Configuration.GetConnectionString("Database"),
+                    npgsqlOptions =>
+                        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+
+        string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        if (allowedOrigins is null || allowedOrigins.Length == 0)
+            throw new InvalidOperationException("Allowed origins must be specified in configuration.");
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowLocalhost", policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            });
+        });
+
+        WebApplication app = builder.Build();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        // Add exception handling middleware
+        app.UseExceptionHandler(appBuilder =>
+        {
+            appBuilder.Run(async context =>
+            {
+                IExceptionHandlerFeature? exception = context.Features.Get<IExceptionHandlerFeature>();
+                switch (exception?.Error)
+                {
+                    case ProjectNotFoundException:
+                    case PersonNotFoundException:
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = exception.Error.Message,
+                        });
+                        break;
+                    case PersonAlreadyAddedToProjectException:
+                        context.Response.StatusCode = 409; // Conflict
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = exception.Error.Message,
+                        });
+                        break;
+                    default:
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = "An unexpected error occurred.",
+                        });
+                        break;
+                }
+            });
+        });
+
+        app.UseHttpsRedirection();
+        app.MapControllers();
+        app.UseCors("AllowLocalhost");
+
+        // Ensure the database is created and seeded
+        using IServiceScope scope = app.Services.CreateScope();
+        IServiceProvider services = scope.ServiceProvider;
+        ConfluxContext context = services.GetRequiredService<ConfluxContext>();
+        if (context.Database.IsRelational()) await context.Database.MigrateAsync();
+
+        // Seed the database for development, if necessary
+        if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
+            await context.SeedDataAsync();
+
+        app.MapSwagger();
+
+        await app.RunAsync();
+    }
 }
-
-app.UseHttpsRedirection();
-app.MapControllers();
-app.UseCors("AllowLocalhost");
-
-// Ensure the database is created and seeded
-using IServiceScope scope = app.Services.CreateScope();
-IServiceProvider services = scope.ServiceProvider;
-ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-await context.Database.MigrateAsync();
-
-// Seed the database for development, if necessary
-if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
-    await context.SeedDataAsync();
-
-app.MapSwagger();
-
-await app.RunAsync();

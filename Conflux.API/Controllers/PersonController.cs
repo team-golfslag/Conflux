@@ -1,9 +1,8 @@
-using Conflux.API.DTOs;
 using Conflux.API.Services;
 using Conflux.Data;
 using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.API.Controllers;
 
@@ -14,15 +13,13 @@ namespace Conflux.API.Controllers;
 [ApiController]
 public class PersonController : ControllerBase
 {
-    private readonly ConfluxContext _context;
     private readonly PersonService _personService;
 
     public PersonController(ConfluxContext context)
     {
-        _context = context;
-        _personService = new (_context);
+        _personService = new(context);
     }
-    
+
     /// <summary>
     /// Gets the person by his GUID
     /// </summary>
@@ -30,23 +27,16 @@ public class PersonController : ControllerBase
     /// <returns>The request response</returns>
     [HttpGet]
     [Route("{id:guid}")]
-    public ActionResult<Person> GetPersonById([FromRoute] Guid id)
-    {
-        Person? person = _context.People
-            .FirstOrDefault(p => p.Id == id);
-        return person == null ? NotFound() : Ok(person);
-    } 
+    public async Task<ActionResult<Person>> GetPersonByIdAsync([FromRoute] Guid id) =>
+        Ok(await _personService.GetPersonByIdAsync(id));
 
     /// <summary>
     /// Creates a new person
     /// </summary>
-    /// <param name="personDto">The DTO which to convert to a <see cref="Person"/></param>
+    /// <param name="personDto">The DTO which to convert to a <see cref="Person" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
     [Route("create")]
-    public async Task<ActionResult> CreatePerson([FromBody] PersonDto personDto)
-    {
-        Person? person = await _personService.CreatePersonAsync(personDto);
-        return person == null ? BadRequest() : Ok(person);
-    }
+    public async Task<ActionResult<Person>> CreatePerson([FromBody] PersonDTO personDto) =>
+        await _personService.CreatePersonAsync(personDto);
 }

@@ -38,12 +38,21 @@ public static class NwOpenMapper
     /// <param name="project">The NWOpen project to map</param>
     private static void MapProject(NwOpenProject project)
     {
+        DateTime? startDate = project.StartDate.HasValue
+            ? DateTime.SpecifyKind(project.StartDate.Value, DateTimeKind.Utc)
+            : null;
+
+        DateTime? endDate = project.EndDate.HasValue
+            ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
+            : null;
+
+
         Project mappedProject = new()
         {
             Title = project.Title,
             Description = project.SummaryNl,
-            StartDate = DateTimeToDateOnly(project.StartDate),
-            EndDate = DateTimeToDateOnly(project.EndDate),
+            StartDate = startDate,
+            EndDate = endDate,
         };
 
         foreach (NwOpenProduct product in project.Products ?? []) MapProduct(mappedProject, product);
@@ -56,10 +65,6 @@ public static class NwOpenMapper
 
         Projects.Add(mappedProject);
     }
-
-    private static DateOnly? DateTimeToDateOnly(DateTime? dateTime) =>
-        dateTime == null ? null : DateOnly.FromDateTime(dateTime.Value);
-
 
     /// <summary>
     /// Maps an NWOpen product to a domain product.

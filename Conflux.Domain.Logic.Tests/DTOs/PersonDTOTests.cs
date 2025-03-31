@@ -1,8 +1,7 @@
-using Conflux.API.DTOs;
-using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs;
 using Xunit;
 
-namespace Conflux.API.Tests;
+namespace Conflux.Domain.Logic.Tests.DTOs;
 
 public class PersonDTOTests
 {
@@ -15,34 +14,17 @@ public class PersonDTOTests
     public void ToPerson_ShouldConvertDTOToPerson()
     {
         // Arrange
-        PersonDto dto = new()
+        PersonDTO dto = new()
         {
             Name = "John Doe",
         };
-        
+
         // Act 
         Person person = dto.ToPerson();
-        
+
         // Assert
         Assert.NotNull(person);
         Assert.Equal(dto.Name, person.Name);
         Assert.NotEqual(Guid.Empty, person.Id);
-    }
-
-    public void ProjectDTO_ShouldGetSet()
-    {
-        // Arrange
-        Guid personId = Guid.NewGuid();
-        
-        PersonDto dto = new()
-        {
-            Id = personId,
-            Name = "John Doe",
-        };
-        
-        // Act
-        
-        // Assert
-        Assert.Equal(personId, dto.Id);
     }
 }

@@ -109,10 +109,10 @@ public class ProjectsService
         Project project = await _context.Projects.FindAsync(id)
             ?? throw new ProjectNotFoundException(id);
 
-        project.Title = dto.Title ?? project.Title;
-        project.Description = dto.Description ?? project.Description;
-        project.StartDate = dto.StartDate ?? project.StartDate;
-        project.EndDate = dto.EndDate ?? project.EndDate;
+        project.Title = dto.Title;
+        project.Description = dto.Description;
+        project.StartDate = dto.StartDate;
+        project.EndDate = dto.EndDate;
 
         await _context.SaveChangesAsync();
         return project;

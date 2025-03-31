@@ -7,11 +7,11 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectPutDTO
 #pragma warning restore S101
 {
-    public string? Title { get; init; }
+    public string Title { get; init; }
 
-    public string? Description { get; init; }
+    public string Description { get; init; }
 
-    public DateTime? StartDate { get; init; }
+    public DateTime StartDate { get; init; }
 
-    public DateTime? EndDate { get; init; }
+    public DateTime EndDate { get; init; }
 }

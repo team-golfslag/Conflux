@@ -48,7 +48,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                 Title = "Non-existent project",
                 Description = "Will not update",
                 StartDate = DateTime.UtcNow,
-                EndDate = null,
+                EndDate = DateTime.UtcNow.AddDays(1),
             }));
     }
 
@@ -88,8 +88,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Title = "Updated Title",
             Description = "Updated Description",
-            StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
+            StartDate = new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act

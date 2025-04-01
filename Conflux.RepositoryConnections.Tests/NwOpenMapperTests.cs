@@ -161,6 +161,67 @@ public class NwOpenMapperTests
         Assert.Equal(2, seedData.Projects.Count);
         Assert.Single(seedData.Products);
     }
+    
+    
+    /// <summary>
+    /// Tests if product of a project have IsValid bool marked correctly dependant on the url.
+    /// </summary>
+    [Fact]
+    public void  Products_IsValidUrl()
+    {
+        // Arrange
+        var projectList = new List<NwOpenProject>
+        {
+            new()
+            {
+                Products =
+                [
+                    new()
+                    {
+                        Title = "First Title",
+                        UrlOpenAccess = "",
+                    },
+                    new()
+                    {
+                        Title = "Second Title",
+                        UrlOpenAccess = "https://riojournal.com/article/67379/",
+                    },
+                    new()
+                    {
+                        Title = "Third Title",
+                        UrlOpenAccess = "https://doi.org/10.3897/rio.7.e67379",
+                    },
+                    new()
+                    {
+                        Title = "Fourth Title",
+                        UrlOpenAccess = "http://localhost:5173/projects/search",
+                    },
+                    new()
+                    {
+                        Title = "Fifth Title",
+                        UrlOpenAccess = "TO BE ADDED LATER",
+                    },
+                ],
+                ProjectId = "",
+                Title = "",
+                FundingScheme = "",
+                Department = "",
+                SubDepartment = "",
+                SummaryNl = "",
+                SummaryEn = "",
+            },
+        };
+
+        // Act
+        SeedData seedData = NwOpenMapper.MapProjects(projectList);
+
+        // Assert
+        Assert.False(seedData.Products[0].IsValidUrl);
+        Assert.True (seedData.Products[1].IsValidUrl);
+        Assert.True (seedData.Products[2].IsValidUrl);
+        Assert.False (seedData.Products[3].IsValidUrl); //local host fails due to ":"
+        Assert.False(seedData.Products[4].IsValidUrl);
+    }
 
     /// <summary>
     /// Helper to reset all the static lists in NwOpenMapper before each test.

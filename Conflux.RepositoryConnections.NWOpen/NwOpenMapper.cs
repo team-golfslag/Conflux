@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using Conflux.Domain;
+using DoiTools.Net;
 using Product = Conflux.Domain.Product;
 using Project = Conflux.Domain.Project;
 using NwOpenProject = NWOpen.Net.Models.Project;
@@ -79,16 +81,35 @@ public static class NwOpenMapper
             project.Products.Add(products[0]);
             return;
         }
-
+        
+        
         Product mappedProduct = new()
         {
             Id = Guid.NewGuid(),
             Title = product.Title ?? "No title",
             Url = product.UrlOpenAccess,
+            IsValidUrl = CheckIsValidUrl(product.UrlOpenAccess),
         };
 
         project.Products.Add(mappedProduct);
         Products.Add(mappedProduct);
+    }
+    
+    /// <summary>
+    /// given a url, checks if it is a valid DOI or http(s) url.
+    /// </summary>
+    /// <param name="url"> nullable url to check if it is valid</param>
+    /// <returns>bool</returns>
+    private static bool CheckIsValidUrl(string? url)
+    {
+        if(string.IsNullOrEmpty(url)) return false;
+        
+        if(Doi.IsValid(url)) return true; //check if it is a valid DOI url
+        
+        // check if it a valid http(s) url.
+        var isMatch = Regex.Match(url, @"(?:http[s]?:\/\/.)?(?:www\.)?[-a-zA-Z0-9@%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)");
+        if (isMatch.Success) return true;
+        return false;
     }
 
     /// <summary>

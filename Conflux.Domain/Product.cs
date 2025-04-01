@@ -12,4 +12,6 @@ public class Product
     public string? Url { get; set; }
 
     public required string Title { get; set; }
+
+    public bool? IsValidUrl { get; set; }
 }

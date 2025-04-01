@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Conflux.RepositoryConnections.NWOpen;
 using Xunit;
 
@@ -32,7 +37,7 @@ public class TemporaryProjectRetrieverTests
         TemporaryProjectRetriever[] instances = new TemporaryProjectRetriever[10];
 
         Parallel.For(0, 10, i => { instances[i] = TemporaryProjectRetriever.GetInstance(); });
-        
+
         TemporaryProjectRetriever first = instances[0];
         Assert.All(instances, instance => Assert.Same(first, instance));
     }

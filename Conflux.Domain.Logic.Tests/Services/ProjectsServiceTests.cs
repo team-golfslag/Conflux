@@ -16,10 +16,18 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
+    private ConfluxContext _context;
 
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+        var options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseNpgsql(_postgres.GetConnectionString())
+            .Options;
+
+        ConfluxContext context = new(options);
+        await context.Database.EnsureCreatedAsync();
+        _context = context;
     }
 
     public async Task DisposeAsync()
@@ -36,15 +44,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
-
-        // No project is added to the database, so it definitely doesn't exist
-        ProjectsService service = new(context);
+        ProjectsService service = new(_context);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
@@ -66,12 +66,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
+        ProjectsService service = new(_context);
 
         // Insert a test project
         Project originalProject = new()
@@ -83,10 +78,8 @@ public class ProjectsServiceTests : IAsyncLifetime
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
-        context.Projects.Add(originalProject);
-        await context.SaveChangesAsync();
-
-        ProjectsService service = new(context);
+        _context.Projects.Add(originalProject);
+        await _context.SaveChangesAsync();
 
         // Prepare Put DTO
         ProjectPutDTO putDto = new()
@@ -108,7 +101,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
         // Double-check by re-querying from the database
-        Project? reloaded = await context.Projects.FindAsync(originalProject.Id);
+        Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Equal("Updated Title", reloaded.Title);
         Assert.Equal("Updated Description", reloaded.Description);
@@ -125,12 +118,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PatchProjectAsync_ShouldPatchExistingProject()
     {
         // Arrange
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-
-        await using ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
+        ProjectsService service = new(_context);
 
         // Insert a test project
         Project originalProject = new()
@@ -142,10 +130,9 @@ public class ProjectsServiceTests : IAsyncLifetime
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
-        context.Projects.Add(originalProject);
-        await context.SaveChangesAsync();
+        _context.Projects.Add(originalProject);
+        await _context.SaveChangesAsync();
 
-        ProjectsService service = new(context);
 
         // Prepare patch DTO
         ProjectPatchDTO patchDto = new()
@@ -167,11 +154,234 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
 
         // Double-check by re-querying from the database
-        Project? reloaded = await context.Projects.FindAsync(originalProject.Id);
+        Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Equal("Patched Title", reloaded.Title);
         Assert.Equal("Patched Description", reloaded.Description);
         Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        _context.Projects.Add(testProject);
+        await _context.SaveChangesAsync();
+
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+
+        // Act
+        Project project = await projectsService.AddPersonToProjectAsync(projectId, personId);
+
+        // Assert
+        Assert.NotNull(project);
+        Assert.Equal(projectId, project.Id);
+        Assert.Equal(testProject.Title, project.Title);
+        Assert.Equal(project.People[0].Id, testPerson.Id);
+        Assert.Equal(project.People[0].Name, testPerson.Name);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            projectsService.AddPersonToProjectAsync(projectId, personId));
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldThrow_WhenPersonDoesNotExist()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        _context.Projects.Add(testProject);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<PersonNotFoundException>(() =>
+            projectsService.AddPersonToProjectAsync(projectId, personId));
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Insert a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+        };
+
+        _context.Projects.Add(testProject);
+
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+
+        // Act
+        await projectsService.AddPersonToProjectAsync(projectId, personId);
+
+        // Assert
+        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
+            projectsService.AddPersonToProjectAsync(projectId, personId));
+    }
+
+    [Fact]
+    public async Task AddPersonToProject_ShouldReturnProject_WhenSuccessful()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Create a test project
+        Project testProject = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        _context.Projects.Add(testProject);
+
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+
+        // Act
+        Project project = await projectsService.AddPersonToProjectAsync(projectId, testPerson.Id);
+
+        // Assert
+        Assert.NotNull(project);
+        Assert.Equal(project.People[0].Id, testPerson.Id);
+        Assert.Equal(project.People[0].Name, testPerson.Name);
+    }
+
+    [Fact]
+    public async Task AddPersonToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            projectsService.AddPersonToProjectAsync(projectId, personId));
+    }
+
+    [Fact]
+    public async Task AddPersonToProject_ShouldReturnBadRequest_WhenPersonAlreadyAdded()
+    {
+        // Arrange
+        ProjectsService projectsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+
+        // Create a test project
+        Project testProjectDto = new()
+        {
+            Id = projectId,
+            Title = "Test Title",
+            Description = "Test Description",
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        _context.Projects.Add(testProjectDto);
+
+        // Insert a test person
+        Person testPerson = new()
+        {
+            Id = personId,
+            Name = "Test Person",
+        };
+
+        _context.People.Add(testPerson);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        Project resultProject = await projectsService.AddPersonToProjectAsync(projectId, personId);
+        Assert.NotNull(resultProject);
+
+        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
+            projectsService.AddPersonToProjectAsync(projectId, personId));
     }
 }

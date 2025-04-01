@@ -26,10 +26,10 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
         string basePath = Path.Combine(Directory.GetCurrentDirectory(), "../Conflux.API");
 
         IConfiguration config = new ConfigurationBuilder()
-                                .SetBasePath(basePath)
-                                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                                .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
-                                .Build();
+            .SetBasePath(basePath)
+            .AddJsonFile("appsettings.json", false, true)
+            .AddJsonFile($"appsettings.{environmentName}.json", true, true)
+            .Build();
 
         string? connectionString = config.GetConnectionString("Database");
 

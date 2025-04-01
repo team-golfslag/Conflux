@@ -3,22 +3,14 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
-
 namespace Conflux.Domain.Logic.DTOs;
 
 /// <summary>
-/// The Data Transfer Object for updating a <see cref="Project" /> with PUT.
+/// The Data Transfer Object for patching a <see cref="Person" />
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
-public class ProjectPutDTO
+public class PersonPatchDTO
 #pragma warning restore S101
 {
-    [Required] public required string Title { get; init; }
-
-    [Required] public required string Description { get; init; }
-
-    public DateTime StartDate { get; init; }
-
-    public DateTime EndDate { get; init; }
+    public string? Name { get; init; }
 }

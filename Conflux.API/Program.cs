@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
@@ -31,7 +36,7 @@ public class Program
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-        if (allowedOrigins is null  || allowedOrigins.Length == 0)
+        if (allowedOrigins is null || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");
 
         builder.Services.AddCors(options =>
@@ -43,7 +48,6 @@ public class Program
                     .AllowAnyHeader();
             });
         });
-
 
         WebApplication app = builder.Build();
         if (app.Environment.IsDevelopment())
@@ -58,21 +62,30 @@ public class Program
             appBuilder.Run(async context =>
             {
                 IExceptionHandlerFeature? exception = context.Features.Get<IExceptionHandlerFeature>();
-                if (exception?.Error is ProjectNotFoundException)
+                switch (exception?.Error)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsJsonAsync(new
-                    {
-                        error = exception.Error.Message,
-                    });
-                }
-                else
-                {
-                    context.Response.StatusCode = 500;
-                    await context.Response.WriteAsJsonAsync(new
-                    {
-                        error = "An unexpected error occurred.",
-                    });
+                    case ProjectNotFoundException:
+                    case PersonNotFoundException:
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = exception.Error.Message,
+                        });
+                        break;
+                    case PersonAlreadyAddedToProjectException:
+                        context.Response.StatusCode = 409; // Conflict
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = exception.Error.Message,
+                        });
+                        break;
+                    default:
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = "An unexpected error occurred.",
+                        });
+                        break;
                 }
             });
         });

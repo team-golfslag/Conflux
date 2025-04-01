@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
@@ -82,4 +87,15 @@ public class ProjectsController : ControllerBase
     [Route("{id:guid}")]
     public async Task<ActionResult> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
         Ok(await _projectsService.PatchProjectAsync(id, projectDto));
+
+    /// <summary>
+    /// Updates a project by adding the person with the provided personId.
+    /// </summary>
+    /// <param name="projectId">The GUID of the project to update</param>
+    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <returns>The request response</returns>
+    [HttpPost]
+    [Route("{projectId:guid}/addPerson/{personId:guid}")]
+    public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId, Guid personId) =>
+        await _projectsService.AddPersonToProjectAsync(projectId, personId);
 }

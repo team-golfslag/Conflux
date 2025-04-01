@@ -143,4 +143,26 @@ public class ProjectsService
         await _context.SaveChangesAsync();
         return project;
     }
+
+    /// <summary>
+    /// Updates a project by adding the person with the provided personId.
+    /// </summary>
+    /// <param name="projectId">The GUID of the project to update</param>
+    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <returns>The request response</returns>
+    public async Task<Project> AddPersonToProjectAsync(Guid projectId, Guid personId)
+    {
+        Project project = await _context.Projects.Include(p => p.People).SingleOrDefaultAsync(p => p.Id == projectId)
+            ?? throw new ProjectNotFoundException(projectId);
+
+        Person person = await _context.People.FindAsync(personId)
+            ?? throw new PersonNotFoundException(personId);
+
+        if (project.People.Any(p => p.Id == person.Id))
+            throw new PersonAlreadyAddedToProjectException(projectId, personId);
+
+        project.People.Add(person);
+        await _context.SaveChangesAsync();
+        return project;
+    }
 }

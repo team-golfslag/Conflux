@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Exceptions;
@@ -96,7 +101,6 @@ public class ProjectsService
             .Include(p => p.People)
             .Include(p => p.Parties)
             .ToListAsync();
-
 
     /// <summary>
     /// Updates a project to the database via PUT.

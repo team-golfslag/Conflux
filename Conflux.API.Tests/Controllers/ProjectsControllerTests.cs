@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
@@ -10,9 +12,11 @@ namespace Conflux.API.Tests.Controllers;
 public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory;
 
     public ProjectsControllerTests(TestWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -172,5 +176,93 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         var projects = await response.Content.ReadFromJsonAsync<Project[]>();
         Assert.NotNull(projects);
         Assert.Empty(projects);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_AddsPersonSuccessfully()
+    {
+        // Arrange: Create a new project using the API
+        ProjectPostDTO newProject = new()
+        {
+            Title = "Test Project",
+            Description = "Project for add person testing",
+        };
+        HttpResponseMessage createProjectRes = await _client.PostAsJsonAsync("/projects", newProject);
+        createProjectRes.EnsureSuccessStatusCode();
+        Project? project = await createProjectRes.Content.ReadFromJsonAsync<Project>();
+        Assert.NotNull(project);
+
+        // Arrange: Create a new person by seeding the database
+        Guid personId = Guid.NewGuid();
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            Person person = new()
+            {
+                Id = personId,
+                Name = "Test Person",
+            };
+            context.People.Add(person);
+            await context.SaveChangesAsync();
+        }
+
+        // Act: Call the AddPersonToProjectAsync endpoint
+        HttpResponseMessage addRes = await _client.PostAsync($"/projects/{project!.Id}/addPerson/{personId}", null);
+        addRes.EnsureSuccessStatusCode();
+        Project? updatedProject = await addRes.Content.ReadFromJsonAsync<Project>();
+
+        // Assert: The updated project should contain the person
+        Assert.NotNull(updatedProject);
+        Assert.NotNull(updatedProject!.People);
+        Assert.Contains(updatedProject.People, p => p.Id == personId);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
+    {
+        // Arrange: Create a person in the database
+        Guid personId = Guid.NewGuid();
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            Person person = new()
+            {
+                Id = personId,
+                Name = "Test Person",
+            };
+            context.People.Add(person);
+            await context.SaveChangesAsync();
+        }
+
+        // Act: Use a non-existent project ID
+        Guid nonExistentProjectId = Guid.NewGuid();
+        HttpResponseMessage response =
+            await _client.PostAsync($"/projects/{nonExistentProjectId}/addPerson/{personId}", null);
+
+        // Assert: The response should be NotFound
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenPersonDoesNotExist()
+    {
+        // Arrange: Create a new project using the API
+        ProjectPostDTO newProject = new()
+        {
+            Title = "Test Project",
+            Description = "Project for add person testing",
+        };
+        HttpResponseMessage createProjectRes = await _client.PostAsJsonAsync("/projects", newProject);
+        createProjectRes.EnsureSuccessStatusCode();
+        Project? project = await createProjectRes.Content.ReadFromJsonAsync<Project>();
+        Assert.NotNull(project);
+
+        // Act: Use a non-existent person ID
+        Guid nonExistentPersonId = Guid.NewGuid();
+        HttpResponseMessage response =
+            await _client.PostAsync($"/projects/{project!.Id}/addPerson/{nonExistentPersonId}", null);
+
+        // Assert: The response should be NotFound
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

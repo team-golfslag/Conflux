@@ -14,7 +14,7 @@ public class PersonDTOTests
     public void ToPerson_ShouldConvertDTOToPerson()
     {
         // Arrange
-        PersonDTO dto = new()
+        PersonPostDTO dto = new()
         {
             Name = "John Doe",
         };

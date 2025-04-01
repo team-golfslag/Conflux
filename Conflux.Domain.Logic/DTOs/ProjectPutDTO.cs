@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Conflux.Domain.Logic.DTOs;
 
 /// <summary>
@@ -7,9 +9,9 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectPutDTO
 #pragma warning restore S101
 {
-    public string Title { get; init; }
+    [Required] public required string Title { get; init; }
 
-    public string Description { get; init; }
+    [Required] public required string Description { get; init; }
 
     public DateTime StartDate { get; init; }
 

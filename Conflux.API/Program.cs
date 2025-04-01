@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
@@ -31,7 +36,7 @@ public class Program
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-        if (allowedOrigins is null  || allowedOrigins.Length == 0)
+        if (allowedOrigins is null || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");
 
         builder.Services.AddCors(options =>

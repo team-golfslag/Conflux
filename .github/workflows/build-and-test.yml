@@ -1,4 +1,4 @@
-name: End-to-end tests (Pull Request)
+name: Build, Test and Analyse (Pull Request)
 
 on:
     pull_request:

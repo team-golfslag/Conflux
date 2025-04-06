@@ -25,7 +25,7 @@ public class TemporaryProjectRetriever
     /// </summary>
     private TemporaryProjectRetriever()
     {
-        _service = new(new(new HttpClientHandler()), new Logger<NWOpenService>(new LoggerFactory()));
+        _service = new(new(new HttpClientHandler()));
     }
 
     /// <summary>

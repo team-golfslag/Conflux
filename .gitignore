@@ -5,3 +5,9 @@ riderModule.iml
 /_ReSharper.Caches/
 /.idea
 Conflux.sln.DotSettings.user
+
+# Backend client
+backend-client/node_modules
+backend-client/package-lock.json
+backend-client/src/**
+!backend-client/src/.gitkeep

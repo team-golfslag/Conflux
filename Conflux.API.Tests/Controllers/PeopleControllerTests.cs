@@ -19,7 +19,7 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         _client = factory.CreateClient();
     }
-    
+
     [Fact]
     public async Task GetPeople_ByQuery_ReturnsMatchingPeople()
     {
@@ -39,7 +39,7 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(people);
         Assert.Contains(people, p => p.Name.Equals("Stefan Herald"));
     }
-    
+
     [Fact]
     public async Task CreatePerson_ReturnsCreatedPerson()
     {

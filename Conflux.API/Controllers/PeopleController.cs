@@ -24,7 +24,7 @@ public class PeopleController : ControllerBase
     {
         _peopleService = new(context);
     }
-    
+
     /// <summary>
     /// Gets all people whose name contains the query (case-insensitive)
     /// </summary>
@@ -34,7 +34,7 @@ public class PeopleController : ControllerBase
     public async Task<ActionResult<List<Project>>> GetProjectByQuery(
         [FromQuery] string? query) =>
         Ok(await _peopleService.GetPeopleByQueryAsync(query));
-    
+
     /// <summary>
     /// Gets the person by his GUID
     /// </summary>

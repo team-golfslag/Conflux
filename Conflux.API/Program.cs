@@ -38,8 +38,7 @@ public class Program
                     npgsqlOptions =>
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
         }
-            
-        
+
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
@@ -114,7 +113,7 @@ public class Program
 
         await app.RunAsync();
     }
-    
+
     /// <summary>
     /// Gets the connection string from environment variables.
     /// </summary>

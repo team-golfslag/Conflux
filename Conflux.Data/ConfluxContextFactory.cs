@@ -32,10 +32,28 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
             .Build();
 
         string? connectionString = config.GetConnectionString("Database");
+        if (string.IsNullOrEmpty(connectionString))
+            // If the connection string is not found in the configuration, use environment variables
+            connectionString = GetConnectionStringFromEnvironment();
 
         DbContextOptionsBuilder<ConfluxContext> optionsBuilder = new();
         optionsBuilder.UseNpgsql(connectionString);
 
         return new(optionsBuilder.Options);
+    }
+
+    /// <summary>
+    /// Gets the connection string from environment variables.
+    /// </summary>
+    /// <returns>The connection string.</returns>
+    public static string GetConnectionStringFromEnvironment()
+    {
+        string? host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+        string? port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+        string? database = Environment.GetEnvironmentVariable("DB_NAME");
+        string? user = Environment.GetEnvironmentVariable("DB_USER");
+        string? password = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+        return $"Host={host}:{port};Database={database};Username={user};Password={password}";
     }
 }

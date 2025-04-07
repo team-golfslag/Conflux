@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Microsoft.Extensions.Logging;
 using NWOpen.Net.Models;
 using NWOpen.Net.Services;
 

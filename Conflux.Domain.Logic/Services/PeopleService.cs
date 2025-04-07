@@ -21,7 +21,26 @@ public class PeopleService
     {
         _context = context;
     }
+    
+    /// <summary>
+    /// Gets all people whose name contains the query (case-insensitive)
+    /// </summary>
+    /// <param name="query">The string to search in the title or description</param>
+    /// <returns>Filtered list of people</returns>
+    public async Task<List<Person>> GetPeopleByQueryAsync(string? query)
+    {
+        IQueryable<Person> people = _context.People;
 
+        if (string.IsNullOrWhiteSpace(query)) return await people.ToListAsync();
+        
+        string loweredQuery = query.ToLowerInvariant();
+#pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
+        people = people.Where(person =>
+            person.Name.ToLower().Contains(loweredQuery));
+#pragma warning restore CA1862
+        return await people.ToListAsync();
+    }
+    
     /// <summary>
     /// Gets the person by their GUID
     /// </summary>

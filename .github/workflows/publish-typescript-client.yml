@@ -1,0 +1,55 @@
+name: publish-typescript-client
+on:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+        
+
+jobs:
+    publish-typescript-client:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+
+            -   uses: actions/setup-dotnet@v4
+                with:
+                    dotnet-version: '9.x'
+            
+            -   uses: actions/setup-node@v4
+                with:
+                    registry-url: https://npm.pkg.github.com/
+            
+            -   name: Install NSwag CLI
+                run: dotnet tool install --global NSwag.ConsoleCore
+            
+            -   name: Build project
+                run: dotnet build --no-incremental
+            
+            -   name: Run project
+                run: |
+                    cd Conflux.API
+                    dotnet run &
+            
+            -   name: Generate API-client
+                run: |
+                    cd Conflux.API
+                    nswag run
+            
+            -   name: Build NPM package
+                run: |
+                    cd backend-client
+                    npm i
+                    npm build
+            
+            -   name: Publish
+                run: |
+                    cd backend-client
+                    npm publish
+                env:
+                    NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    
+                    
+            

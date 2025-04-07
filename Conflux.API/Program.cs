@@ -27,7 +27,10 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddControllers();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerDocument(c => 
+        {
+            c.Title = "Conflux API";
+        });
         if (builder.Environment.EnvironmentName != "Testing")
         {
             string? connectionString = builder.Configuration.GetConnectionString("Database") ??
@@ -57,8 +60,11 @@ public class Program
         WebApplication app = builder.Build();
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseOpenApi();
+            app.UseSwaggerUi(c =>
+            {
+                c.DocumentTitle = "Conflux API";
+            });
         }
 
         // Add exception handling middleware
@@ -108,8 +114,6 @@ public class Program
         // Seed the database for development, if necessary
         if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
             await context.SeedDataAsync();
-
-        app.MapSwagger();
 
         await app.RunAsync();
     }

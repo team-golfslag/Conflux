@@ -32,6 +32,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 
         base.OnModelCreating(modelBuilder);
     }
+    
 
     /// <summary>
     /// Seeds the database with initial data.

@@ -29,11 +29,17 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddSwaggerGen();
         if (builder.Environment.EnvironmentName != "Testing")
+        {
+            string? connectionString = builder.Configuration.GetConnectionString("Database") ??
+                GetConnectionStringFromEnvironment();
             builder.Services.AddDbContextPool<ConfluxContext>(opt =>
                 opt.UseNpgsql(
-                    builder.Configuration.GetConnectionString("Database"),
+                    connectionString,
                     npgsqlOptions =>
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
+        }
+            
+        
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
@@ -107,5 +113,26 @@ public class Program
         app.MapSwagger();
 
         await app.RunAsync();
+    }
+    
+    /// <summary>
+    /// Gets the connection string from environment variables.
+    /// </summary>
+    /// <returns>The connection string.</returns>
+    public static string GetConnectionStringFromEnvironment()
+    {
+        string? host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+        string? port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+        string? database = Environment.GetEnvironmentVariable("DB_NAME");
+        if (string.IsNullOrEmpty(database))
+            throw new InvalidOperationException("Database name must be specified in environment variables.");
+        string? user = Environment.GetEnvironmentVariable("DB_USER");
+        if (string.IsNullOrEmpty(user))
+            throw new InvalidOperationException("Database user must be specified in environment variables.");
+        string? password = Environment.GetEnvironmentVariable("DB_PASSWORD");
+        if (string.IsNullOrEmpty(password))
+            throw new InvalidOperationException("Database password must be specified in environment variables.");
+
+        return $"Host={host}:{port};Database={database};Username={user};Password={password}";
     }
 }

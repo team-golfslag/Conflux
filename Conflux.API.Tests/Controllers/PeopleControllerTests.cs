@@ -19,7 +19,27 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         _client = factory.CreateClient();
     }
+    
+    [Fact]
+    public async Task GetPeople_ByQuery_ReturnsMatchingPeople()
+    {
+        // Arrange
+        PersonPostDTO person = new()
+        {
+            Name = "Stefan Herald",
+        };
+        await _client.PostAsJsonAsync("/people", person);
 
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/people?query=stefan");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var people = await response.Content.ReadFromJsonAsync<List<Person>>();
+        Assert.NotNull(people);
+        Assert.Contains(people, p => p.Name.Equals("Stefan Herald"));
+    }
+    
     [Fact]
     public async Task CreatePerson_ReturnsCreatedPerson()
     {

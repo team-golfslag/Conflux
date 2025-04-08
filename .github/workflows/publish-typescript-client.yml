@@ -5,6 +5,8 @@ on:
             - main
     workflow_dispatch:
         
+env:
+    ConnectionStrings__Database: "Host=localhost:5432;Database=postgres;Username=postgres;Password=postgres"
 
 jobs:
     publish-typescript-client:
@@ -43,17 +45,30 @@ jobs:
                     registry-url: https://npm.pkg.github.com/
             
             -   name: Install NSwag CLI
-                run: dotnet tool install --global NSwag.ConsoleCore
+                run: dotnet tool install --global NSwag.ConsoleCore dotnet-ef
             
             -   name: Build project
                 run: dotnet build --no-incremental
+                
+            -   name: Setup database
+                run: |
+                    cd Conflux.Data
+                    dotnet ef database update
             
             -   name: Run project
                 run: |
                     cd Conflux.API
                     dotnet run &
-                env:
-                    ConnectionStrings__Database: "Host=localhost:5432;Database=postgres;Username=postgres;Password=postgres"
+
+                    echo "Waiting for API to start..."
+                    for i in {1..20}; do
+                      if curl --silent http://localhost:8000/swagger/v1/swagger.json > /dev/null; then
+                        echo "API is up!"
+                        break
+                      fi
+                      echo "Waiting ($i)..."
+                      sleep 2
+                    done
             
             -   name: Generate API-client
                 run: |

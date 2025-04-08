@@ -7,6 +7,7 @@ on:
         
 env:
     ASPNETCORE_ENVIRONMENT: "Workflow"
+    DOTNET_ENVIRONMENT: "Workflow"
 
 jobs:
     publish-typescript-client:

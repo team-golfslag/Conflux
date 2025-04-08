@@ -45,7 +45,9 @@ jobs:
                     registry-url: https://npm.pkg.github.com/
             
             -   name: Install NSwag CLI
-                run: dotnet tool install --global NSwag.ConsoleCore dotnet-ef
+                run: |
+                    dotnet tool install --global NSwag.ConsoleCore
+                    dotnet tool install --global dotnet-ef
             
             -   name: Build project
                 run: dotnet build --no-incremental

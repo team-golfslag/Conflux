@@ -53,9 +53,7 @@ jobs:
                     cd Conflux.API
                     dotnet run &
                 env:
-                    DB_NAME: postgres
-                    DB_USER: postgres
-                    DB_PASSWORD: postgres
+                    ConnectionStrings__Database: "Host=localhost:5432;Database=postgres;Username=postgres;Password=postgres"
             
             -   name: Generate API-client
                 run: |

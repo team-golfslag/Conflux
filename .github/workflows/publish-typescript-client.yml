@@ -6,7 +6,7 @@ on:
     workflow_dispatch:
         
 env:
-    ConnectionStrings__Database: "Host=localhost:5432;Database=postgres;Username=postgres;Password=postgres"
+    ASPNETCORE_ENVIRONMENT: "Workflow"
 
 jobs:
     publish-typescript-client:

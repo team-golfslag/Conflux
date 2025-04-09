@@ -8,6 +8,9 @@ concurrency:
     group: end-to-end-${{ github.head_ref }}
     cancel-in-progress: true
 
+env:
+    SRAM_CLIENT_SECRET: ${{ secrets.SRAM_CLIENT_SECRET }}
+
 jobs:
     end-to-end:
         name: Build .NET and Analyse with SonarCloud

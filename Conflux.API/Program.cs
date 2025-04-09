@@ -3,8 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;

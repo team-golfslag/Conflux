@@ -8,29 +8,12 @@ on:
 env:
     ASPNETCORE_ENVIRONMENT: "Workflow"
     DOTNET_ENVIRONMENT: "Workflow"
+    SRAM_CLIENT_SECRET: ${{ secrets.SRAM_CLIENT_SECRET }}
 
 jobs:
     publish-typescript-client:
         runs-on: ubuntu-latest
-        
-        services:
-            # Label used to access the service container
-            postgres:
-                # Docker Hub image
-                image: postgres
-                # Provide the password for postgres
-                env:
-                    POSTGRES_PASSWORD: postgres
-                # Set health checks to wait until postgres has started
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    # Maps tcp port 5432 on service container to the host
-                    - 5432:5432
-        
+               
         
         steps:
             -   uses: actions/checkout@v4
@@ -48,22 +31,16 @@ jobs:
             -   name: Install NSwag CLI
                 run: |
                     dotnet tool install --global NSwag.ConsoleCore
-                    dotnet tool install --global dotnet-ef
             
             -   name: Build project
                 run: dotnet build --no-incremental
-                
-            -   name: Setup database
-                run: |
-                    cd Conflux.Data
-                    dotnet ef database update
             
             -   name: Run project
                 run: |
                     cd Conflux.API
                     dotnet run &
 
-                    echo "Waiting for API to start..."
+                    echo "Waiting for Swagger API to start..."
                     for i in {1..20}; do
                       if curl --silent http://localhost:8000/swagger/v1/swagger.json > /dev/null; then
                         echo "API is up!"

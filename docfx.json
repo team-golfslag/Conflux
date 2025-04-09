@@ -10,7 +10,8 @@
           ]
         }
       ],
-      "dest": ""
+      "dest": "",
+      "namespaceLayout": "nested"
     }
   ],
   "build": {

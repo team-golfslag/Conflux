@@ -113,7 +113,10 @@ public class Program
         });
 
         WebApplication app = builder.Build();
-        if (app.Environment.IsDevelopment())
+        
+        IConfigurationSection featureFlags = app.Configuration.GetSection("FeatureFlags");
+        
+        if (featureFlags.GetValue<bool>("Swagger", false))
         {
             app.UseOpenApi();
             app.UseSwaggerUi(c =>
@@ -171,7 +174,7 @@ public class Program
         if (context.Database.IsRelational()) await context.Database.MigrateAsync();
 
         // Seed the database for development, if necessary
-        if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
+        if (featureFlags.GetValue<bool>("SeedDatabase", false) && !await context.People.AnyAsync())
             await context.SeedDataAsync();
 
         await app.RunAsync();

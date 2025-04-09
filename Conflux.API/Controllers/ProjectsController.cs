@@ -7,6 +7,7 @@ using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Conflux.API.Controllers;

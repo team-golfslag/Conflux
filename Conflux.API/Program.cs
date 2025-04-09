@@ -3,11 +3,17 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Conflux.API;
 
@@ -41,7 +47,57 @@ public class Program
                     npgsqlOptions =>
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
         }
+        
+        builder.Services.AddDistributedMemoryCache();
 
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromSeconds(10);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true;
+        });
+
+        // get sram secret from environment variable
+        string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(sramSecret))
+            throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
+        
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddOpenIdConnect(options =>
+            {
+                IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
+                
+                options.Authority = oidcConfig["Authority"];
+                options.ClientId = oidcConfig["ClientId"];
+                options.ClientSecret = sramSecret;
+
+                options.CallbackPath = oidcConfig["CallbackPath"];
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.ResponseType = OpenIdConnectResponseType.Code;
+                options.SaveTokens = true;
+                options.GetClaimsFromUserInfoEndpoint = true;
+
+                var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+                if (scopes != null)
+                    foreach (string scope in scopes)
+                        options.Scope.Add(scope);
+
+                var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
+                if (claimMappings != null)
+                    foreach (var mapping in claimMappings)
+                        options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
+
+                options.Events.OnRedirectToIdentityProvider = context =>
+                {
+                    context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
+                    return Task.CompletedTask;
+                };
+            });
 
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
@@ -103,6 +159,10 @@ public class Program
 
         app.UseHttpsRedirection();
         app.MapControllers();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseSession();
+
         app.UseCors("AllowLocalhost");
 
         // Ensure the database is created and seeded

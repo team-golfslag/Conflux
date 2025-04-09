@@ -52,7 +52,8 @@ public class Program
 
         builder.Services.AddSession(options =>
         {
-            options.IdleTimeout = TimeSpan.FromSeconds(10);
+            // Set session idle timeout to 20 minutes for production environments.
+            options.IdleTimeout = TimeSpan.FromMinutes(20);
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
         });

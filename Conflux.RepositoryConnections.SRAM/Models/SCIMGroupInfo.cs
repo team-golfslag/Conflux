@@ -8,7 +8,7 @@ public class SCIMGroupInfo
 
     [JsonPropertyName("labels")] public List<string> Labels { get; set; }
 
-    [JsonPropertyName("links")] public List<SCIMLink> Links { get; set; }
+    [JsonPropertyName("links")] public List<SCIMLink>? Links { get; set; }
 
     [JsonPropertyName("urn")] public string Urn { get; set; }
 }

@@ -40,6 +40,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
     }
     
     // TODO: find better name
+    // TODO: i think this is always even when the urns are present in the database
     private async Task<List<Collaboration>> GetAllGroupsFromSCIMApi(List<CollaborationDTO> collaborationDtos)
     {
         var allGroups = await scimApiClient.GetAllGroups();
@@ -158,8 +159,8 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
             members.Add(groupMember);
         }
         
-        string? url = scimGroup.SCIMGroupInfo.Links.FirstOrDefault(l => l.Name == "sbs_url")?.Value;
-        string? logoUrl = scimGroup.SCIMGroupInfo.Links.FirstOrDefault(l => l.Name == "logo")?.Value;
+        string? url = scimGroup.SCIMGroupInfo.Links?.FirstOrDefault(l => l.Name == "sbs_url")?.Value;
+        string? logoUrl = scimGroup.SCIMGroupInfo.Links?.FirstOrDefault(l => l.Name == "logo")?.Value;
         
         // Map the SCIM group to a Group object
         return new Group()

@@ -6,6 +6,10 @@
     "url": "git+https://github.com/team-golfslag/Conflux.git",
     "directory": "backend-client"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com/"
+  },
   "license": "AGPL-3.0-only",
   "main": "dist/client.js",
   "types": "dist/client.d.ts",

@@ -14,8 +14,7 @@
   "main": "dist/client.js",
   "types": "dist/client.d.ts",
   "scripts": {
-    "build": "tsc -d",
-    "publish": "npm publish --access public"
+    "build": "tsc -d"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

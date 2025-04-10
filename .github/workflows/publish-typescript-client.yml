@@ -59,7 +59,7 @@ jobs:
                 run: |
                     cd backend-client
                     npm i
-                    npm build
+                    npm run build
             
             -   name: Publish
                 run: |

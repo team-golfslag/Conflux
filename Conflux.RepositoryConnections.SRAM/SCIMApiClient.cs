@@ -44,7 +44,7 @@ public class SCIMApiClient
     /// </summary>
     public async Task<SCIMGroup?> GetSCIMGroup(string id)
     {
-        HttpResponseMessage response = await _httpClient.GetAsync($"/Groups/{id}");
+        HttpResponseMessage response = await _httpClient.GetAsync($"Groups/{id}");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SCIMGroup>();
     }
@@ -55,7 +55,7 @@ public class SCIMApiClient
     /// </summary>
     public async Task<List<SCIMGroup>?> GetAllGroups()
     {
-        HttpResponseMessage response = await _httpClient.GetAsync("/Groups");
+        HttpResponseMessage response = await _httpClient.GetAsync("Groups");
         response.EnsureSuccessStatusCode();
         SCIMGroupsResult? results = await response.Content.ReadFromJsonAsync<SCIMGroupsResult>();
         return results?.Groups;

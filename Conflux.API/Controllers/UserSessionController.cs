@@ -4,6 +4,8 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
+using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -16,6 +18,18 @@ namespace Conflux.API.Controllers;
 [Route("session")]
 public class UserSessionController : ControllerBase
 {
+    private readonly IUserSessionService _userSession;
+    public UserSessionController(IUserSessionService userSession) => _userSession = userSession;
+
+    [HttpGet]
+    [Route("login")]
+    [Authorize]
+    public async Task<ActionResult> LogIn()
+    {
+        await _userSession.SetUser();
+        return Ok();
+    }
+    
     [HttpGet]
     [Route("logout")]
     public async Task<ActionResult> LogOut([FromQuery] string redirectUri) =>
@@ -29,9 +43,8 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult> UserSession()
+    public async Task<ActionResult<UserSession>> UserSession()
     {
-        ClaimsPrincipal user = User;
-        return Ok();
+        return Ok(_userSession.GetUser());
     }
 }

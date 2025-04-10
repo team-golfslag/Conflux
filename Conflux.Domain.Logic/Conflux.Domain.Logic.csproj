@@ -8,6 +8,11 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
+        <ProjectReference Include="..\Conflux.RepositoryConnections.SRAM\Conflux.RepositoryConnections.SRAM.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     </ItemGroup>
 
 </Project>

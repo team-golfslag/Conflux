@@ -6,6 +6,7 @@
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -55,6 +56,8 @@ public class Program
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
         });
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
 
         // get sram secret from environment variable
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");

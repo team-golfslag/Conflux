@@ -11,6 +11,12 @@ namespace Conflux.RepositoryConnections.SRAM.Extensions;
 
 public static partial class ClaimsPrincipleExtensions
 {
+    public static string? GetClaimValue(this ClaimsPrincipal claimsPrincipal, string claimType)
+    {
+        return claimsPrincipal.Claims
+            .FirstOrDefault(c => c.Type == claimType)?.Value;
+    }
+    
     public static List<CollaborationDTO> GetCollaborations(this ClaimsPrincipal claimsPrincipal)
     {
         Regex regex = EntitlementRegex();

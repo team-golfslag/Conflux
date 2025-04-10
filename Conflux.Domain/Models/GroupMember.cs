@@ -3,13 +3,10 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Core.Models;
-
 namespace Conflux.Domain.Models;
 
-public class Collaboration
+public class GroupMember
 {
-    public string Organization { get; set; }
-    public Group CollaborationGroup { get; set; }
-    public List<Group> Groups { get; set; }
+    public string DisplayName { get; set; }
+    public string SRAMId { get; set; }
 }

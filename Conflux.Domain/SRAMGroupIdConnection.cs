@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain;
 
-public record GroupIdConnection
+public record SRAMGroupIdConnection
 {
     [Key] public string Id { get; init; }
 

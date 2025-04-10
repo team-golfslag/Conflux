@@ -19,6 +19,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public DbSet<Product> Products { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Party> Parties { get; set; }
+    public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 
     /// <summary>
     /// Configures the relationships between the entities.

@@ -49,4 +49,9 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 
         await SaveChangesAsync();
     }
+
+    public override void Dispose()
+    {
+        return;
+    }
 }

@@ -46,7 +46,9 @@ public class SCIMApiClient
     {
         HttpResponseMessage response = await _httpClient.GetAsync($"Groups/{id}");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SCIMGroup>();
+        var result = await response.Content.ReadFromJsonAsync<SCIMGroup>();
+
+        return result;
     }
 
     /// <summary>

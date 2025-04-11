@@ -7,6 +7,7 @@ using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.RepositoryConnections.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -57,6 +58,25 @@ public class Program
             options.Cookie.IsEssential = true;
         });
         builder.Services.AddHttpContextAccessor();
+        builder.Services.AddHttpClient<SCIMApiClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://sram.surf.nl/api/scim/v2/");
+        });
+        builder.Services.AddScoped<SCIMApiClient>(provider =>
+        {
+            var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+            var client = httpClientFactory.CreateClient(nameof(SCIMApiClient));
+
+            var scimClient = new SCIMApiClient(client);
+
+            string? secret = Environment.GetEnvironmentVariable("SRAM_SCIM_SECRET");
+            if (string.IsNullOrEmpty(secret))
+                throw new InvalidOperationException("SRAM_SCIM_SECRET not set.");
+
+            scimClient.SetBearerToken(secret);
+            return scimClient;
+        });
+        builder.Services.AddScoped<CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
 
         // get sram secret from environment variable
@@ -69,7 +89,25 @@ public class Program
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            .AddCookie()
+            .AddCookie(options =>
+            {
+                options.Events.OnSignedIn = context =>
+                {
+                    // Set user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.SetUser(context.Principal);
+                    return Task.CompletedTask;
+                };
+                options.Events.OnSigningOut = context =>
+                {
+                    // Clear user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.ClearUser();
+                    return Task.CompletedTask;
+                };
+            })
             .AddOpenIdConnect(options =>
             {
                 IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
@@ -93,7 +131,7 @@ public class Program
                 if (claimMappings != null)
                     foreach (var mapping in claimMappings)
                         options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
-
+                
                 options.Events.OnRedirectToIdentityProvider = context =>
                 {
                     context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];

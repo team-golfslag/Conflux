@@ -12,8 +12,17 @@ using Conflux.RepositoryConnections.SRAM.Models;
 
 namespace Conflux.RepositoryConnections.SRAM;
 
-public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiClient)
+public class CollaborationMapper
 {
+    private readonly ConfluxContext _context;
+    private readonly SCIMApiClient _scimApiClient;
+
+    public CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiClient)
+    {
+        _context = context;
+        _scimApiClient = scimApiClient;
+    }
+
     /// <summary>
     /// Maps a list of CollaborationDTOs to domain Collaboration objects.
     /// </summary>
@@ -31,7 +40,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         
         // Check if all urns have a matching ID in the database if this is not the case we are better off
         //  just retrieving all groups from the SCIM API
-        if (urns.Any(urn => !context.SRAMGroupIdConnections.Any(x => x.Urn == urn)))
+        if (urns.Any(urn => _context.SRAMGroupIdConnections.Find(urn) == null))
             return await GetAllGroupsFromSCIMApi(collaborationDtos);
         
         var collaborations = new List<Collaboration>();
@@ -52,7 +61,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
     /// <returns>A list of domain Collaboration objects</returns>
     private async Task<List<Collaboration>> GetAllGroupsFromSCIMApi(List<CollaborationDTO> collaborationDtos)
     {
-        var allGroups = await scimApiClient.GetAllGroups();
+        var allGroups = await _scimApiClient.GetAllGroups();
         if (allGroups == null)
             throw new("No groups found in SCIM API");
 
@@ -71,9 +80,9 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         }
         
         // Add all connections to the database by first removing all existing connections 
-        context.SRAMGroupIdConnections.RemoveRange(context.SRAMGroupIdConnections);
-        context.SRAMGroupIdConnections.AddRange(allConnections);
-        await context.SaveChangesAsync();
+        _context.SRAMGroupIdConnections.RemoveRange(_context.SRAMGroupIdConnections);
+        _context.SRAMGroupIdConnections.AddRange(allConnections);
+        await _context.SaveChangesAsync();
         
         // Map the groups to collaborations
         // TODO: do we need checking here to ensure all urns are present in the groupMap?
@@ -157,7 +166,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
     /// <exception cref="Exception">Thrown when the group cannot be found</exception>
     private async Task<Group> GetGroupFromSCIMApi(string groupUrn)
     {
-        var connection = await context.SRAMGroupIdConnections
+        var connection = await _context.SRAMGroupIdConnections
             .FindAsync(groupUrn);
 
         // There should always be a group with the given URN in the database
@@ -165,7 +174,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
             throw new($"Group with URN {groupUrn} not found in database");
 
         // Get the group from the SCIM API
-        SCIMGroup? scimGroup = await scimApiClient.GetSCIMGroup(connection.Id);
+        SCIMGroup? scimGroup = await _scimApiClient.GetSCIMGroup(connection.Id);
         if (scimGroup == null)
             throw new($"Group with ID {connection.Id} not found in SCIM API");
         

@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Security.Claims;
 using Conflux.Data;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
@@ -13,8 +14,8 @@ namespace Conflux.Domain.Logic.Services;
 
 public interface IUserSessionService
 {
-    UserSession? GetUser();
-    Task SetUser();
+    Task<UserSession?> GetUser();
+    Task<UserSession?> SetUser(ClaimsPrincipal? claims);
     void ClearUser();
 }
 
@@ -23,42 +24,40 @@ public class UserSessionService: IUserSessionService
     private const string UserKey = "UserProfile";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ConfluxContext _context;
-
-    private readonly SCIMApiClient _scimApiClient;
+   
     private readonly CollaborationMapper _collaborationMapper;
 
     public UserSessionService(
-        IHttpContextAccessor httpContextAccessor,
-        ConfluxContext context)
+        IHttpContextAccessor httpContextAccessor, CollaborationMapper collaborationMapper)
     {
         _httpContextAccessor = httpContextAccessor;
-        _context = context;
-        
-        _scimApiClient = new SCIMApiClient(new HttpClient()
-        {
-            BaseAddress = new Uri("https://sram.surf.nl/api/scim/v2/")
-        });
-        string? scimSecret = Environment.GetEnvironmentVariable("SRAM_SCIM_SECRET");
-        if (string.IsNullOrEmpty(scimSecret))
-            throw new InvalidOperationException("SRAM SCIM secret must be specified in environment variable.");
-        _scimApiClient.SetBearerToken(scimSecret);
-        
-        _collaborationMapper = new CollaborationMapper(_context, _scimApiClient);
+        _collaborationMapper = collaborationMapper;
     }
-    
-    public UserSession? GetUser() =>
-        _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
 
-    public async Task SetUser()
+    public async Task<UserSession?> GetUser()
+    {
+        if (_httpContextAccessor.HttpContext.Session is not null &&
+            _httpContextAccessor.HttpContext.Session.IsAvailable)
+        {
+            var userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
+            if (userSession != null)
+                return userSession;
+        }
+
+
+        return await SetUser(null);
+    }
+
+    public async Task<UserSession?> SetUser(ClaimsPrincipal? claims)
     {
         if (_httpContextAccessor.HttpContext?.User is null)
             throw new InvalidOperationException("User is not authenticated.");
-        
-        if (GetUser() is not null)
-            return;
 
-        var collaborationDtos = _httpContextAccessor.HttpContext?.User.GetCollaborations();
+        if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
+            return null;
+
+        var collaborationDtos = claims != null ? claims.GetCollaborations() : 
+            _httpContextAccessor.HttpContext?.User.GetCollaborations();
         if (collaborationDtos is null)
             throw new InvalidOperationException("User has no collaborations.");
 
@@ -74,8 +73,13 @@ public class UserSessionService: IUserSessionService
         };
         
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
+        
+        return user;
     }
 
-    public void ClearUser() =>
-        _httpContextAccessor.HttpContext?.Session.Remove(UserKey);
+    public void ClearUser()
+    {
+        if (_httpContextAccessor.HttpContext.Session is not null && _httpContextAccessor.HttpContext.Session.IsAvailable)
+            _httpContextAccessor.HttpContext?.Session.Remove(UserKey);
+    }
 }

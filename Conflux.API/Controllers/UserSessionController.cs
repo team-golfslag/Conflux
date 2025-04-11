@@ -26,7 +26,6 @@ public class UserSessionController : ControllerBase
     [Authorize]
     public async Task<ActionResult> LogIn()
     {
-        await _userSession.SetUser();
         return Ok();
     }
     
@@ -45,6 +44,6 @@ public class UserSessionController : ControllerBase
     [Authorize]
     public async Task<ActionResult<UserSession>> UserSession()
     {
-        return Ok(_userSession.GetUser());
+        return Ok(await _userSession.GetUser());
     }
 }

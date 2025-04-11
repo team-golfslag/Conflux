@@ -33,10 +33,7 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddControllers();
-        builder.Services.AddSwaggerDocument(c => 
-        {
-            c.Title = "Conflux API";
-        });
+        builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
         if (builder.Environment.EnvironmentName != "Testing")
         {
             string? connectionString = builder.Configuration.GetConnectionString("Database") ??
@@ -47,7 +44,7 @@ public class Program
                     npgsqlOptions =>
                         npgsqlOptions.MigrationsAssembly("Conflux.Data")));
         }
-        
+
         builder.Services.AddDistributedMemoryCache();
 
         builder.Services.AddSession(options =>
@@ -60,14 +57,14 @@ public class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHttpClient<SCIMApiClient>(client =>
         {
-            client.BaseAddress = new Uri("https://sram.surf.nl/api/scim/v2/");
+            client.BaseAddress = new("https://sram.surf.nl/api/scim/v2/");
         });
         builder.Services.AddScoped<SCIMApiClient>(provider =>
         {
-            var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
-            var client = httpClientFactory.CreateClient(nameof(SCIMApiClient));
+            IHttpClientFactory httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+            HttpClient client = httpClientFactory.CreateClient(nameof(SCIMApiClient));
 
-            var scimClient = new SCIMApiClient(client);
+            SCIMApiClient scimClient = new(client);
 
             string? secret = Environment.GetEnvironmentVariable("SRAM_SCIM_SECRET");
             if (string.IsNullOrEmpty(secret))
@@ -83,7 +80,7 @@ public class Program
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
         if (string.IsNullOrEmpty(sramSecret))
             throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
-        
+
         builder.Services.AddAuthentication(options =>
             {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -111,7 +108,7 @@ public class Program
             .AddOpenIdConnect(options =>
             {
                 IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
-                
+
                 options.Authority = oidcConfig["Authority"];
                 options.ClientId = oidcConfig["ClientId"];
                 options.ClientSecret = sramSecret;
@@ -131,10 +128,16 @@ public class Program
                 if (claimMappings != null)
                     foreach (var mapping in claimMappings)
                         options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
-                
+
                 options.Events.OnRedirectToIdentityProvider = context =>
                 {
                     context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                {
+                    context.Response.Redirect(oidcConfig["SignOutCallbackPath"]!);
+                    context.HandleResponse();
                     return Task.CompletedTask;
                 };
             });
@@ -157,10 +160,7 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.UseOpenApi();
-            app.UseSwaggerUi(c =>
-            {
-                c.DocumentTitle = "Conflux API";
-            });
+            app.UseSwaggerUi(c => { c.DocumentTitle = "Conflux API"; });
         }
 
         // Add exception handling middleware

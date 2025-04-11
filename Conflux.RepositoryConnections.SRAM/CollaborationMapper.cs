@@ -14,6 +14,11 @@ namespace Conflux.RepositoryConnections.SRAM;
 
 public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiClient)
 {
+    /// <summary>
+    /// Maps a list of CollaborationDTOs to domain Collaboration objects.
+    /// </summary>
+    /// <param name="collaborationDtos">The list of CollaborationDTOs to map</param>
+    /// <returns>A list of domain Collaboration objects</returns>
     public async Task<List<Collaboration>> Map(List<CollaborationDTO> collaborationDtos)
     {
         var urns = new List<string>();
@@ -39,8 +44,12 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         return collaborations;
     }
     
-    // TODO: find better name
-    // TODO: i think this is always even when the urns are present in the database
+    /// <summary>
+    /// Retrieves all groups from the SCIM API and maps them to collaborations.
+    /// This method is called when not all URNs are found in the database cache.
+    /// </summary>
+    /// <param name="collaborationDtos">The list of CollaborationDTOs to map</param>
+    /// <returns>A list of domain Collaboration objects</returns>
     private async Task<List<Collaboration>> GetAllGroupsFromSCIMApi(List<CollaborationDTO> collaborationDtos)
     {
         var allGroups = await scimApiClient.GetAllGroups();
@@ -95,6 +104,12 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         return collaborations;
     }
     
+    /// <summary>
+    /// Maps a single CollaborationDTO to a domain Collaboration object by retrieving
+    /// group information from the SCIM API.
+    /// </summary>
+    /// <param name="collaborationDto">The CollaborationDTO to map</param>
+    /// <returns>A domain Collaboration object</returns>
     private async Task<Collaboration> GetCollaborationFromSCIMApi(CollaborationDTO collaborationDto)
     {
         string collaborationGroupUrn = FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name);
@@ -119,6 +134,13 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
     }
     
   
+    /// <summary>
+    /// Formats a group URN based on organization name, collaboration name, and optional group name.
+    /// </summary>
+    /// <param name="orgName">The organization name</param>
+    /// <param name="coName">The collaboration name</param>
+    /// <param name="groupName">Optional group name</param>
+    /// <returns>Formatted URN string</returns>
     private string FormatGroupUrn(string orgName, string coName, string? groupName = null)
     {
         // see https://servicedesk.surf.nl/wiki/spaces/IAM/pages/74226142/Attributes+in+SRAM
@@ -127,6 +149,12 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         return $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:{groupName}";
     }
 
+    /// <summary>
+    /// Retrieves a group from the SCIM API based on its URN.
+    /// </summary>
+    /// <param name="groupUrn">The URN of the group to retrieve</param>
+    /// <returns>A domain Group object</returns>
+    /// <exception cref="Exception">Thrown when the group cannot be found</exception>
     private async Task<Group> GetGroupFromSCIMApi(string groupUrn)
     {
         string? id = context.SRAMGroupIdConnections
@@ -145,6 +173,12 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         return MapSCIMGroup(groupUrn, scimGroup);
     }
     
+    /// <summary>
+    /// Maps a SCIM group to a domain Group object.
+    /// </summary>
+    /// <param name="groupUrn">The URN of the group</param>
+    /// <param name="scimGroup">The SCIM group to map</param>
+    /// <returns>A domain Group object</returns>
     private Group MapSCIMGroup(string groupUrn, SCIMGroup scimGroup)
     {
         // Get the members of the group

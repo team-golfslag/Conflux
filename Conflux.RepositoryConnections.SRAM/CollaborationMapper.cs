@@ -21,7 +21,7 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
         {
             string groupUrn = FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name);
             urns.Add(groupUrn);
-            urns.AddRange(collaborationDto.Groups.Select(g => FormatGroupUrn(g, collaborationDto.Name, groupUrn)));
+            urns.AddRange(collaborationDto.Groups.Select(g => FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name, g)));
         }
         
         // Check if all urns have a matching ID in the database if this is not the case we are better off

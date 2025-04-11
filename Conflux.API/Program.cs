@@ -136,7 +136,7 @@ public class Program
                 };
                 options.Events.OnRedirectToIdentityProviderForSignOut = context =>
                 {
-                    context.Response.Redirect(oidcConfig["SignOutCallbackPath"]!);
+                    context.Response.Redirect(context.Request.Query["redirectUri"]);;
                     context.HandleResponse();
                     return Task.CompletedTask;
                 };
@@ -152,6 +152,7 @@ public class Program
             {
                 policy.WithOrigins(allowedOrigins)
                     .AllowAnyMethod()
+                    .AllowCredentials()
                     .AllowAnyHeader();
             });
         });
@@ -196,6 +197,7 @@ public class Program
                 }
             });
         });
+        app.UseCors("AllowLocalhost");
 
         app.UseHttpsRedirection();
         app.MapControllers();
@@ -203,7 +205,6 @@ public class Program
         app.UseAuthorization();
         app.UseSession();
 
-        app.UseCors("AllowLocalhost");
 
         // Ensure the database is created and seeded
         using IServiceScope scope = app.Services.CreateScope();

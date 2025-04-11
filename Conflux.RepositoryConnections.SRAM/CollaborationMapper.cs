@@ -157,17 +157,17 @@ public class CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiCl
     /// <exception cref="Exception">Thrown when the group cannot be found</exception>
     private async Task<Group> GetGroupFromSCIMApi(string groupUrn)
     {
-        string? id = context.SRAMGroupIdConnections
-            .FirstOrDefault(x => x.Urn == groupUrn)?.Id;
+        var connection = await context.SRAMGroupIdConnections
+            .FindAsync(groupUrn);
 
         // There should always be a group with the given URN in the database
-        if (id == null)
+        if (connection == null)
             throw new($"Group with URN {groupUrn} not found in database");
 
         // Get the group from the SCIM API
-        SCIMGroup? scimGroup = await scimApiClient.GetSCIMGroup(id);
+        SCIMGroup? scimGroup = await scimApiClient.GetSCIMGroup(connection.Id);
         if (scimGroup == null)
-            throw new($"Group with ID {id} not found in SCIM API");
+            throw new($"Group with ID {connection.Id} not found in SCIM API");
         
         // Map the SCIM group to a Group object
         return MapSCIMGroup(groupUrn, scimGroup);

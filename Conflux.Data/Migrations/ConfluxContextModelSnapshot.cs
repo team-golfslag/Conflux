@@ -17,7 +17,7 @@ namespace Conflux.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -39,7 +39,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Parties");
+                    b.ToTable("Parties", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Domain.Person", b =>
@@ -54,7 +54,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("People");
+                    b.ToTable("People", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Domain.Product", b =>
@@ -72,7 +72,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Domain.Project", b =>
@@ -96,7 +96,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Domain.SRAMGroupIdConnection", b =>
@@ -109,7 +109,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasKey("Urn");
 
-                    b.ToTable("SRAMGroupIdConnections");
+                    b.ToTable("SRAMGroupIdConnections", (string)null);
                 });
 
             modelBuilder.Entity("PersonProject", b =>
@@ -124,7 +124,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("PersonProject");
+                    b.ToTable("PersonProject", (string)null);
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -139,7 +139,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("ProductProject");
+                    b.ToTable("ProductProject", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Domain.Party", b =>

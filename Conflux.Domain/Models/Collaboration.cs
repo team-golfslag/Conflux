@@ -3,8 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Core.Models;
-
 namespace Conflux.Domain.Models;
 
 public class Collaboration

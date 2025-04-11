@@ -7,6 +7,6 @@ namespace Conflux.Domain.Models;
 
 public class GroupMember
 {
-    public string DisplayName { get; set; }
-    public string SRAMId { get; set; }
+    public required string DisplayName { get; set; }
+    public required string SRAMId { get; set; }
 }

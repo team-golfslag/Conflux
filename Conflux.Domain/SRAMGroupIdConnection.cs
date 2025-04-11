@@ -9,7 +9,7 @@ namespace Conflux.Domain;
 
 public record SRAMGroupIdConnection
 {
-    [Required] public string Id { get; init; }
+    [Required] public required string Id { get; init; }
 
-    [Key] public string Urn { get; init; }
+    [Key] public required string Urn { get; init; }
 }

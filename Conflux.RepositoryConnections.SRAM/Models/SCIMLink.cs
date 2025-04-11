@@ -9,7 +9,7 @@ namespace Conflux.RepositoryConnections.SRAM.Models;
 
 public class SCIMLink
 {
-    [JsonPropertyName("name")] public string Name { get; set; }
+    [JsonPropertyName("name")] public string Name { get; init; }
 
-    [JsonPropertyName("value")] public string Value { get; set; }
+    [JsonPropertyName("value")] public string Value { get; init; }
 }

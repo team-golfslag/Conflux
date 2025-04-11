@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
-using Conflux.Data;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Extensions;
@@ -36,14 +35,11 @@ public class UserSessionService: IUserSessionService
 
     public async Task<UserSession?> GetUser()
     {
-        if (_httpContextAccessor.HttpContext.Session is not null &&
-            _httpContextAccessor.HttpContext.Session.IsAvailable)
-        {
-            var userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
-            if (userSession != null)
-                return userSession;
-        }
-
+        if (_httpContextAccessor.HttpContext.Session is null ||
+            !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
+        UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
+        if (userSession != null)
+            return userSession;
 
         return await SetUser(null);
     }
@@ -56,20 +52,20 @@ public class UserSessionService: IUserSessionService
         if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
             return null;
 
-        var collaborationDtos = claims != null ? claims.GetCollaborations() : 
+        var collaborationDTOs = claims != null ? claims.GetCollaborations() : 
             _httpContextAccessor.HttpContext?.User.GetCollaborations();
-        if (collaborationDtos is null)
+        if (collaborationDTOs is null)
             throw new InvalidOperationException("User has no collaborations.");
 
-        var collaborations = await _collaborationMapper.Map(collaborationDtos);
-        var user = new UserSession
+        var collaborations = await _collaborationMapper.Map(collaborationDTOs);
+        UserSession user = new()
         {
             SRAMId = _httpContextAccessor.HttpContext?.User.GetClaimValue("personIdentifier"),
             Name = _httpContextAccessor.HttpContext?.User.GetClaimValue("Name"),
             GivenName = _httpContextAccessor.HttpContext?.User.GetClaimValue("given_name"),
             FamilyName = _httpContextAccessor.HttpContext?.User.GetClaimValue("family_name"),
             Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email"),
-            Collaborations = collaborations
+            Collaborations = collaborations,
         };
         
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);

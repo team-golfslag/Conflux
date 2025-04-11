@@ -18,16 +18,14 @@ namespace Conflux.API.Controllers;
 [Route("session")]
 public class UserSessionController : ControllerBase
 {
-    private readonly IUserSessionService _userSession;
-    public UserSessionController(IUserSessionService userSession) => _userSession = userSession;
+    private readonly IUserSessionService _userSessionService;
+    public UserSessionController(IUserSessionService userSessionService) => _userSessionService = userSessionService;
 
     [HttpGet]
     [Route("login")]
     [Authorize]
-    public async Task<ActionResult> LogIn()
-    {
-        return Ok();
-    }
+    public async Task<ActionResult> LogIn() => Ok();
+   
     
     [HttpGet]
     [Route("logout")]
@@ -42,8 +40,5 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<UserSession>> UserSession()
-    {
-        return Ok(await _userSession.GetUser());
-    }
+    public async Task<ActionResult<UserSession>> UserSession() => Ok(await _userSessionService.GetUser());
 }

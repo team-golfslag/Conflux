@@ -32,11 +32,10 @@ public class SCIMApiClient
     /// Sets the bearer token for all subsequent requests.
     /// Call this before calling other methods if authentication is required.
     /// </summary>
-    public void SetBearerToken(string bearerToken)
-    {
+    public void SetBearerToken(string bearerToken) =>
         _httpClient.DefaultRequestHeaders.Authorization =
             new("Bearer", bearerToken);
-    }
+
 
     /// <summary>
     /// GET /Groups/{id}
@@ -46,7 +45,7 @@ public class SCIMApiClient
     {
         HttpResponseMessage response = await _httpClient.GetAsync($"Groups/{id}");
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<SCIMGroup>();
+        SCIMGroup? result = await response.Content.ReadFromJsonAsync<SCIMGroup>();
 
         return result;
     }

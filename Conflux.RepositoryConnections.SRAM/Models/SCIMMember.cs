@@ -4,9 +4,9 @@ namespace Conflux.RepositoryConnections.SRAM.Models;
 
 public class SCIMMember
 {
-    [JsonPropertyName("$ref")] public string Ref { get; set; }
+    [JsonPropertyName("$ref")] public required string Ref { get; init; }
 
-    [JsonPropertyName("display")] public string Display { get; set; }
+    [JsonPropertyName("display")] public required string Display { get; init; }
 
-    [JsonPropertyName("value")] public string Value { get; set; }
+    [JsonPropertyName("value")] public required string Value { get; init; }
 }

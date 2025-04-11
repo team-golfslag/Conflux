@@ -24,9 +24,9 @@ public class UserSessionController : ControllerBase
     [HttpGet]
     [Route("login")]
     [Authorize]
-    public async Task<ActionResult> LogIn() => Ok();
-   
-    
+    public async Task<ActionResult> LogIn([FromQuery] string redirect) => 
+        Redirect(redirect);
+
     [HttpGet]
     [Route("logout")]
     public async Task<ActionResult> LogOut([FromQuery] string redirectUri) =>

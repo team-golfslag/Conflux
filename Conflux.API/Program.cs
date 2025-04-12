@@ -75,6 +75,7 @@ public class Program
         });
         builder.Services.AddScoped<CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+        builder.Services.AddScoped<SessionCollectionService>();
 
         // get sram secret from environment variable
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
@@ -136,7 +137,7 @@ public class Program
                 };
                 options.Events.OnRedirectToIdentityProviderForSignOut = context =>
                 {
-                    context.Response.Redirect(context.Request.Query["redirectUri"]);;
+                    context.Response.Redirect(context.Request.Query["redirectUri"]);
                     context.HandleResponse();
                     return Task.CompletedTask;
                 };
@@ -213,8 +214,8 @@ public class Program
         if (context.Database.IsRelational()) await context.Database.MigrateAsync();
 
         // Seed the database for development, if necessary
-        if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
-            await context.SeedDataAsync();
+        // if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
+        //     await context.SeedDataAsync();
 
         await app.RunAsync();
     }

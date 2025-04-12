@@ -18,13 +18,12 @@ public interface IUserSessionService
     void ClearUser();
 }
 
-public class UserSessionService: IUserSessionService
+public class UserSessionService : IUserSessionService
 {
     private const string UserKey = "UserProfile";
+    private readonly CollaborationMapper _collaborationMapper;
 
     private readonly IHttpContextAccessor _httpContextAccessor;
-   
-    private readonly CollaborationMapper _collaborationMapper;
 
     public UserSessionService(
         IHttpContextAccessor httpContextAccessor, CollaborationMapper collaborationMapper)
@@ -52,8 +51,9 @@ public class UserSessionService: IUserSessionService
         if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
             return null;
 
-        var collaborationDTOs = claims != null ? claims.GetCollaborations() : 
-            _httpContextAccessor.HttpContext?.User.GetCollaborations();
+        var collaborationDTOs = claims != null
+            ? claims.GetCollaborations()
+            : _httpContextAccessor.HttpContext?.User.GetCollaborations();
         if (collaborationDTOs is null)
             throw new InvalidOperationException("User has no collaborations.");
 
@@ -67,15 +67,16 @@ public class UserSessionService: IUserSessionService
             Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email"),
             Collaborations = collaborations,
         };
-        
+
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
-        
+
         return user;
     }
 
     public void ClearUser()
     {
-        if (_httpContextAccessor.HttpContext.Session is not null && _httpContextAccessor.HttpContext.Session.IsAvailable)
+        if (_httpContextAccessor.HttpContext.Session is not null &&
+            _httpContextAccessor.HttpContext.Session.IsAvailable)
             _httpContextAccessor.HttpContext?.Session.Remove(UserKey);
     }
 }

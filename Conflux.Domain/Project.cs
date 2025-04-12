@@ -12,7 +12,11 @@ namespace Conflux.Domain;
 /// </summary>
 public class Project
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public Guid Id { get; init; }
+
+    public string? SRAMId { get; init; }
+
+    public string? RAiDId { get; init; }
 
     [Required] public required string Title { get; set; }
 

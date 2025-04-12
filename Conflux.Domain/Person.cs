@@ -14,5 +14,14 @@ public class Person
 {
     [Key] public Guid Id { get; set; }
 
+    public string? SRAMId { get; set; }
+    public string? ORCiD { get; set; }
+
     [Required] public required string Name { get; set; }
+
+    public List<Role> Roles { get; set; } = [];
+
+    public string? GivenName { get; set; }
+    public string? FamilyName { get; set; }
+    public string? Email { get; set; }
 }

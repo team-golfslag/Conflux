@@ -19,6 +19,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public DbSet<Product> Products { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Party> Parties { get; set; }
+    public DbSet<Role> Roles { get; set; }
     public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 
     /// <summary>
@@ -28,8 +29,12 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>().HasMany(p => p.People).WithMany();
-
         modelBuilder.Entity<Project>().HasMany(p => p.Products).WithMany();
+
+        modelBuilder.Entity<Person>()
+            .HasMany(p => p.Roles)
+            .WithOne()
+            .HasForeignKey("PersonId");
 
         base.OnModelCreating(modelBuilder);
     }
@@ -52,6 +57,5 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 
     public override void Dispose()
     {
-        return;
     }
 }

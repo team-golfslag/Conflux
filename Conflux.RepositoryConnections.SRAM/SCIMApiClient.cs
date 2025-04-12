@@ -61,4 +61,18 @@ public class SCIMApiClient
         SCIMGroupsResult? results = await response.Content.ReadFromJsonAsync<SCIMGroupsResult>();
         return results?.Groups;
     }
+
+    /// <summary>
+    /// GET /Users/{id}
+    /// </summary>
+    /// <param name="id">The external ID of the user.</param>
+    /// <returns>The SCIM user.</returns>
+    public async Task<SCIMUser?> GetSCIMMemberByExternalId(string id)
+    {
+        HttpResponseMessage response = await _httpClient.GetAsync($"Users/{id}");
+        response.EnsureSuccessStatusCode();
+        SCIMUser? result = await response.Content.ReadFromJsonAsync<SCIMUser>();
+
+        return result;
+    }
 }

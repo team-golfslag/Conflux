@@ -31,7 +31,7 @@ public class PeopleController : ControllerBase
     /// <param name="query">Optional: The string to search in the title or description</param>
     /// <returns>Filtered list of people</returns>
     [HttpGet]
-    public async Task<ActionResult<List<Project>>> GetProjectByQuery(
+    public async Task<ActionResult<List<Project>>> GetPeopleByQuery(
         [FromQuery] string? query) =>
         Ok(await _peopleService.GetPeopleByQueryAsync(query));
 

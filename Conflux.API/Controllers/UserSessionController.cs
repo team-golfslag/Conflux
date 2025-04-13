@@ -17,14 +17,14 @@ namespace Conflux.API.Controllers;
 [Route("session")]
 public class UserSessionController : ControllerBase
 {
-    private readonly SessionCollectionService _sessionCollectionService;
+    private readonly SessionMappingService _sessionMappingService;
     private readonly IUserSessionService _userSessionService;
 
     public UserSessionController(IUserSessionService userSessionService,
-        SessionCollectionService sessionCollectionService)
+        SessionMappingService sessionMappingService)
     {
         _userSessionService = userSessionService;
-        _sessionCollectionService = sessionCollectionService;
+        _sessionMappingService = sessionMappingService;
     }
 
     [HttpGet]
@@ -36,7 +36,7 @@ public class UserSessionController : ControllerBase
         UserSession? user = await _userSessionService.GetUser();
         if (user is null) return Unauthorized();
 
-        await _sessionCollectionService.HandleSession(user);
+        await _sessionMappingService.CollectSessionData(user);
         return Redirect(redirect);
     }
 

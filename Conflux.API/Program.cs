@@ -75,7 +75,7 @@ public class Program
         });
         builder.Services.AddScoped<CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
-        builder.Services.AddScoped<SessionCollectionService>();
+        builder.Services.AddScoped<SessionMappingService>();
 
         // get sram secret from environment variable
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");

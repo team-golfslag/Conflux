@@ -28,13 +28,15 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     /// <param name="modelBuilder">The model builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Project>().HasMany(p => p.People).WithMany();
-        modelBuilder.Entity<Project>().HasMany(p => p.Products).WithMany();
-
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.People)
+            .WithMany();
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Products)
+            .WithMany();
         modelBuilder.Entity<Person>()
             .HasMany(p => p.Roles)
-            .WithOne()
-            .HasForeignKey("PersonId");
+            .WithMany();
 
         base.OnModelCreating(modelBuilder);
     }
@@ -57,5 +59,6 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 
     public override void Dispose()
     {
+        // Method intentionally left empty.
     }
 }

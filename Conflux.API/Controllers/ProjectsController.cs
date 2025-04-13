@@ -20,10 +20,12 @@ namespace Conflux.API.Controllers;
 public class ProjectsController : ControllerBase
 {
     private readonly ProjectsService _projectsService;
+    private readonly IProjectSyncService _projectSyncService;
 
-    public ProjectsController(ConfluxContext context)
+    public ProjectsController(ConfluxContext context, IProjectSyncService projectSyncService)
     {
         _projectsService = new(context);
+        _projectSyncService = projectSyncService;
     }
 
     /// <summary>
@@ -99,4 +101,13 @@ public class ProjectsController : ControllerBase
     [Route("{projectId:guid}/addPerson/{personId:guid}")]
     public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId, Guid personId) =>
         await _projectsService.AddPersonToProjectAsync(projectId, personId);
+
+    [HttpPost]
+    [Route("{id:guid}/sync")]
+    [Authorize]
+    public async Task<ActionResult> SyncProject([FromRoute] Guid id)
+    {
+        await _projectSyncService.SyncProjectAsync(id);
+        return Ok();
+    }
 }

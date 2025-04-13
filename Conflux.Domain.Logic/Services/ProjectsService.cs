@@ -31,6 +31,7 @@ public class ProjectsService
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
         await _context.Projects
             .Include(p => p.People)
+            .ThenInclude(p => p.Roles)
             .Include(p => p.Products)
             .Include(p => p.Parties)
             .SingleOrDefaultAsync(p => p.Id == id)
@@ -47,6 +48,7 @@ public class ProjectsService
     {
         IQueryable<Project> projects = _context.Projects
             .Include(p => p.People)
+            .ThenInclude(p => p.Roles)
             .Include(p => p.Products)
             .Include(p => p.Parties);
 
@@ -99,6 +101,7 @@ public class ProjectsService
         await _context.Projects
             .Include(p => p.Products)
             .Include(p => p.People)
+            .ThenInclude(person => person.Roles)
             .Include(p => p.Parties)
             .ToListAsync();
 

@@ -29,7 +29,8 @@ public class PeopleService
     /// <returns>Filtered list of people</returns>
     public async Task<List<Person>> GetPeopleByQueryAsync(string? query)
     {
-        IQueryable<Person> people = _context.People;
+        IQueryable<Person> people = _context.People
+            .Include(p => p.Roles);
 
         if (string.IsNullOrWhiteSpace(query)) return await people.ToListAsync();
 
@@ -49,6 +50,7 @@ public class PeopleService
     /// <exception cref="PersonNotFoundException">Thrown when the person is not found</exception>
     public async Task<Person> GetPersonByIdAsync(Guid id) =>
         await _context.People
+            .Include(p => p.Roles)
             .SingleOrDefaultAsync(p => p.Id == id) ?? throw new PersonNotFoundException(id);
 
     /// <summary>

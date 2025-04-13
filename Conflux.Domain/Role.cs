@@ -9,7 +9,7 @@ namespace Conflux.Domain;
 
 public class Role
 {
-    [Key] public required Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public required Guid Id { get; init; }
 
     public required string Name { get; init; }
     public string? Description { get; init; }

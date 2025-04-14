@@ -53,11 +53,20 @@ public class ProjectsService
             .ToListAsync();
         foreach (var project in data)
         {
-            Project newProject = project.Project;
+            var newProject = project.Project;
             newProject.Products = project.Products.ToList();
-            newProject.People = project.People.Select(p => p.Person).ToList();
+            newProject.People = project.People.Select(p => new Person
+            {
+                Id = p.Person.Id,
+                SRAMId = p.Person.SRAMId,
+                ORCiD = p.Person.ORCiD,
+                Name = p.Person.Name,
+                Roles =  p.Roles.ToList(),
+                GivenName =  p.Person.GivenName,
+                FamilyName = p.Person.FamilyName,
+                Email = p.Person.Email
+            }).ToList();
             newProject.Parties = project.Parties.ToList();
-            foreach (var person in project.People) person.Person.Roles = person.Roles.ToList();
             projects.Add(newProject);
         }
 

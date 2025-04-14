@@ -143,7 +143,6 @@ public class CollaborationMapper
         return collaboration;
     }
 
-
     /// <summary>
     /// Formats a group URN based on organization name, collaboration name, and optional group name.
     /// </summary>
@@ -157,7 +156,6 @@ public class CollaborationMapper
             string.IsNullOrEmpty(groupName)
                 ? $"urn:mace:surf.nl:sram:group:{orgName}:{coName}"
                 : $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:{groupName}";
-
 
     /// <summary>
     /// Retrieves a group from the SCIM API based on its URN.

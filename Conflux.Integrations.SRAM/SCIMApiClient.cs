@@ -36,7 +36,6 @@ public class SCIMApiClient
         _httpClient.DefaultRequestHeaders.Authorization =
             new("Bearer", bearerToken);
 
-
     /// <summary>
     /// GET /Groups/{id}
     /// Get this SCIM group by ID.

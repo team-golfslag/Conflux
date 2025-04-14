@@ -8,6 +8,7 @@ using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -22,18 +23,23 @@ public class UserSessionService : IUserSessionService
 {
     private const string UserKey = "UserProfile";
     private readonly CollaborationMapper _collaborationMapper;
-
+    private readonly IVariantFeatureManager _featureManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserSessionService(
-        IHttpContextAccessor httpContextAccessor, CollaborationMapper collaborationMapper)
+        IHttpContextAccessor httpContextAccessor, CollaborationMapper collaborationMapper,
+        IVariantFeatureManager featureManager)
     {
         _httpContextAccessor = httpContextAccessor;
         _collaborationMapper = collaborationMapper;
+        _featureManager = featureManager;
     }
 
     public async Task<UserSession?> GetUser()
     {
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return UserSession.Development();
+
         if (_httpContextAccessor.HttpContext.Session is null ||
             !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
@@ -45,6 +51,8 @@ public class UserSessionService : IUserSessionService
 
     public async Task<UserSession?> SetUser(ClaimsPrincipal? claims)
     {
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return UserSession.Development();
         if (_httpContextAccessor.HttpContext?.User is null)
             throw new InvalidOperationException("User is not authenticated.");
 

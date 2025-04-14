@@ -8,6 +8,7 @@ using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -17,6 +18,7 @@ namespace Conflux.Domain.Logic.Services;
 public class SessionMappingService
 {
     private readonly ConfluxContext _context;
+    private readonly IVariantFeatureManager _featureManager;
     private readonly SCIMApiClient _sramApiClient;
 
     /// <summary>
@@ -24,10 +26,12 @@ public class SessionMappingService
     /// </summary>
     /// <param name="context">The Conflux context.</param>
     /// <param name="sramApiClient">The API client which is used to retrieve all user information.</param>
-    public SessionMappingService(ConfluxContext context, SCIMApiClient sramApiClient)
+    public SessionMappingService(ConfluxContext context, SCIMApiClient sramApiClient,
+        IVariantFeatureManager featureManager)
     {
-        _sramApiClient = sramApiClient;
+        _featureManager = featureManager;
         _context = context;
+        _sramApiClient = sramApiClient;
     }
 
     /// <summary>
@@ -36,6 +40,9 @@ public class SessionMappingService
     /// <param name="userSession">The user session to collect the data from.</param>
     public async Task CollectSessionData(UserSession userSession)
     {
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return;
+
         await CollectAndAddProjects(userSession);
 
         await CollectAndAddPeople(userSession);

@@ -62,11 +62,11 @@ public class PeopleController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
-    public async Task<ActionResult> UpdatePerson([FromRoute] Guid id, [FromBody] PersonPutDTO personDto) =>
+    public async Task<ActionResult<Person>> UpdatePerson([FromRoute] Guid id, [FromBody] PersonPutDTO personDto) =>
         Ok(await _peopleService.UpdatePersonAsync(id, personDto));
 
     [HttpPatch]
     [Route("{id:guid}")]
-    public async Task<ActionResult> PatchPerson([FromRoute] Guid id, [FromBody] PersonPatchDTO personDto) =>
+    public async Task<ActionResult<Person>> PatchPerson([FromRoute] Guid id, [FromBody] PersonPatchDTO personDto) =>
         Ok(await _peopleService.PatchPersonAsync(id, personDto));
 }

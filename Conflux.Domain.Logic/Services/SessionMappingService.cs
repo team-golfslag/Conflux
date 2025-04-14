@@ -112,6 +112,8 @@ public class SessionMappingService
                 if (existingPerson is not null) continue;
                 _context.People.Add(retrievedPerson);
             }
+
+            await _context.SaveChangesAsync();
         }
     }
 
@@ -122,7 +124,7 @@ public class SessionMappingService
     /// <param name="userSession">The user session to collect the roles from.</param>
     private async Task CollectAndAddRoles(UserSession userSession)
     {
-        foreach (var collaboration in userSession.Collaborations)
+        foreach (Collaboration collaboration in userSession.Collaborations)
         {
             Project? projects = await _context.Projects
                 .SingleOrDefaultAsync(p => p.SRAMId == collaboration.CollaborationGroup.SRAMId);
@@ -141,6 +143,8 @@ public class SessionMappingService
                 if (existingRole is not null) continue;
                 _context.Roles.Add(newRole);
             }
+
+            await _context.SaveChangesAsync();
         }
     }
 

@@ -16,15 +16,15 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService
 {
-    private readonly IUserSessionService _userSessionService;
     private readonly ConfluxContext _context;
+    private readonly IUserSessionService _userSessionService;
 
     public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
         _userSessionService = userSessionService;
     }
-    
+
     private async Task<List<Project>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
@@ -35,14 +35,33 @@ public class ProjectsService
             .Select(c => c.CollaborationGroup.SRAMId)
             .ToList();
 
-        // Use the local list in the query.
-        return await _context.Projects
+        // TODO: ensure that this returns more than one role per person
+        var projects = new List<Project>();
+        var data = await _context.Projects
             .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
-            .Include(p => p.Products)
-            .Include(p => p.People)
-            .ThenInclude(person => person.Roles)
-            .Include(p => p.Parties)
+            .Select(p => new
+            {
+                Project = p,
+                p.Products,
+                People = p.People.Select(person => new
+                {
+                    Person = person,
+                    Roles = person.Roles.Where(role => role.ProjectId == p.Id),
+                }),
+                p.Parties,
+            })
             .ToListAsync();
+        foreach (var project in data)
+        {
+            Project newProject = project.Project;
+            newProject.Products = project.Products.ToList();
+            newProject.People = project.People.Select(p => p.Person).ToList();
+            newProject.Parties = project.Parties.ToList();
+            foreach (var person in project.People) person.Person.Roles = person.Roles.ToList();
+            projects.Add(newProject);
+        }
+
+        return projects;
     }
 
     public async Task<List<Role>?> GetRolesFromProject(Project project)
@@ -57,7 +76,7 @@ public class ProjectsService
         var roles = await _context.Roles
             .Where(r => r.ProjectId == project.Id)
             .ToListAsync();
-        
+
         return roles.Where(r => collaboration.Groups.Any(g => g.Urn == r.Urn)).ToList();
     }
 
@@ -69,7 +88,7 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
         (await GetAvailableProjects())
-            .FirstOrDefault(p => p.Id == id)
+        .FirstOrDefault(p => p.Id == id)
         ?? throw new ProjectNotFoundException(id);
 
     /// <summary>

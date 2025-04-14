@@ -49,7 +49,7 @@ public class ProjectsController : ControllerBase
     /// <returns>All projects</returns>
     [HttpGet]
     [Route("all")]
-    public async Task<ActionResult<IEnumerable<Project>>> GetAllProjects() =>
+    public async Task<ActionResult<List<Project>>> GetAllProjects() =>
         Ok(await _projectsService.GetAllProjectsAsync());
 
     /// <summary>
@@ -77,7 +77,7 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
-    public async Task<ActionResult> PutProject([FromRoute] Guid id, ProjectPutDTO projectDto) =>
+    public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectPutDTO projectDto) =>
         Ok(await _projectsService.PutProjectAsync(id, projectDto));
 
     /// <summary>
@@ -88,7 +88,7 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPatch]
     [Route("{id:guid}")]
-    public async Task<ActionResult> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
+    public async Task<ActionResult<Project>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
         Ok(await _projectsService.PatchProjectAsync(id, projectDto));
 
     /// <summary>

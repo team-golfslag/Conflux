@@ -39,7 +39,7 @@ public class Program
         {
             c.Title = "Conflux API";
         });
-        if (builder.Environment.EnvironmentName != "Testing")
+        if (!featureFlags.GetValue("NoDatabaseConnection", false))
         {
             string? connectionString = builder.Configuration.GetConnectionString("Database") ??
                 ConnectionStringHelper.GetConnectionStringFromEnvironment();
@@ -167,7 +167,7 @@ public class Program
         WebApplication app = builder.Build();
         
         
-        if (featureFlags.GetValue<bool>("Swagger", false))
+        if (featureFlags.GetValue("Swagger", false))
         {
             app.UseOpenApi();
             app.UseSwaggerUi(c => { c.DocumentTitle = "Conflux API"; });
@@ -220,13 +220,13 @@ public class Program
         IServiceProvider services = scope.ServiceProvider;
         
         // If we have a database service and it is required.
-        if (services.GetService<ConfluxContext>() != null || !featureFlags.GetValue<bool>("NoDatabaseConnection", false)) 
+        if (services.GetService<ConfluxContext>() != null || !featureFlags.GetValue("NoDatabaseConnection", false)) 
         {
             ConfluxContext context = services.GetRequiredService<ConfluxContext>();
             if (context.Database.IsRelational()) await context.Database.MigrateAsync();
     
             // Seed the database for development, if necessary
-            if (featureFlags.GetValue<bool>("SeedDatabase", false) && !await context.People.AnyAsync())
+            if (featureFlags.GetValue("SeedDatabase", false) && !await context.People.AnyAsync())
                 await context.SeedDataAsync();
         }
 

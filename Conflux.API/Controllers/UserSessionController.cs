@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement;
 
 namespace Conflux.API.Controllers;
 
@@ -19,12 +20,14 @@ public class UserSessionController : ControllerBase
 {
     private readonly SessionMappingService _sessionMappingService;
     private readonly IUserSessionService _userSessionService;
+    private readonly IVariantFeatureManager _featureManager;
 
     public UserSessionController(IUserSessionService userSessionService,
-        SessionMappingService sessionMappingService)
+        SessionMappingService sessionMappingService, IVariantFeatureManager featureManager)
     {
         _userSessionService = userSessionService;
         _sessionMappingService = sessionMappingService;
+        _featureManager = featureManager;
     }
 
     [HttpGet]
@@ -45,13 +48,20 @@ public class UserSessionController : ControllerBase
     [HttpGet]
     [Route("logout")]
     public async Task<ActionResult> LogOut([FromQuery] string redirectUri) =>
-        SignOut(new AuthenticationProperties
-            {
-                RedirectUri = redirectUri,
-            },
-            OpenIdConnectDefaults.AuthenticationScheme,
-            CookieAuthenticationDefaults.AuthenticationScheme
-        );
+        await _featureManager.IsEnabledAsync("SRAMAuthentication")
+            ? SignOut(new AuthenticationProperties
+                {
+                    RedirectUri = redirectUri,
+                },
+                OpenIdConnectDefaults.AuthenticationScheme,
+                CookieAuthenticationDefaults.AuthenticationScheme
+            )
+            : SignOut(new AuthenticationProperties
+                {
+                    RedirectUri = redirectUri,
+                },
+                CookieAuthenticationDefaults.AuthenticationScheme
+            );
 
     [HttpGet]
     [Authorize]

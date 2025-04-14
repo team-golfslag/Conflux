@@ -67,7 +67,7 @@ public class Program
         {
             client.BaseAddress = new("https://sram.surf.nl/api/scim/v2/");
         });
-        
+
         bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
         builder.Services.AddScoped<SCIMApiClient>(provider =>
         {
@@ -89,79 +89,10 @@ public class Program
         builder.Services.AddScoped<IProjectSyncService, ProjectSyncService>();
 
         if (sramEnabled)
-        {
-            // get sram secret from environment variable
-            string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
-            if (string.IsNullOrEmpty(sramSecret))
-                throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
-            builder.Services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-                })
-                .AddCookie(options =>
-                {
-                    options.Events.OnSignedIn = context =>
-                    {
-                        // Set user session
-                        IUserSessionService userSessionService =
-                            context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
-                        userSessionService.SetUser(context.Principal);
-                        return Task.CompletedTask;
-                    };
-                    options.Events.OnSigningOut = context =>
-                    {
-                        // Clear user session
-                        IUserSessionService userSessionService =
-                            context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
-                        userSessionService.ClearUser();
-                        return Task.CompletedTask;
-                    };
-                })
-                .AddOpenIdConnect(options =>
-                {
-                    IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
-
-                    options.Authority = oidcConfig["Authority"];
-                    options.ClientId = oidcConfig["ClientId"];
-                    options.ClientSecret = sramSecret;
-
-                    options.CallbackPath = oidcConfig["CallbackPath"];
-                    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.ResponseType = OpenIdConnectResponseType.Code;
-                    options.SaveTokens = true;
-                    options.GetClaimsFromUserInfoEndpoint = true;
-
-                    var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
-                    if (scopes != null)
-                        foreach (string scope in scopes)
-                            options.Scope.Add(scope);
-
-                    var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
-                    if (claimMappings != null)
-                        foreach (var mapping in claimMappings)
-                            options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
-
-                    options.Events.OnRedirectToIdentityProvider = context =>
-                    {
-                        context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
-                        return Task.CompletedTask;
-                    };
-                    options.Events.OnRedirectToIdentityProviderForSignOut = context =>
-                    {
-                        context.Response.Redirect(context.Request.Query["redirectUri"]);
-                        context.HandleResponse();
-                        return Task.CompletedTask;
-                    };
-                });
-        }
+            SetupAuth(builder);
         else
-        {
-            builder.Services.AddAuthentication("DevelopmentAuthScheme")
-                .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>("DevelopmentAuthScheme", _ => { });
-        }
-
-
+            SetupDevelopmentAuth(builder);
+  
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");
@@ -244,5 +175,101 @@ public class Program
         }
 
         await app.RunAsync();
+    }
+
+    private static void SetupDevelopmentAuth(WebApplicationBuilder builder)
+    {
+        builder.Services.AddAuthentication("DevelopmentAuthScheme")
+            .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>("DevelopmentAuthScheme", _ => { })
+            .AddCookie(options =>
+            {
+                options.Events.OnSignedIn = context =>
+                {
+                    // Set user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.SetUser(context.Principal);
+                    return Task.CompletedTask;
+                };
+                options.Events.OnSigningOut = context =>
+                {
+                    // Clear user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.ClearUser();
+                    return Task.CompletedTask;
+                };
+
+                options.LogoutPath = "/logout";
+                options.SlidingExpiration = true;
+            });
+    }
+
+    private static void SetupAuth(WebApplicationBuilder builder)
+    {
+        // get sram secret from environment variable
+        string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(sramSecret))
+            throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie(options =>
+            {
+                options.Events.OnSignedIn = context =>
+                {
+                    // Set user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.SetUser(context.Principal);
+                    return Task.CompletedTask;
+                };
+                options.Events.OnSigningOut = context =>
+                {
+                    // Clear user session
+                    IUserSessionService userSessionService =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+                    userSessionService.ClearUser();
+                    return Task.CompletedTask;
+                };
+            })
+            .AddOpenIdConnect(options =>
+            {
+                IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
+
+                options.Authority = oidcConfig["Authority"];
+                options.ClientId = oidcConfig["ClientId"];
+                options.ClientSecret = sramSecret;
+
+                options.CallbackPath = oidcConfig["CallbackPath"];
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.ResponseType = OpenIdConnectResponseType.Code;
+                options.SaveTokens = true;
+                options.GetClaimsFromUserInfoEndpoint = true;
+
+                var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+                if (scopes != null)
+                    foreach (string scope in scopes)
+                        options.Scope.Add(scope);
+
+                var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
+                if (claimMappings != null)
+                    foreach (var mapping in claimMappings)
+                        options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
+
+                options.Events.OnRedirectToIdentityProvider = context =>
+                {
+                    context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                {
+                    context.Response.Redirect(context.Request.Query["redirectUri"]);
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                };
+            });
     }
 }

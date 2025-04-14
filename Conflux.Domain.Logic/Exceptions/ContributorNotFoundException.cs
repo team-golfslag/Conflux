@@ -8,14 +8,14 @@ namespace Conflux.Domain.Logic.Exceptions;
 /// <summary>
 /// Represents an exception that is thrown when a person is not found.
 /// </summary>
-public class PersonNotFoundException : Exception
+public class ContributorNotFoundException : Exception
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="PersonNotFoundException" /> class.
+    /// Initializes a new instance of the <see cref="ContributorNotFoundException" /> class.
     /// </summary>
-    /// <param name="personId">The ID of the person that was not found</param>
-    public PersonNotFoundException(Guid personId)
-        : base($"Person with ID {personId} was not found.")
+    /// <param name="contributorId">The ID of the person that was not found</param>
+    public ContributorNotFoundException(Guid contributorId)
+        : base($"Person with ID {contributorId} was not found.")
     {
     }
 }

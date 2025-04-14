@@ -11,11 +11,11 @@ using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
 
-public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ContributorsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public PeopleControllerTests(TestWebApplicationFactory factory)
+    public ContributorsControllerTests(TestWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -24,18 +24,18 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetPeople_ByQuery_ReturnsMatchingPeople()
     {
         // Arrange
-        PersonPostDTO person = new()
+        ContributorPostDto contributor = new()
         {
             Name = "Stefan Herald",
         };
-        await _client.PostAsJsonAsync("/people", person);
+        await _client.PostAsJsonAsync("/people", contributor);
 
         // Act
         HttpResponseMessage response = await _client.GetAsync("/people?query=stefan");
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var people = await response.Content.ReadFromJsonAsync<List<Person>>();
+        var people = await response.Content.ReadFromJsonAsync<List<Contributor>>();
         Assert.NotNull(people);
         Assert.Contains(people, p => p.Name.Equals("Stefan Herald"));
     }
@@ -44,16 +44,16 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task CreatePerson_ReturnsCreatedPerson()
     {
         // Arrange
-        PersonPostDTO newPerson = new()
+        ContributorPostDto newContributor = new()
         {
             Name = "Test Person",
         };
 
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/people", newPerson);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/people", newContributor);
         response.EnsureSuccessStatusCode();
 
-        Person? createdPerson = await response.Content.ReadFromJsonAsync<Person>();
+        Contributor? createdPerson = await response.Content.ReadFromJsonAsync<Contributor>();
 
         // Assert
         Assert.NotNull(createdPerson);
@@ -64,20 +64,20 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetPersonById_ReturnsPerson_WhenExists()
     {
         // Arrange: create a person first
-        PersonPostDTO newPerson = new()
+        ContributorPostDto newContributor = new()
         {
             Name = "John Doe",
         };
 
-        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newPerson);
+        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newContributor);
         createRes.EnsureSuccessStatusCode();
-        Person? createdPerson = await createRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? createdPerson = await createRes.Content.ReadFromJsonAsync<Contributor>();
         Assert.NotNull(createdPerson);
 
         // Act
         HttpResponseMessage getRes = await _client.GetAsync($"/people/{createdPerson.Id}");
         getRes.EnsureSuccessStatusCode();
-        Person? fetchedPerson = await getRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? fetchedPerson = await getRes.Content.ReadFromJsonAsync<Contributor>();
 
         // Assert
         Assert.NotNull(fetchedPerson);
@@ -102,18 +102,18 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task UpdatePerson_UpdatesPersonSuccessfully()
     {
         // Arrange: create a person first
-        PersonPostDTO newPerson = new()
+        ContributorPostDto newContributor = new()
         {
             Name = "Original Name",
         };
 
-        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newPerson);
+        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newContributor);
         createRes.EnsureSuccessStatusCode();
-        Person? createdPerson = await createRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? createdPerson = await createRes.Content.ReadFromJsonAsync<Contributor>();
         Assert.NotNull(createdPerson);
 
         // Prepare update DTO
-        PersonPutDTO updateDto = new()
+        ContributorPutDto updateDto = new()
         {
             Name = "Updated Name",
         };
@@ -125,7 +125,7 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
         // Retrieve updated person
         HttpResponseMessage getRes = await _client.GetAsync($"/people/{createdPerson.Id}");
         getRes.EnsureSuccessStatusCode();
-        Person? updatedPerson = await getRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? updatedPerson = await getRes.Content.ReadFromJsonAsync<Contributor>();
 
         // Assert
         Assert.NotNull(updatedPerson);
@@ -136,18 +136,18 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task PatchPerson_PatchesPersonSuccessfully()
     {
         // Arrange: create a person first
-        PersonPostDTO newPerson = new()
+        ContributorPostDto newContributor = new()
         {
             Name = "Initial Name",
         };
 
-        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newPerson);
+        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/people", newContributor);
         createRes.EnsureSuccessStatusCode();
-        Person? createdPerson = await createRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? createdPerson = await createRes.Content.ReadFromJsonAsync<Contributor>();
         Assert.NotNull(createdPerson);
 
         // Prepare patch DTO to change the name
-        PersonPatchDTO patchDto = new()
+        ContributorPatchDto patchDto = new()
         {
             Name = "Patched Name",
         };
@@ -159,7 +159,7 @@ public class PeopleControllerTests : IClassFixture<TestWebApplicationFactory>
         // Retrieve patched person
         HttpResponseMessage getRes = await _client.GetAsync($"/people/{createdPerson.Id}");
         getRes.EnsureSuccessStatusCode();
-        Person? patchedPerson = await getRes.Content.ReadFromJsonAsync<Person>();
+        Contributor? patchedPerson = await getRes.Content.ReadFromJsonAsync<Contributor>();
 
         // Assert
         Assert.NotNull(patchedPerson);

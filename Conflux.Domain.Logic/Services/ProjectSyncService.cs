@@ -31,7 +31,7 @@ public class ProjectSyncService : IProjectSyncService
     {
         // Retrieve the project from the database
         Project project = await _confluxContext.Projects
-            .Include(p => p.People)
+            .Include(p => p.Contributors)
             .ThenInclude(p => p.Roles)
             .SingleOrDefaultAsync(p => p.Id == projectId) ?? throw new ProjectNotFoundException(projectId);
 

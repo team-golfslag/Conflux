@@ -10,7 +10,7 @@ namespace Conflux.Domain;
 /// <summary>
 /// Represents a person.
 /// </summary>
-public class Person
+public class Contributor
 {
     [Key] public Guid Id { get; set; }
 

@@ -195,14 +195,14 @@ public class Program
                 switch (exception?.Error)
                 {
                     case ProjectNotFoundException:
-                    case PersonNotFoundException:
+                    case ContributorNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new
                         {
                             error = exception.Error.Message,
                         });
                         break;
-                    case PersonAlreadyAddedToProjectException:
+                    case ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409; // Conflict
                         await context.Response.WriteAsJsonAsync(new
                         {
@@ -239,7 +239,7 @@ public class Program
             if (context.Database.IsRelational()) await context.Database.MigrateAsync();
 
             // Seed the database for development, if necessary
-            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.People.AnyAsync())
+            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Contributors.AnyAsync())
                 await context.SeedDataAsync();
         }
 

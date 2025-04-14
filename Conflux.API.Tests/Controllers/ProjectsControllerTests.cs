@@ -202,12 +202,12 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
             ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
+            Contributor contributor = new()
             {
                 Id = personId,
                 Name = "Test Person",
             };
-            context.People.Add(person);
+            context.Contributors.Add(contributor);
             await context.SaveChangesAsync();
         }
 
@@ -218,8 +218,8 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert: The updated project should contain the person
         Assert.NotNull(updatedProject);
-        Assert.NotNull(updatedProject!.People);
-        Assert.Contains(updatedProject.People, p => p.Id == personId);
+        Assert.NotNull(updatedProject!.Contributors);
+        Assert.Contains(updatedProject.Contributors, p => p.Id == personId);
     }
 
     [Fact]
@@ -230,12 +230,12 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
             ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
+            Contributor contributor = new()
             {
                 Id = personId,
                 Name = "Test Person",
             };
-            context.People.Add(person);
+            context.Contributors.Add(contributor);
             await context.SaveChangesAsync();
         }
 

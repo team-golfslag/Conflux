@@ -30,7 +30,7 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
         await _context.Projects
-            .Include(p => p.People)
+            .Include(p => p.Contributors)
             .ThenInclude(p => p.Roles)
             .Include(p => p.Products)
             .Include(p => p.Parties)
@@ -47,7 +47,7 @@ public class ProjectsService
     public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
     {
         IQueryable<Project> projects = _context.Projects
-            .Include(p => p.People)
+            .Include(p => p.Contributors)
             .ThenInclude(p => p.Roles)
             .Include(p => p.Products)
             .Include(p => p.Parties);
@@ -100,7 +100,7 @@ public class ProjectsService
     public async Task<List<Project>> GetAllProjectsAsync() =>
         await _context.Projects
             .Include(p => p.Products)
-            .Include(p => p.People)
+            .Include(p => p.Contributors)
             .ThenInclude(person => person.Roles)
             .Include(p => p.Parties)
             .ToListAsync();
@@ -155,16 +155,16 @@ public class ProjectsService
     /// <returns>The request response</returns>
     public async Task<Project> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
-        Project project = await _context.Projects.Include(p => p.People).SingleOrDefaultAsync(p => p.Id == projectId)
+        Project project = await _context.Projects.Include(p => p.Contributors).SingleOrDefaultAsync(p => p.Id == projectId)
             ?? throw new ProjectNotFoundException(projectId);
 
-        Person person = await _context.People.FindAsync(personId)
-            ?? throw new PersonNotFoundException(personId);
+        Contributor contributor = await _context.Contributors.FindAsync(personId)
+            ?? throw new ContributorNotFoundException(personId);
 
-        if (project.People.Any(p => p.Id == person.Id))
-            throw new PersonAlreadyAddedToProjectException(projectId, personId);
+        if (project.Contributors.Any(p => p.Id == contributor.Id))
+            throw new ContributorAlreadyAddedToProjectException(projectId, personId);
 
-        project.People.Add(person);
+        project.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
         return project;
     }

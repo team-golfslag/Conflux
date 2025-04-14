@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.DTOs;
 
-public class PersonDTOTests
+public class ContributorDTOTests
 {
     /// <summary>
     /// Given a valid PersonDTO with Name,
@@ -19,17 +19,17 @@ public class PersonDTOTests
     public void ToPerson_ShouldConvertDTOToPerson()
     {
         // Arrange
-        PersonPostDTO dto = new()
+        ContributorPostDto dto = new()
         {
             Name = "John Doe",
         };
 
         // Act 
-        Person person = dto.ToPerson();
+        Contributor contributor = dto.ToContributor();
 
         // Assert
-        Assert.NotNull(person);
-        Assert.Equal(dto.Name, person.Name);
-        Assert.NotEqual(Guid.Empty, person.Id);
+        Assert.NotNull(contributor);
+        Assert.Equal(dto.Name, contributor.Name);
+        Assert.NotEqual(Guid.Empty, contributor.Id);
     }
 }

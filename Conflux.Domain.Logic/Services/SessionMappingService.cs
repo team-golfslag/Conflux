@@ -95,7 +95,7 @@ public class SessionMappingService
             {
                 SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SRAMId);
                 if (scimUser is null) continue;
-                Person retrievedPerson = await _context.People.SingleOrDefaultAsync(p => p.SRAMId == scimUser.Id) ??
+                Contributor retrievedContributor = await _context.Contributors.SingleOrDefaultAsync(p => p.SRAMId == scimUser.Id) ??
                     new()
                     {
                         SRAMId = scimUser.Id,
@@ -105,10 +105,10 @@ public class SessionMappingService
                         Email = scimUser.Emails?.FirstOrDefault()?.Value,
                     };
 
-                Person? existingPerson = await _context.People
-                    .SingleOrDefaultAsync(p => p.SRAMId == retrievedPerson.SRAMId);
+                Contributor? existingPerson = await _context.Contributors
+                    .SingleOrDefaultAsync(p => p.SRAMId == retrievedContributor.SRAMId);
                 if (existingPerson is not null) continue;
-                _context.People.Add(retrievedPerson);
+                _context.Contributors.Add(retrievedContributor);
             }
         }
     }
@@ -147,19 +147,19 @@ public class SessionMappingService
         foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
         {
             Project? project = await _context.Projects
-                .Include(p => p.People)
+                .Include(p => p.Contributors)
                 .SingleOrDefaultAsync(p => p.SRAMId == group.SRAMId);
 
-            var people = await _context.People
+            var people = await _context.Contributors
                 .Where(p => group.Members.Select(m => m.SRAMId).Contains(p.SRAMId))
                 .ToListAsync();
 
-            foreach (Person person in people)
+            foreach (Contributor person in people)
             {
                 if (project is null) continue;
-                if (project.People.Contains(person)) continue;
+                if (project.Contributors.Contains(person)) continue;
 
-                project.People.Add(person);
+                project.Contributors.Add(person);
             }
         }
     }
@@ -174,7 +174,7 @@ public class SessionMappingService
         {
             foreach (Group group in groups)
             {
-                var people = await _context.People
+                var people = await _context.Contributors
                     .Where(p => group.Members
                         .Select(m => m.SRAMId)
                         .Contains(p.SRAMId))

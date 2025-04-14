@@ -35,6 +35,41 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             using IServiceScope scope = provider.CreateScope();
             ConfluxContext db = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
             db.Database.EnsureCreated();
+            // Clear the database
+            db.Database.EnsureDeleted();
+
+            // Add some projects
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000001"),
+                Title = "Test Project",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SRAMId = "SRAM",
+            });
+
+            // Add projects for the PUT and PATCH tests
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000002"),
+                Title = "Test Project 2",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SRAMId = "SRAM",
+            });
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000003"),
+                Title = "Test Project 3",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SRAMId = "SRAM",
+            });
+
+            db.SaveChanges();
         });
     }
 }

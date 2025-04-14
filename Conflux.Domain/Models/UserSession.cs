@@ -35,7 +35,7 @@ public class UserSession
                         Url = "https://example.com/development",
                         LogoUrl = "https://example.com/logo.png",
                         ExternalId = Guid.NewGuid().ToString(),
-                        SRAMId = Guid.NewGuid().ToString(),
+                        SRAMId = "SRAM",
                     },
                     Organization = "Development Organization",
                     Groups =

@@ -40,7 +40,6 @@ public class ProjectsController : ControllerBase
     /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
     /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
     /// <returns>Filtered list of projects</returns>
-    ///
     [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<Project>>> GetProjectByQuery(
@@ -86,15 +85,6 @@ public class ProjectsController : ControllerBase
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
-
-    /// <summary>
-    /// Creates a new project
-    /// </summary>
-    /// <param name="projectPostDto">The DTO which to convert to a <see cref="Project" /></param>
-    /// <returns>The request response</returns>
-    [HttpPost]
-    public async Task<ActionResult<Project>> CreateProject([FromBody] ProjectPostDTO projectPostDto) =>
-        Ok(await _projectsService.CreateProjectAsync(projectPostDto));
 
     /// <summary>
     /// Puts a project by its GUID

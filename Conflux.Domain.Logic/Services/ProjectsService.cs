@@ -16,16 +16,16 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService
 {
-    private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
+    private readonly ConfluxContext _context;
 
     public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
         _userSessionService = userSessionService;
     }
-
-    private async Task<IQueryable<Project>> GetAvailableProjects()
+    
+    private async Task<List<Project>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -36,12 +36,13 @@ public class ProjectsService
             .ToList();
 
         // Use the local list in the query.
-        return _context.Projects
+        return await _context.Projects
             .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
             .Include(p => p.Products)
             .Include(p => p.People)
             .ThenInclude(person => person.Roles)
-            .Include(p => p.Parties);
+            .Include(p => p.Parties)
+            .ToListAsync();
     }
 
     /// <summary>
@@ -51,8 +52,8 @@ public class ProjectsService
     /// <returns>The project</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
-        await (await GetAvailableProjects())
-            .SingleOrDefaultAsync(p => p.Id == id)
+        (await GetAvailableProjects())
+            .FirstOrDefault(p => p.Id == id)
         ?? throw new ProjectNotFoundException(id);
 
     /// <summary>
@@ -64,7 +65,7 @@ public class ProjectsService
     /// <returns>Filtered list of projects</returns>
     public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
     {
-        var projects = await GetAvailableProjects();
+        IEnumerable<Project> projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -91,7 +92,7 @@ public class ProjectsService
         if (startDate.HasValue && endDate.HasValue)
             projects = projects.Where(project => project.StartDate <= endDate && project.EndDate >= startDate);
 
-        return await projects.ToListAsync();
+        return projects.ToList();
     }
 
     /// <summary>
@@ -117,7 +118,8 @@ public class ProjectsService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
         var projects = await GetAvailableProjects();
-        return await projects.ToListAsync();
+        return projects
+            .ToList();
     }
 
     /// <summary>

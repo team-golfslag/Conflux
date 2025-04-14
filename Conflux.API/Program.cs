@@ -87,6 +87,7 @@ public class Program
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<SessionMappingService>();
         builder.Services.AddScoped<IProjectSyncService, ProjectSyncService>();
+        builder.Services.AddScoped<ProjectsService>();
 
         if (sramEnabled)
             SetupAuth(builder);

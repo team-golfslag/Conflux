@@ -6,6 +6,7 @@
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
@@ -15,11 +16,26 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService
 {
+    private readonly IUserSessionService _userSessionService;
     private readonly ConfluxContext _context;
 
-    public ProjectsService(ConfluxContext context)
+    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
+        _userSessionService = userSessionService;
+    }
+    
+    private async Task<IQueryable<Project>> GetAvailableProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        return _context.Projects
+            .Where(p => userSession.Collaborations.Any(c => c.CollaborationGroup.Id == p.SRAMId))
+            .Include(p => p.Products)
+            .Include(p => p.People)
+            .ThenInclude(person => person.Roles)
+            .Include(p => p.Parties);
     }
 
     /// <summary>
@@ -29,11 +45,7 @@ public class ProjectsService
     /// <returns>The project</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
-        await _context.Projects
-            .Include(p => p.People)
-            .ThenInclude(p => p.Roles)
-            .Include(p => p.Products)
-            .Include(p => p.Parties)
+        await (await GetAvailableProjects())
             .SingleOrDefaultAsync(p => p.Id == id)
         ?? throw new ProjectNotFoundException(id);
 
@@ -46,11 +58,7 @@ public class ProjectsService
     /// <returns>Filtered list of projects</returns>
     public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
     {
-        IQueryable<Project> projects = _context.Projects
-            .Include(p => p.People)
-            .ThenInclude(p => p.Roles)
-            .Include(p => p.Products)
-            .Include(p => p.Parties);
+        IQueryable<Project> projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -97,13 +105,16 @@ public class ProjectsService
     /// Gets all projects.
     /// </summary>
     /// <returns>All projects</returns>
-    public async Task<List<Project>> GetAllProjectsAsync() =>
-        await _context.Projects
-            .Include(p => p.Products)
-            .Include(p => p.People)
-            .ThenInclude(person => person.Roles)
-            .Include(p => p.Parties)
+    public async Task<List<Project>> GetAllProjectsAsync()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        var projects = await GetAvailableProjects();
+        return await projects
+            .Where(p => userSession.Collaborations.Any(c => c.CollaborationGroup.Id == p.SRAMId))
             .ToListAsync();
+    }
 
     /// <summary>
     /// Updates a project to the database via PUT.

@@ -22,10 +22,10 @@ public class ProjectsController : ControllerBase
     private readonly ProjectsService _projectsService;
     private readonly IProjectSyncService _projectSyncService;
 
-    public ProjectsController(ConfluxContext context, IProjectSyncService projectSyncService)
+    public ProjectsController(ProjectsService projectsService, IProjectSyncService projectSyncService)
     {
-        _projectsService = new(context);
         _projectSyncService = projectSyncService;
+        _projectsService = projectsService;
     }
 
     /// <summary>
@@ -36,6 +36,8 @@ public class ProjectsController : ControllerBase
     /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
     /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
     /// <returns>Filtered list of projects</returns>
+    ///
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<Project>>> GetProjectByQuery(
         [FromQuery] string? query,
@@ -48,6 +50,7 @@ public class ProjectsController : ControllerBase
     /// </summary>
     /// <returns>All projects</returns>
     [HttpGet]
+    [Authorize]
     [Route("all")]
     public async Task<ActionResult<List<Project>>> GetAllProjects() =>
         Ok(await _projectsService.GetAllProjectsAsync());
@@ -56,6 +59,7 @@ public class ProjectsController : ControllerBase
     /// Gets a project by its GUID.
     /// </summary>
     [HttpGet]
+    [Authorize]
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);

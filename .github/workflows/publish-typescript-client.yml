@@ -1,4 +1,4 @@
-name: publish-typescript-client
+name: publish-typescript-client-and-docs
 on:
     push:
         branches:
@@ -9,6 +9,14 @@ env:
     ASPNETCORE_ENVIRONMENT: "Workflow"
     DOTNET_ENVIRONMENT: "Workflow"
     SRAM_CLIENT_SECRET: ${{ secrets.SRAM_CLIENT_SECRET }}
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+    group: "pages"
+    cancel-in-progress: false
 
 jobs:
     publish-typescript-client:
@@ -16,7 +24,9 @@ jobs:
         permissions:
             contents: write # to be able to publish a GitHub release
             pull-requests: write # to be able to comment on released pull requests
-            packages: write # to publish to the registry
+            actions: read
+            pages: write
+            id-token: write
         steps:
             -   uses: actions/checkout@v4
                 with:
@@ -31,6 +41,7 @@ jobs:
             -   name: Install NSwag CLI
                 run: |
                     dotnet tool install --global NSwag.ConsoleCore
+                    dotnet tool install --global docfx
             
             -   name: Build project
                 run: dotnet build --no-incremental
@@ -69,6 +80,24 @@ jobs:
                     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
                     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
                     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Generate docfx
+                run: docfx docfx.json
+            
+            -   name: Generate typedoc
+                run: |
+                    cd conflux-api-client
+                    npx typedoc src/client.ts --html ../_site/conflux-api-client-docs
+                    
+            -   name: Upload artifact
+                uses: actions/upload-pages-artifact@v3
+                with:
+                    # Upload entire repository
+                    path: '_site'
+        
+            -   name: Deploy to GitHub Pages
+                id: deployment
+                uses: actions/deploy-pages@v4
                     
                     
             

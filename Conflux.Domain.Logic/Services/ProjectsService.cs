@@ -16,22 +16,28 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService
 {
-    private readonly IUserSessionService _userSessionService;
     private readonly ConfluxContext _context;
+    private readonly IUserSessionService _userSessionService;
 
     public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
         _userSessionService = userSessionService;
     }
-    
+
     private async Task<IQueryable<Project>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
+
+        var accessibleSramIds = userSession.Collaborations
+            .Select(c => c.CollaborationGroup.SRAMId)
+            .ToList();
+
+        // Use the local list in the query.
         return _context.Projects
-            .Where(p => userSession.Collaborations.Any(c => c.CollaborationGroup.Id == p.SRAMId))
+            .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
             .Include(p => p.Products)
             .Include(p => p.People)
             .ThenInclude(person => person.Roles)
@@ -58,7 +64,7 @@ public class ProjectsService
     /// <returns>Filtered list of projects</returns>
     public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
     {
-        IQueryable<Project> projects = await GetAvailableProjects();
+        var projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -111,9 +117,7 @@ public class ProjectsService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
         var projects = await GetAvailableProjects();
-        return await projects
-            .Where(p => userSession.Collaborations.Any(c => c.CollaborationGroup.Id == p.SRAMId))
-            .ToListAsync();
+        return await projects.ToListAsync();
     }
 
     /// <summary>

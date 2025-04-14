@@ -59,13 +59,13 @@ jobs:
             
             -   name: Build NPM package
                 run: |
-                    cd backend-client
+                    cd conflux-api-client
                     npm i
                     npm run build
             
             -   name: Publish
                 run: |
-                    cd backend-client
+                    cd conflux-api-client
                     npx semantic-release
                 env:
                     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

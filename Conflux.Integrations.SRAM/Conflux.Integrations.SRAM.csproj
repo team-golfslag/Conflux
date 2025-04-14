@@ -4,13 +4,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>Conflux.RepositoryConnections.SRAM</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="NWOpen.Net" Version="1.1.0"/>
-    </ItemGroup>
-
-    <ItemGroup>
+        <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj"/>
     </ItemGroup>
 

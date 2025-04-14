@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj"/>
-        <ProjectReference Include="..\Conflux.RepositoryConnections.NWOpen\Conflux.RepositoryConnections.NWOpen.csproj"/>
+        <ProjectReference Include="..\Conflux.Integrations.NWOpen\Conflux.Integrations.NWOpen.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

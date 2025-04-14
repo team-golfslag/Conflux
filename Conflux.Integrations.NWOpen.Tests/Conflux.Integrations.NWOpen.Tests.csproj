@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Conflux.RepositoryConnections.NWOpen\Conflux.RepositoryConnections.NWOpen.csproj"/>
+        <ProjectReference Include="..\Conflux.Integrations.NWOpen\Conflux.Integrations.NWOpen.csproj"/>
     </ItemGroup>
 
 </Project>

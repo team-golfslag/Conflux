@@ -34,6 +34,7 @@ public class UserSessionController : ControllerBase
     {
         Redirect(redirect);
         UserSession? user = await _userSessionService.GetUser();
+
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);

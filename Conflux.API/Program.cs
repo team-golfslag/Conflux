@@ -232,6 +232,7 @@ public class Program
                     IUserSessionService userSessionService =
                         context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
                     userSessionService.ClearUser();
+                    context.HttpContext.Session.Clear();
                     return Task.CompletedTask;
                 };
             })

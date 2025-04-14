@@ -28,7 +28,9 @@ public class Program
 
         builder.Services.AddFeatureManagement(builder.Configuration.GetSection("FeatureFlags"));
 
+#pragma warning disable ASP0000
         IVariantFeatureManager featureManager = builder.Services.BuildServiceProvider()
+#pragma warning restore ASP0000
             .GetRequiredService<IVariantFeatureManager>();
 
         builder.Services.AddControllers().AddJsonOptions(options =>

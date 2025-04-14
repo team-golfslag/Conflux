@@ -45,6 +45,22 @@ public class ProjectsService
             .ToListAsync();
     }
 
+    public async Task<List<Role>?> GetRolesFromProject(Project project)
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        Collaboration? collaboration =
+            userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SRAMId == project.SRAMId);
+        if (collaboration is null)
+            return null;
+        var roles = await _context.Roles
+            .Where(r => r.ProjectId == project.Id)
+            .ToListAsync();
+        
+        return roles.Where(r => collaboration.Groups.Any(g => g.Urn == r.Urn)).ToList();
+    }
+
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>

@@ -212,6 +212,7 @@ public class CollaborationMapper
             ExternalId = scimGroup.ExternalId,
             SRAMId = scimGroup.Id,
             Members = members,
+            Created = scimGroup.SCIMMeta.Created,
         };
     }
 }

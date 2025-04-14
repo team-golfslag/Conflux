@@ -7,6 +7,7 @@ using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,11 +22,14 @@ public class ProjectsController : ControllerBase
 {
     private readonly ProjectsService _projectsService;
     private readonly IProjectSyncService _projectSyncService;
+    private readonly IUserSessionService _userSessionService;
 
-    public ProjectsController(ProjectsService projectsService, IProjectSyncService projectSyncService)
+    public ProjectsController(ProjectsService projectsService, IProjectSyncService projectSyncService,
+        IUserSessionService userSessionService)
     {
         _projectSyncService = projectSyncService;
         _projectsService = projectsService;
+        _userSessionService = userSessionService;
     }
 
     /// <summary>
@@ -52,8 +56,27 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    public async Task<ActionResult<List<Project>>> GetAllProjects() =>
-        Ok(await _projectsService.GetAllProjectsAsync());
+    public async Task<ActionResult<List<Project>>> GetAllProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            return Unauthorized();
+        var projects = await _projectsService.GetAllProjectsAsync();
+        var projectDtos = new List<ProjectGetDTO>();
+        foreach (Project project in projects)
+        {
+            Collaboration? collaborations =
+                userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SRAMId == project.SRAMId);
+            if (collaborations is null)
+                continue;
+            var roles = await _projectsService.GetRolesFromProject(project);
+            if (roles is null)
+                continue;
+            projectDtos.Add(ProjectGetDTO.FromProject(project, roles));
+        }
+        
+        return Ok(projectDtos);
+    }
 
     /// <summary>
     /// Gets a project by its GUID.

@@ -44,6 +44,7 @@ public class SessionMappingService
             return;
 
         await CollectAndAddProjects(userSession);
+        await _context.SaveChangesAsync();
 
         await CollectAndAddPeople(userSession);
 
@@ -77,6 +78,7 @@ public class SessionMappingService
                     SRAMId = group.SRAMId,
                     Title = group.DisplayName,
                     Description = group.Description,
+                    StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
             else
@@ -120,11 +122,15 @@ public class SessionMappingService
     /// <param name="userSession">The user session to collect the roles from.</param>
     private async Task CollectAndAddRoles(UserSession userSession)
     {
-        foreach (var groups in userSession.Collaborations.Select(collaboration => collaboration.Groups))
+        foreach (var collaboration in userSession.Collaborations)
         {
-            foreach (Role newRole in groups.Select(group => new Role
+            Project? projects = await _context.Projects
+                .SingleOrDefaultAsync(p => p.SRAMId == collaboration.CollaborationGroup.SRAMId);
+            if (projects is null) continue;
+            foreach (Role newRole in collaboration.Groups.Select(group => new Role
                 {
                     Id = Guid.NewGuid(),
+                    ProjectId = projects.Id,
                     Name = group.DisplayName,
                     Description = group.Description,
                     Urn = group.Urn,

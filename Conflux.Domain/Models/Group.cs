@@ -15,6 +15,7 @@ public class Group
     public string? LogoUrl { get; set; }
     public required string ExternalId { get; set; }
     public required string SRAMId { get; set; }
+    public DateTime Created { get; set; }
 
     public List<GroupMember> Members { get; set; } = [];
 }

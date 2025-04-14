@@ -65,6 +65,8 @@ public class Program
         {
             client.BaseAddress = new("https://sram.surf.nl/api/scim/v2/");
         });
+        
+        bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
         builder.Services.AddScoped<SCIMApiClient>(provider =>
         {
             IHttpClientFactory httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
@@ -73,7 +75,7 @@ public class Program
             SCIMApiClient scimClient = new(client);
 
             string? secret = Environment.GetEnvironmentVariable("SRAM_SCIM_SECRET");
-            if (string.IsNullOrEmpty(secret))
+            if (string.IsNullOrEmpty(secret) && sramEnabled)
                 throw new InvalidOperationException("SRAM_SCIM_SECRET not set.");
 
             scimClient.SetBearerToken(secret);
@@ -84,7 +86,7 @@ public class Program
         builder.Services.AddScoped<SessionMappingService>();
         builder.Services.AddScoped<IProjectSyncService, ProjectSyncService>();
 
-        if (await featureManager.IsEnabledAsync("SRAMAuthentication"))
+        if (sramEnabled)
         {
             // get sram secret from environment variable
             string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");

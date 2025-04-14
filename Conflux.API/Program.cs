@@ -24,6 +24,8 @@ public class Program
     public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+        
+        IConfigurationSection featureFlags = builder.Configuration.GetSection("FeatureFlags");
 
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
@@ -33,7 +35,10 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddControllers();
-        builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
+        builder.Services.AddSwaggerDocument(c => 
+        {
+            c.Title = "Conflux API";
+        });
         if (builder.Environment.EnvironmentName != "Testing")
         {
             string? connectionString = builder.Configuration.GetConnectionString("Database") ??
@@ -160,7 +165,9 @@ public class Program
         });
 
         WebApplication app = builder.Build();
-        if (app.Environment.IsDevelopment())
+        
+        
+        if (featureFlags.GetValue<bool>("Swagger", false))
         {
             app.UseOpenApi();
             app.UseSwaggerUi(c => { c.DocumentTitle = "Conflux API"; });
@@ -211,12 +218,17 @@ public class Program
         // Ensure the database is created and seeded
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
-        ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-        if (context.Database.IsRelational()) await context.Database.MigrateAsync();
-
-        // Seed the database for development, if necessary
-        // if (app.Environment.IsDevelopment() && !await context.People.AnyAsync())
-        //     await context.SeedDataAsync();
+        
+        // If we have a database service and it is required.
+        if (services.GetService<ConfluxContext>() != null || !featureFlags.GetValue<bool>("NoDatabaseConnection", false)) 
+        {
+            ConfluxContext context = services.GetRequiredService<ConfluxContext>();
+            if (context.Database.IsRelational()) await context.Database.MigrateAsync();
+    
+            // Seed the database for development, if necessary
+            if (featureFlags.GetValue<bool>("SeedDatabase", false) && !await context.People.AnyAsync())
+                await context.SeedDataAsync();
+        }
 
         await app.RunAsync();
     }

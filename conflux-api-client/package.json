@@ -1,0 +1,23 @@
+{
+  "name": "@team-golfslag/conflux-api-client",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/team-golfslag/Conflux.git",
+    "directory": "conflux-api-client"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "license": "AGPL-3.0-only",
+  "main": "dist/client.js",
+  "types": "dist/client.d.ts",
+  "scripts": {
+    "build": "tsc -d"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "semantic-release": "^24.2.3"
+  }
+}

@@ -17,6 +17,7 @@ public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private ConfluxContext _context;
+    private UserSessionService _userSessionService;
 
     public async Task InitializeAsync()
     {
@@ -28,6 +29,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
+        _userSessionService = new(null, null, null);
     }
 
     public async Task DisposeAsync()
@@ -44,7 +46,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
@@ -66,7 +68,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
 
         // Insert a test project
         Project originalProject = new()
@@ -118,7 +120,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PatchProjectAsync_ShouldPatchExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
+
 
         // Insert a test project
         Project originalProject = new()
@@ -166,7 +169,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -209,7 +213,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -223,7 +228,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldThrow_WhenPersonDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -250,7 +256,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -286,7 +292,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProject_ShouldReturnProject_WhenSuccessful()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -326,7 +333,8 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
@@ -350,7 +358,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task AddPersonToProject_ShouldReturnBadRequest_WhenPersonAlreadyAdded()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();

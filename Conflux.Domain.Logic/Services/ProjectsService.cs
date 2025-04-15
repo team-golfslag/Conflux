@@ -25,6 +25,11 @@ public class ProjectsService
         _userSessionService = userSessionService;
     }
 
+    /// <summary>
+    /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
+    /// </summary>
+    /// <returns>A list of projects that the current user has access to</returns>
+    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
     private async Task<List<Project>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
@@ -35,7 +40,6 @@ public class ProjectsService
             .Select(c => c.CollaborationGroup.SRAMId)
             .ToList();
 
-        // TODO: ensure that this returns more than one role per person
         var data = await _context.Projects
             .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
             .Select(p => new
@@ -69,6 +73,15 @@ public class ProjectsService
         return projects;
     }
 
+    /// <summary>
+    /// Gets all roles for a project that the current user has access to through their SRAM collaborations.
+    /// </summary>
+    /// <param name="project">The project to get roles for</param>
+    /// <returns>
+    /// A list of roles that the user has access to through the project's SRAM connection, 
+    /// or null if the user doesn't have access to the project
+    /// </returns>
+    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
     public async Task<List<Role>?> GetRolesFromProject(Project project)
     {
         UserSession? userSession = await _userSessionService.GetUser();

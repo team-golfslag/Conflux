@@ -15,7 +15,7 @@ namespace Conflux.RepositoryConnections.NWOpen;
 public static class NwOpenMapper
 {
     private static List<Party> Parties { get; } = [];
-    private static List<Person> People { get; } = [];
+    private static List<Contributor> People { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
 
@@ -26,12 +26,13 @@ public static class NwOpenMapper
     /// <returns>A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and parties</returns>
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
-        foreach (NwOpenProject project in projects) MapProject(project);
+        int i = 1;
+        foreach (NwOpenProject project in projects) MapProject(project, i++);
 
         return new()
         {
             Parties = Parties,
-            People = People,
+            Contributors = People,
             Products = Products,
             Projects = Projects,
         };
@@ -41,7 +42,7 @@ public static class NwOpenMapper
     /// Maps an NWOpen project to a domain project.
     /// </summary>
     /// <param name="project">The NWOpen project to map</param>
-    private static void MapProject(NwOpenProject project)
+    private static void MapProject(NwOpenProject project, int projectCount)
     {
         DateTime? startDate = project.StartDate.HasValue
             ? DateTime.SpecifyKind(project.StartDate.Value, DateTimeKind.Utc)
@@ -58,6 +59,7 @@ public static class NwOpenMapper
             Description = project.SummaryNl,
             StartDate = startDate,
             EndDate = endDate,
+            SRAMId = "SRAM" + projectCount,
         };
 
         foreach (NwOpenProduct product in project.Products ?? []) MapProduct(mappedProject, product);
@@ -103,13 +105,13 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapPerson(Project project, NwOpenProjectMember projectMember)
     {
-        Person person = new()
+        Contributor contributor = new()
         {
             Id = Guid.NewGuid(),
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
         };
-        People.Add(person);
-        project.People.Add(person);
+        People.Add(contributor);
+        project.Contributors.Add(contributor);
     }
 
     /// <summary>

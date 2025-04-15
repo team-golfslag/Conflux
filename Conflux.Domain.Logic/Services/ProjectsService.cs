@@ -46,9 +46,9 @@ public class ProjectsService
             {
                 Project = p,
                 p.Products,
-                People = p.People.Select(person => new
+                Contributors = p.Contributors.Select(person => new
                 {
-                    Person = person,
+                    Contributor = person,
                     Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
                 }),
                 p.Parties,
@@ -62,7 +62,7 @@ public class ProjectsService
         {
             Project newProject = project.Project;
             newProject.Products = project.Products;
-            newProject.People = project.People.Select(p => p.Person with
+            newProject.Contributors = project.Contributors.Select(p => p.Contributor with
             {
                 Roles = p.Roles.ToList(),
             }).ToList();
@@ -225,16 +225,16 @@ public class ProjectsService
     /// <returns>The request response</returns>
     public async Task<Project> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
-        Project project = await _context.Projects.Include(p => p.People).SingleOrDefaultAsync(p => p.Id == projectId)
+        Project project = await _context.Projects.Include(p => p.Contributors).SingleOrDefaultAsync(p => p.Id == projectId)
             ?? throw new ProjectNotFoundException(projectId);
 
-        Person person = await _context.People.FindAsync(personId)
-            ?? throw new PersonNotFoundException(personId);
+        Contributor contributor = await _context.Contributors.FindAsync(personId)
+            ?? throw new ContributorNotFoundException(personId);
 
-        if (project.People.Any(p => p.Id == person.Id))
-            throw new PersonAlreadyAddedToProjectException(projectId, personId);
+        if (project.Contributors.Any(p => p.Id == contributor.Id))
+            throw new ContributorAlreadyAddedToProjectException(projectId, personId);
 
-        project.People.Add(person);
+        project.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
         return project;
     }

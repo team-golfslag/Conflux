@@ -189,13 +189,13 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
             Id = personId,
             Name = "Test Person",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act
@@ -205,8 +205,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(project);
         Assert.Equal(projectId, project.Id);
         Assert.Equal(testProject.Title, project.Title);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Equal(project.Contributors[0].Id, testContributor.Id);
+        Assert.Equal(project.Contributors[0].Name, testContributor.Name);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<PersonNotFoundException>(() =>
+        await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
             projectsService.AddPersonToProjectAsync(projectId, personId));
     }
 
@@ -271,20 +271,20 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context.Projects.Add(testProject);
 
         // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
             Id = personId,
             Name = "Test Person",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act
         await projectsService.AddPersonToProjectAsync(projectId, personId);
 
         // Assert
-        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
+        await Assert.ThrowsAsync<ContributorAlreadyAddedToProjectException>(() =>
             projectsService.AddPersonToProjectAsync(projectId, personId));
     }
 
@@ -311,22 +311,22 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context.Projects.Add(testProject);
 
         // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
             Id = personId,
             Name = "Test Person",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act
-        Project project = await projectsService.AddPersonToProjectAsync(projectId, testPerson.Id);
+        Project project = await projectsService.AddPersonToProjectAsync(projectId, testContributor.Id);
 
         // Assert
         Assert.NotNull(project);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Equal(project.Contributors[0].Id, testContributor.Id);
+        Assert.Equal(project.Contributors[0].Name, testContributor.Name);
     }
 
     [Fact]
@@ -340,13 +340,13 @@ public class ProjectsServiceTests : IAsyncLifetime
         Guid personId = Guid.NewGuid();
 
         // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
             Id = personId,
             Name = "Test Person",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act & Assert
@@ -376,20 +376,20 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context.Projects.Add(testProjectDto);
 
         // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
             Id = personId,
             Name = "Test Person",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act & Assert
         Project resultProject = await projectsService.AddPersonToProjectAsync(projectId, personId);
         Assert.NotNull(resultProject);
 
-        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
+        await Assert.ThrowsAsync<ContributorAlreadyAddedToProjectException>(() =>
             projectsService.AddPersonToProjectAsync(projectId, personId));
     }
 }

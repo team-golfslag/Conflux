@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-
 using System.Net;
 using Conflux.Integrations.SRAM.Tests.Helpers;
 using Conflux.RepositoryConnections.SRAM;

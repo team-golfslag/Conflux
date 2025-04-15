@@ -18,9 +18,9 @@ namespace Conflux.API.Controllers;
 [Route("session")]
 public class UserSessionController : ControllerBase
 {
+    private readonly IVariantFeatureManager _featureManager;
     private readonly SessionMappingService _sessionMappingService;
     private readonly IUserSessionService _userSessionService;
-    private readonly IVariantFeatureManager _featureManager;
 
     public UserSessionController(IUserSessionService userSessionService,
         SessionMappingService sessionMappingService, IVariantFeatureManager featureManager)

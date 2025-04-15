@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Conflux.Domain.Logic.DTOs;
 
@@ -16,7 +16,10 @@ public class ProjectGetDTO
 {
     public Guid Id { get; init; }
     public string? SRAMId { get; init; }
+
+    [JsonPropertyName("raid_id")]
     public string? RAiDId { get; init; }
+
     public required string Title { get; set; }
     public string? Description { get; set; }
     public DateTime? StartDate { get; set; }
@@ -25,7 +28,7 @@ public class ProjectGetDTO
     public List<Product> Products { get; set; } = [];
     public List<Party> Parties { get; set; } = [];
     public List<Role> Roles { get; set; } = [];
-    
+
     /// <summary>
     /// Converts a <see cref="Project" /> to a <see cref="ProjectGetDTO" />
     /// </summary>

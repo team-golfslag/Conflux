@@ -16,7 +16,7 @@ public static partial class ClaimsPrincipleExtensions
         return claimsPrincipal.Claims
             .FirstOrDefault(c => c.Type == claimType)?.Value;
     }
-    
+
     public static List<CollaborationDTO> GetCollaborations(this ClaimsPrincipal claimsPrincipal)
     {
         Regex regex = EntitlementRegex();

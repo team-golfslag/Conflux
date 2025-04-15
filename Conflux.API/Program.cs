@@ -93,7 +93,7 @@ public class Program
             SetupAuth(builder);
         else
             SetupDevelopmentAuth(builder);
-  
+
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");

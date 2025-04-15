@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
@@ -73,7 +72,7 @@ public class ProjectsController : ControllerBase
                 continue;
             projectDtos.Add(ProjectGetDTO.FromProject(project, roles));
         }
-        
+
         return Ok(projectDtos);
     }
 

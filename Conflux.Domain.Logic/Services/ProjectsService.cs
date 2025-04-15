@@ -36,7 +36,6 @@ public class ProjectsService
             .ToList();
 
         // TODO: ensure that this returns more than one role per person
-        var projects = new List<Project>();
         var data = await _context.Projects
             .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
             .Select(p => new
@@ -46,27 +45,24 @@ public class ProjectsService
                 People = p.People.Select(person => new
                 {
                     Person = person,
-                    Roles = person.Roles.Where(role => role.ProjectId == p.Id),
+                    Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
                 }),
                 p.Parties,
             })
             .ToListAsync();
+
+        // create a list of projects with the same size as the data
+        var projects = new List<Project>(data.Count);
+
         foreach (var project in data)
         {
-            var newProject = project.Project;
-            newProject.Products = project.Products.ToList();
-            newProject.People = project.People.Select(p => new Person
+            Project newProject = project.Project;
+            newProject.Products = project.Products;
+            newProject.People = project.People.Select(p => p.Person with
             {
-                Id = p.Person.Id,
-                SRAMId = p.Person.SRAMId,
-                ORCiD = p.Person.ORCiD,
-                Name = p.Person.Name,
-                Roles =  p.Roles.ToList(),
-                GivenName =  p.Person.GivenName,
-                FamilyName = p.Person.FamilyName,
-                Email = p.Person.Email
+                Roles = p.Roles.ToList(),
             }).ToList();
-            newProject.Parties = project.Parties.ToList();
+            newProject.Parties = project.Parties;
             projects.Add(newProject);
         }
 

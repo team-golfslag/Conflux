@@ -26,7 +26,8 @@ public static class NwOpenMapper
     /// <returns>A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and parties</returns>
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
-        foreach (NwOpenProject project in projects) MapProject(project);
+        int i = 1;
+        foreach (NwOpenProject project in projects) MapProject(project, i++);
 
         return new()
         {
@@ -41,7 +42,7 @@ public static class NwOpenMapper
     /// Maps an NWOpen project to a domain project.
     /// </summary>
     /// <param name="project">The NWOpen project to map</param>
-    private static void MapProject(NwOpenProject project)
+    private static void MapProject(NwOpenProject project, int projectCount)
     {
         DateTime? startDate = project.StartDate.HasValue
             ? DateTime.SpecifyKind(project.StartDate.Value, DateTimeKind.Utc)
@@ -58,6 +59,7 @@ public static class NwOpenMapper
             Description = project.SummaryNl,
             StartDate = startDate,
             EndDate = endDate,
+            SRAMId = "SRAM" + projectCount,
         };
 
         foreach (NwOpenProduct product in project.Products ?? []) MapProduct(mappedProject, product);

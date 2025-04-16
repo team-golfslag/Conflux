@@ -78,7 +78,7 @@ public class ProjectsService
     /// </summary>
     /// <param name="project">The project to get roles for</param>
     /// <returns>
-    /// A list of roles that the user has access to through the project's SRAM connection, 
+    /// A list of roles that the user has access to through the project's SRAM connection,
     /// or null if the user doesn't have access to the project
     /// </returns>
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>

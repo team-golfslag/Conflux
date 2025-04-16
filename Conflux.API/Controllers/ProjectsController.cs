@@ -45,7 +45,7 @@ public class ProjectsController : ControllerBase
         [FromQuery] string? query,
         [FromQuery(Name = "start_date")] DateTime? startDate,
         [FromQuery(Name = "end_date")] DateTime? endDate) =>
-        Ok(await _projectsService.GetProjectsByQueryAsync(query, startDate, endDate));
+        await _projectsService.GetProjectsByQueryAsync(query, startDate, endDate);
 
     /// <summary>
     /// Gets all projects
@@ -54,7 +54,7 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    public async Task<ActionResult<List<Project>>> GetAllProjects()
+    public async Task<ActionResult<List<ProjectGetDTO>>> GetAllProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -73,7 +73,7 @@ public class ProjectsController : ControllerBase
             projectDtos.Add(ProjectGetDTO.FromProject(project, roles));
         }
 
-        return Ok(projectDtos);
+        return projectDtos;
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class ProjectsController : ControllerBase
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
-
+    
     /// <summary>
     /// Puts a project by its GUID
     /// </summary>
@@ -94,7 +94,7 @@ public class ProjectsController : ControllerBase
     [HttpPut]
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectPutDTO projectDto) =>
-        Ok(await _projectsService.PutProjectAsync(id, projectDto));
+        await _projectsService.PutProjectAsync(id, projectDto);
 
     /// <summary>
     /// Patches a project by its GUID

@@ -54,26 +54,12 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    public async Task<ActionResult<List<ProjectGetDTO>>> GetAllProjects()
+    public async Task<ActionResult<List<Project>>> GetAllProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             return Unauthorized();
-        var projects = await _projectsService.GetAllProjectsAsync();
-        var projectDtos = new List<ProjectGetDTO>();
-        foreach (Project project in projects)
-        {
-            Collaboration? collaborations =
-                userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
-            if (collaborations is null)
-                continue;
-            var roles = await _projectsService.GetRolesFromProject(project);
-            if (roles is null)
-                continue;
-            projectDtos.Add(ProjectGetDTO.FromProject(project, roles));
-        }
-
-        return projectDtos;
+        return await _projectsService.GetAllProjectsAsync();
     }
 
     /// <summary>

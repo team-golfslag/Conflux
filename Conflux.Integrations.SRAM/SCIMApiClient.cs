@@ -8,7 +8,7 @@ using Conflux.RepositoryConnections.SRAM.Models;
 
 namespace Conflux.RepositoryConnections.SRAM;
 
-public class SCIMApiClient
+public class SCIMApiClient : ISCIMApiClient
 {
     private readonly HttpClient _httpClient;
 

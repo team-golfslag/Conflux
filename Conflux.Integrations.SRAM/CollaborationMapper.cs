@@ -15,9 +15,9 @@ namespace Conflux.RepositoryConnections.SRAM;
 public class CollaborationMapper
 {
     private readonly ConfluxContext _context;
-    private readonly SCIMApiClient _scimApiClient;
+    private readonly ISCIMApiClient _scimApiClient;
 
-    public CollaborationMapper(ConfluxContext context, SCIMApiClient scimApiClient)
+    public CollaborationMapper(ConfluxContext context, ISCIMApiClient scimApiClient)
     {
         _context = context;
         _scimApiClient = scimApiClient;
@@ -61,7 +61,7 @@ public class CollaborationMapper
     /// <param name="collaborationDtos">The list of CollaborationDTOs to map</param>
     /// <returns>A list of domain Collaboration objects</returns>
     /// <exception cref="GroupNotFoundException">Thrown when no groups are found in the SCIM API</exception>
-    private async Task<List<Collaboration>> GetAllGroupsFromSCIMApi(List<CollaborationDTO> collaborationDtos)
+    public async Task<List<Collaboration>> GetAllGroupsFromSCIMApi(List<CollaborationDTO> collaborationDtos)
     {
         var allGroups = await _scimApiClient.GetAllGroups();
         if (allGroups == null)
@@ -120,7 +120,7 @@ public class CollaborationMapper
     /// </summary>
     /// <param name="collaborationDto">The CollaborationDTO to map</param>
     /// <returns>A domain Collaboration object</returns>
-    private async Task<Collaboration> GetCollaborationFromSCIMApi(CollaborationDTO collaborationDto)
+    public async Task<Collaboration> GetCollaborationFromSCIMApi(CollaborationDTO collaborationDto)
     {
         string collaborationGroupUrn = FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name);
         Group collaborationGroup = await GetGroupFromSCIMApi(collaborationGroupUrn);
@@ -150,7 +150,7 @@ public class CollaborationMapper
     /// <param name="coName">The collaboration name</param>
     /// <param name="groupName">Optional group name</param>
     /// <returns>Formatted URN string</returns>
-    private static string FormatGroupUrn(string orgName, string coName, string? groupName = null)
+    public static string FormatGroupUrn(string orgName, string coName, string? groupName = null)
         // see https://servicedesk.surf.nl/wiki/spaces/IAM/pages/74226142/Attributes+in+SRAM
         =>
             string.IsNullOrEmpty(groupName)
@@ -163,7 +163,7 @@ public class CollaborationMapper
     /// <param name="groupUrn">The URN of the group to retrieve</param>
     /// <returns>A domain Group object</returns>
     /// <exception cref="GroupNotFoundException">Thrown when the group cannot be found</exception>
-    private async Task<Group> GetGroupFromSCIMApi(string groupUrn)
+    public async Task<Group> GetGroupFromSCIMApi(string groupUrn)
     {
         SRAMGroupIdConnection? connection = await _context.SRAMGroupIdConnections
             .FindAsync(groupUrn);
@@ -187,7 +187,7 @@ public class CollaborationMapper
     /// <param name="groupUrn">The URN of the group</param>
     /// <param name="scimGroup">The SCIM group to map</param>
     /// <returns>A domain Group object</returns>
-    private static Group MapSCIMGroup(string groupUrn, SCIMGroup scimGroup)
+    public static Group MapSCIMGroup(string groupUrn, SCIMGroup scimGroup)
     {
         // Get the members of the group
         List<GroupMember> members = [];

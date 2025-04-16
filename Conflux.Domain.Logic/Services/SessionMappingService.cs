@@ -46,16 +46,16 @@ public class SessionMappingService
         await CollectAndAddProjects(userSession);
         await _context.SaveChangesAsync();
 
-        await CollectAndAddPeople(userSession);
+        await CollectAndAddUsers(userSession);
 
         await CollectAndAddRoles(userSession);
 
-        // Intermediate save is needed for coupling the projects, people and roles
+        // Intermediate save is needed for coupling the projects, users and roles
         await _context.SaveChangesAsync();
 
-        await CouplePeopleToProject(userSession);
+        await CoupleUsersToProject(userSession);
 
-        await CoupleRolesToPeople(userSession);
+        await CoupleRolesToUsers(userSession);
 
         await _context.SaveChangesAsync();
     }
@@ -89,7 +89,7 @@ public class SessionMappingService
         }
     }
 
-    private async Task CollectAndAddPeople(UserSession userSession)
+    private async Task CollectAndAddUsers(UserSession userSession)
     {
         foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
         {
@@ -97,7 +97,7 @@ public class SessionMappingService
             {
                 SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
                 if (scimUser is null) continue;
-                Person? existingPerson = await _context.People.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
+                User? existingPerson = await _context.Users.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
 
 
                 if (existingPerson is not null)
@@ -105,12 +105,12 @@ public class SessionMappingService
                     if (existingPerson.SRAMId == null && existingPerson.Email == userSession.Email)
                     {
                         existingPerson.SRAMId = userSession.SRAMId;
-                        _context.People.Update(existingPerson);
+                        _context.Users.Update(existingPerson);
                     }
                     continue;
                 }
 
-                Person newPerson = new()
+                User newUser = new()
                     {
                         SCIMId = scimUser.Id,
                         Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
@@ -120,10 +120,10 @@ public class SessionMappingService
                     };
                 
                 // there could be an edge case here where a user has more than one email address
-                if (newPerson.Email == userSession.Email) 
-                    newPerson.SRAMId = userSession.SRAMId;
+                if (newUser.Email == userSession.Email) 
+                    newUser.SRAMId = userSession.SRAMId;
 
-                _context.People.Add(newPerson);
+                _context.Users.Add(newUser);
             }
 
             await _context.SaveChangesAsync();
@@ -162,49 +162,49 @@ public class SessionMappingService
     }
 
     /// <summary>
-    /// Couples people to projects based on the user session data.
+    /// Couples users to projects based on the user session data.
     /// </summary>
-    /// <param name="userSession">The user session containing the data to couple people to projects.</param>
-    private async Task CouplePeopleToProject(UserSession userSession)
+    /// <param name="userSession">The user session containing the data to couple users to projects.</param>
+    private async Task CoupleUsersToProject(UserSession userSession)
     {
         foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
         {
             Project? project = await _context.Projects
-                .Include(p => p.People)
+                .Include(p => p.Users)
                 .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
 
-            var people = await _context.People
+            var users = await _context.Users
                 .Where(p => group.Members.Select(m => m.SCIMId).Contains(p.SCIMId))
                 .ToListAsync();
 
-            foreach (Person person in people)
+            foreach (User person in users)
             {
                 if (project is null) continue;
-                if (project.People.Contains(person)) continue;
+                if (project.Users.Contains(person)) continue;
 
-                project.People.Add(person);
+                project.Users.Add(person);
             }
         }
     }
 
     /// <summary>
-    /// Couples roles to people based on the user session data.
+    /// Couples roles to users based on the user session data.
     /// </summary>
-    /// <param name="userSession">The user session containing the data to couple roles to people.</param>
-    private async Task CoupleRolesToPeople(UserSession userSession)
+    /// <param name="userSession">The user session containing the data to couple roles to users.</param>
+    private async Task CoupleRolesToUsers(UserSession userSession)
     {
         foreach (var groups in userSession.Collaborations.Select(collaboration => collaboration.Groups))
         {
             foreach (Group group in groups)
             {
-                var people = await _context.People
+                var users = await _context.Users
                     .Where(p => group.Members
                         .Select(m => m.SCIMId)
                         .Contains(p.SRAMId))
                     .Include(person => person.Roles)
                     .ToListAsync();
 
-                foreach (var roles in people.Select(role => role.Roles))
+                foreach (var roles in users.Select(role => role.Roles))
                 {
                     Role? role = await _context.Roles
                         .SingleOrDefaultAsync(r => r.Urn == group.Urn);

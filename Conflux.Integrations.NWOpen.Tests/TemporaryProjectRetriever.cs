@@ -60,7 +60,7 @@ public class TemporaryProjectRetrieverTests
         Assert.NotNull(seedData);
         Assert.NotNull(seedData.Projects);
         Assert.NotNull(seedData.Products);
-        Assert.NotNull(seedData.People);
+        Assert.NotNull(seedData.Users);
         Assert.NotNull(seedData.Parties);
     }
 

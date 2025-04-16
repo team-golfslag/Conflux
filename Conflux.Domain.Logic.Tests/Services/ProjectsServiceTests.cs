@@ -188,15 +188,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context.Projects.Add(testProject);
         await _context.SaveChangesAsync();
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        User testUser = new()
         {
             Id = personId,
-            Name = "Test Person",
+            Name = "Test User",
             SCIMId = "test-scim-id",
         };
 
-        _context.People.Add(testPerson);
+        _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
         // Act
@@ -206,8 +206,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(project);
         Assert.Equal(projectId, project.Id);
         Assert.Equal(testProject.Title, project.Title);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Equal(project.Users[0].Id, testUser.Id);
+        Assert.Equal(project.Users[0].Name, testUser.Name);
     }
 
     [Fact]
@@ -271,15 +271,15 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProject);
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        User testUser = new()
         {
             Id = personId,
-            Name = "Test Person",
+            Name = "Test User",
             SCIMId = "test-scim-id",
         };
 
-        _context.People.Add(testPerson);
+        _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
         // Act
@@ -312,24 +312,24 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProject);
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        User testUser = new()
         {
             Id = personId,
-            Name = "Test Person",
+            Name = "Test User",
             SCIMId = "test-scim-id",
         };
 
-        _context.People.Add(testPerson);
+        _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
         // Act
-        Project project = await projectsService.AddPersonToProjectAsync(projectId, testPerson.Id);
+        Project project = await projectsService.AddPersonToProjectAsync(projectId, testUser.Id);
 
         // Assert
         Assert.NotNull(project);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Equal(project.Users[0].Id, testUser.Id);
+        Assert.Equal(project.Users[0].Name, testUser.Name);
     }
 
     [Fact]
@@ -342,15 +342,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Guid projectId = Guid.NewGuid();
         Guid personId = Guid.NewGuid();
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        User testUser = new()
         {
             Id = personId,
-            Name = "Test Person",
+            Name = "Test User",
             SCIMId = "test-scim-id",
         };
 
-        _context.People.Add(testPerson);
+        _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
         // Act & Assert
@@ -379,15 +379,15 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProjectDto);
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        User testUser = new()
         {
             Id = personId,
-            Name = "Test Person",
+            Name = "Test User",
             SCIMId = "test-scim-id",
         };
 
-        _context.People.Add(testPerson);
+        _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
         // Act & Assert

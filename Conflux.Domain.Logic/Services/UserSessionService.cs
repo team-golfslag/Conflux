@@ -61,11 +61,11 @@ public class UserSessionService : IUserSessionService
         if (user is null)
             return null;
         
-        var person = _confluxContext.People.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        var person = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
         if (person is null)
             return user;
         
-        user.Person = person;
+        user.User = person;
         await CommitUser(user);
         
         return user;

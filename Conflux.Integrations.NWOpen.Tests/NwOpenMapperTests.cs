@@ -38,7 +38,7 @@ public class NwOpenMapperTests
 
         // Assert
         Assert.Empty(seedData.Parties);
-        Assert.Empty(seedData.People);
+        Assert.Empty(seedData.Users);
         Assert.Empty(seedData.Products);
         Assert.Empty(seedData.Projects);
     }
@@ -101,9 +101,9 @@ public class NwOpenMapperTests
         Assert.Equal("Prod1", mappedProduct.Title);
         Assert.Equal("http://example.com", mappedProduct.Url);
 
-        Assert.Single(result.People);
-        Person mappedPerson = result.People[0];
-        Assert.Equal("John Doe", mappedPerson.Name);
+        Assert.Single(result.Users);
+        User mappedUser = result.Users[0];
+        Assert.Equal("John Doe", mappedUser.Name);
 
         Assert.Single(result.Parties);
         Party mappedParty = result.Parties[0];
@@ -176,7 +176,7 @@ public class NwOpenMapperTests
         Type mapperType = typeof(NwOpenMapper);
 
         ClearListProperty<Party>(mapperType, "Parties");
-        ClearListProperty<Person>(mapperType, "People");
+        ClearListProperty<User>(mapperType, "Users");
         ClearListProperty<Product>(mapperType, "Products");
         ClearListProperty<Project>(mapperType, "Projects");
     }

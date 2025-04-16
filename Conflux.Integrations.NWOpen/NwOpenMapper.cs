@@ -15,7 +15,7 @@ namespace Conflux.RepositoryConnections.NWOpen;
 public static class NwOpenMapper
 {
     private static List<Party> Parties { get; } = [];
-    private static List<Person> People { get; } = [];
+    private static List<User> Users { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
 
@@ -31,7 +31,7 @@ public static class NwOpenMapper
         return new()
         {
             Parties = Parties,
-            People = People,
+            Users = Users,
             Products = Products,
             Projects = Projects,
         };
@@ -103,14 +103,14 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapPerson(Project project, NwOpenProjectMember projectMember)
     {
-        Person person = new()
+        User user = new()
         {
             Id = Guid.NewGuid(),
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
             SCIMId = ""
         };
-        People.Add(person);
-        project.People.Add(person);
+        Users.Add(user);
+        project.Users.Add(user);
     }
 
     /// <summary>

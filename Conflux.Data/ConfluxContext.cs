@@ -15,7 +15,7 @@ namespace Conflux.Data;
 /// <param name="options">The database context options.</param>
 public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContext(options)
 {
-    public DbSet<Person> People { get; set; }
+    public DbSet<User> Users { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Party> Parties { get; set; }
@@ -29,12 +29,12 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>()
-            .HasMany(p => p.People)
+            .HasMany(p => p.Users)
             .WithMany();
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Products)
             .WithMany();
-        modelBuilder.Entity<Person>()
+        modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();
 
@@ -49,7 +49,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
         TemporaryProjectRetriever projectRetriever = TemporaryProjectRetriever.GetInstance();
         SeedData seedData = projectRetriever.MapProjectsAsync().Result;
 
-        await People.AddRangeAsync(seedData.People);
+        await Users.AddRangeAsync(seedData.Users);
         await Products.AddRangeAsync(seedData.Products);
         await Parties.AddRangeAsync(seedData.Parties);
         await Projects.AddRangeAsync(seedData.Projects);

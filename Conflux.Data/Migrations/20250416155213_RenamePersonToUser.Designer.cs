@@ -3,6 +3,7 @@ using System;
 using Conflux.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    partial class ConfluxContextModelSnapshot : ModelSnapshot
+    [Migration("20250416155213_RenamePersonToUser")]
+    partial class RenamePersonToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -160,7 +163,7 @@ namespace Conflux.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("People");
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -180,15 +183,15 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("ProjectUser", b =>
                 {
+                    b.Property<Guid>("PeopleId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UsersId")
-                        .HasColumnType("uuid");
+                    b.HasKey("PeopleId", "ProjectId");
 
-                    b.HasKey("ProjectId", "UsersId");
-
-                    b.HasIndex("UsersId");
+                    b.HasIndex("ProjectId");
 
                     b.ToTable("ProjectUser");
                 });
@@ -232,15 +235,15 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("ProjectUser", b =>
                 {
-                    b.HasOne("Conflux.Domain.Project", null)
+                    b.HasOne("Conflux.Domain.User", null)
                         .WithMany()
-                        .HasForeignKey("ProjectId")
+                        .HasForeignKey("PeopleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Conflux.Domain.User", null)
+                    b.HasOne("Conflux.Domain.Project", null)
                         .WithMany()
-                        .HasForeignKey("UsersId")
+                        .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -12,7 +12,7 @@ public class UserSession
     public string GivenName { get; set; } = string.Empty;
     public string FamilyName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public Person? Person { get; set; }
+    public User? User { get; set; }
     public List<Collaboration> Collaborations { get; set; } = [];
 
     public static UserSession Development()
@@ -25,7 +25,7 @@ public class UserSession
             GivenName = "Development",
             FamilyName = "User",
             Email = "development@sram.surf.nl",
-            Person = new Person
+            User = new User
             {
                 Id = Guid.NewGuid(),
                 SRAMId = sramId,

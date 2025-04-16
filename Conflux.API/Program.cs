@@ -171,7 +171,7 @@ public class Program
             if (context.Database.IsRelational()) await context.Database.MigrateAsync();
 
             // Seed the database for development, if necessary
-            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.People.AnyAsync())
+            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Users.AnyAsync())
                 await context.SeedDataAsync();
         }
 

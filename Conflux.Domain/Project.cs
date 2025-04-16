@@ -26,7 +26,7 @@ public class Project
 
     public DateTime? EndDate { get; set; }
 
-    public List<Person> People { get; set; } = [];
+    public List<User> Users { get; set; } = [];
 
     public List<Product> Products { get; set; } = [];
 

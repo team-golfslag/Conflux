@@ -46,7 +46,7 @@ public class ProjectsService
             {
                 Project = p,
                 p.Products,
-                People = p.People.Select(person => new
+                Users = p.Users.Select(person => new
                 {
                     Person = person,
                     Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
@@ -62,7 +62,7 @@ public class ProjectsService
         {
             Project newProject = project.Project;
             newProject.Products = project.Products;
-            newProject.People = project.People.Select(p => p.Person with
+            newProject.Users = project.Users.Select(p => p.Person with
             {
                 Roles = p.Roles.ToList(),
             }).ToList();
@@ -225,16 +225,16 @@ public class ProjectsService
     /// <returns>The request response</returns>
     public async Task<Project> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
-        Project project = await _context.Projects.Include(p => p.People).SingleOrDefaultAsync(p => p.Id == projectId)
+        Project project = await _context.Projects.Include(p => p.Users).SingleOrDefaultAsync(p => p.Id == projectId)
             ?? throw new ProjectNotFoundException(projectId);
 
-        Person person = await _context.People.FindAsync(personId)
+        User user = await _context.Users.FindAsync(personId)
             ?? throw new PersonNotFoundException(personId);
 
-        if (project.People.Any(p => p.Id == person.Id))
+        if (project.Users.Any(p => p.Id == user.Id))
             throw new PersonAlreadyAddedToProjectException(projectId, personId);
 
-        project.People.Add(person);
+        project.Users.Add(user);
         await _context.SaveChangesAsync();
         return project;
     }

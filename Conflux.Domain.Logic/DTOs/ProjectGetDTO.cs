@@ -24,7 +24,7 @@ public class ProjectGetDTO
     public string? Description { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public List<Person> People { get; set; } = [];
+    public List<User> People { get; set; } = [];
     public List<Product> Products { get; set; } = [];
     public List<Party> Parties { get; set; } = [];
     public List<Role> Roles { get; set; } = [];
@@ -43,7 +43,7 @@ public class ProjectGetDTO
             Description = project.Description,
             StartDate = project.StartDate,
             EndDate = project.EndDate,
-            People = project.People,
+            People = project.Users,
             Products = project.Products,
             Parties = project.Parties,
             Roles = roles,

@@ -153,13 +153,13 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
             ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
+            User user = new()
             {
                 Id = personId,
-                Name = "Test Person",
+                Name = "Test User",
                 SCIMId = "test-scim-id",
             };
-            context.People.Add(person);
+            context.Users.Add(user);
             await context.SaveChangesAsync();
         }
 

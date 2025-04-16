@@ -15,7 +15,7 @@ public class PersonNotFoundException : Exception
     /// </summary>
     /// <param name="personId">The ID of the person that was not found</param>
     public PersonNotFoundException(Guid personId)
-        : base($"Person with ID {personId} was not found.")
+        : base($"User with ID {personId} was not found.")
     {
     }
 }

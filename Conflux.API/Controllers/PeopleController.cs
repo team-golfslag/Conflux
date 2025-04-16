@@ -31,9 +31,9 @@ public class PeopleController : ControllerBase
     /// <param name="query">Optional: The string to search in the title or description</param>
     /// <returns>Filtered list of people</returns>
     [HttpGet]
-    public async Task<ActionResult<List<Project>>> GetProjectByQuery(
+    public async Task<ActionResult<List<Person>>> GetProjectByQuery(
         [FromQuery] string? query) =>
-        Ok(await _peopleService.GetPeopleByQueryAsync(query));
+        await _peopleService.GetPeopleByQueryAsync(query);
 
     /// <summary>
     /// Gets the person by his GUID
@@ -43,7 +43,7 @@ public class PeopleController : ControllerBase
     [HttpGet]
     [Route("{id:guid}")]
     public async Task<ActionResult<Person>> GetPersonByIdAsync([FromRoute] Guid id) =>
-        Ok(await _peopleService.GetPersonByIdAsync(id));
+        await _peopleService.GetPersonByIdAsync(id);
 
     /// <summary>
     /// Creates a new person
@@ -63,10 +63,10 @@ public class PeopleController : ControllerBase
     [HttpPut]
     [Route("{id:guid}")]
     public async Task<ActionResult<Person>> UpdatePerson([FromRoute] Guid id, [FromBody] PersonPutDTO personDto) =>
-        Ok(await _peopleService.UpdatePersonAsync(id, personDto));
+        await _peopleService.UpdatePersonAsync(id, personDto);
 
     [HttpPatch]
     [Route("{id:guid}")]
     public async Task<ActionResult<Person>> PatchPerson([FromRoute] Guid id, [FromBody] PersonPatchDTO personDto) =>
-        Ok(await _peopleService.PatchPersonAsync(id, personDto));
+        await _peopleService.PatchPersonAsync(id, personDto);
 }

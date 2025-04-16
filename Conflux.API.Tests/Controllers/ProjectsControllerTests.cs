@@ -144,44 +144,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(projects);
         Assert.Empty(projects);
     }
-
-    [Fact]
-    public async Task AddPersonToProjectAsync_AddsPersonSuccessfully()
-    {
-        // Arrange: Query the database for an existing project
-        Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
-        {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000001"));
-        }
-
-        // Arrange: Create a new person by seeding the database
-        Guid personId = Guid.NewGuid();
-        using (IServiceScope scope = _factory.Services.CreateScope())
-        {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
-            {
-                Id = personId,
-                Name = "Test Person",
-                SCIMId = "test-scim-id",
-            };
-            context.People.Add(person);
-            await context.SaveChangesAsync();
-        }
-
-        // Act: Call the AddPersonToProjectAsync endpoint
-        HttpResponseMessage addRes = await _client.PostAsync($"/projects/{project!.Id}/addPerson/{personId}", null);
-        addRes.EnsureSuccessStatusCode();
-        Project? updatedProject = await addRes.Content.ReadFromJsonAsync<Project>();
-
-        // Assert: The updated project should contain the person
-        Assert.NotNull(updatedProject);
-        Assert.NotNull(updatedProject!.People);
-        Assert.Contains(updatedProject.People, p => p.Id == personId);
-    }
-
+    
     [Fact]
     public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
     {

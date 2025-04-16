@@ -29,7 +29,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
-        _userSessionService = new(null, null, null);
+        _userSessionService = new(null, null, null, null);
     }
 
     public async Task DisposeAsync()

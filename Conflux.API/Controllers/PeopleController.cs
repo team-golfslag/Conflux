@@ -44,16 +44,7 @@ public class PeopleController : ControllerBase
     [Route("{id:guid}")]
     public async Task<ActionResult<Person>> GetPersonByIdAsync([FromRoute] Guid id) =>
         await _peopleService.GetPersonByIdAsync(id);
-
-    /// <summary>
-    /// Creates a new person
-    /// </summary>
-    /// <param name="personDto">The DTO which to convert to a <see cref="Person" /></param>
-    /// <returns>The request response</returns>
-    [HttpPost]
-    public async Task<ActionResult<Person>> CreatePerson([FromBody] PersonPostDTO personDto) =>
-        await _peopleService.CreatePersonAsync(personDto);
-
+    
     /// <summary>
     /// Updates a person via PUT
     /// </summary>

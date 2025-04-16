@@ -266,7 +266,7 @@ public class CollaborationMapperTests
         Assert.Equal("https://example.com", result.Url);
         Assert.Equal("https://example.com/logo.png", result.LogoUrl);
         Assert.Equal("ext-123", result.ExternalId);
-        Assert.Equal("123", result.SRAMId);
+        Assert.Equal("123", result.SCIMId);
         Assert.Equal(2, result.Members.Count);
         Assert.Equal(new(2023, 1, 1), result.Created);
     }

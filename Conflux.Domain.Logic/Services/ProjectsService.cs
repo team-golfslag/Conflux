@@ -37,11 +37,11 @@ public class ProjectsService
             throw new UserNotAuthenticatedException();
 
         var accessibleSramIds = userSession.Collaborations
-            .Select(c => c.CollaborationGroup.SRAMId)
+            .Select(c => c.CollaborationGroup.SCIMId)
             .ToList();
 
         var data = await _context.Projects
-            .Where(p => p.SRAMId != null && accessibleSramIds.Contains(p.SRAMId))
+            .Where(p => p.SCIMId != null && accessibleSramIds.Contains(p.SCIMId))
             .Select(p => new
             {
                 Project = p,
@@ -88,7 +88,7 @@ public class ProjectsService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
         Collaboration? collaboration =
-            userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SRAMId == project.SRAMId);
+            userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
         if (collaboration is null)
             return null;
         var roles = await _context.Roles

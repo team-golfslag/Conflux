@@ -193,6 +193,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Test Person",
+            SCIMId = "test-scim-id",
         };
 
         _context.People.Add(testPerson);
@@ -275,6 +276,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Test Person",
+            SCIMId = "test-scim-id",
         };
 
         _context.People.Add(testPerson);
@@ -315,6 +317,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Test Person",
+            SCIMId = "test-scim-id",
         };
 
         _context.People.Add(testPerson);
@@ -344,6 +347,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Test Person",
+            SCIMId = "test-scim-id",
         };
 
         _context.People.Add(testPerson);
@@ -380,6 +384,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Test Person",
+            SCIMId = "test-scim-id",
         };
 
         _context.People.Add(testPerson);

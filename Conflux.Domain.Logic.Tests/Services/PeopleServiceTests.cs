@@ -36,26 +36,6 @@ public class PeopleServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreatePersonAsync_ShouldCreatePerson()
-    {
-        // Arrange
-        PeopleService peopleService = new(_context);
-
-        // Create a test person
-        PersonPostDTO dto = new()
-        {
-            Name = "John Doe",
-        };
-
-        // Act
-        Person person = await peopleService.CreatePersonAsync(dto);
-
-        // Assert
-        Assert.NotNull(person);
-        Assert.Single(await _context.People.Where(p => p.Id == person.Id).ToListAsync());
-    }
-
-    [Fact]
     public async Task GetPersonById_ShouldReturnPerson_WhenPersonExists()
     {
         // Arrange
@@ -67,6 +47,7 @@ public class PeopleServiceTests : IAsyncLifetime
         Person testPerson = new()
         {
             Id = personId,
+            SCIMId = "test-scim-id",
             Name = "Test Person",
         };
 
@@ -79,6 +60,8 @@ public class PeopleServiceTests : IAsyncLifetime
         // Assert
         Assert.NotNull(person);
         Assert.Equal(testPerson.Name, person.Name);
+        Assert.Equal(testPerson.Id, person.Id);
+        Assert.Equal(testPerson.SCIMId, person.SCIMId);
     }
 
     [Fact]
@@ -92,29 +75,7 @@ public class PeopleServiceTests : IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<PersonNotFoundException>(() => peopleService.GetPersonByIdAsync(personId));
     }
-
-    [Fact]
-    public async Task CreatePerson_ShouldCreatePerson()
-    {
-        // Arrange
-        PeopleService peopleService = new(_context);
-        // Create a test person
-        PersonPostDTO testPerson = new()
-        {
-            Name = "Test Person",
-        };
-
-        // Act
-        Person person = await peopleService.CreatePersonAsync(testPerson);
-        await _context.SaveChangesAsync();
-        Person retrievedPerson = await _context.People.SingleAsync(p => p.Id == person.Id);
-
-        // Assert
-        Assert.NotNull(person);
-        Assert.Equal(retrievedPerson.Name, person.Name);
-        Assert.Equal(retrievedPerson.Id, person.Id);
-        Assert.Equal(testPerson.Name, person.Name);
-    }
+    
 
     [Fact]
     public async Task UpdatePersonAsync_ShouldUpdateName()
@@ -126,6 +87,7 @@ public class PeopleServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Original Name",
+            SCIMId = "test-scim-id",
         };
         _context.People.Add(testPerson);
         await _context.SaveChangesAsync();
@@ -155,6 +117,7 @@ public class PeopleServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Original Name",
+            SCIMId = "test-scim-id",
         };
         _context.People.Add(testPerson);
         await _context.SaveChangesAsync();
@@ -184,6 +147,7 @@ public class PeopleServiceTests : IAsyncLifetime
         {
             Id = personId,
             Name = "Original Name",
+            SCIMId = "test-scim-id",
         };
         _context.People.Add(testPerson);
         await _context.SaveChangesAsync();

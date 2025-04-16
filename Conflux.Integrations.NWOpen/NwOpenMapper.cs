@@ -107,6 +107,7 @@ public static class NwOpenMapper
         {
             Id = Guid.NewGuid(),
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            SCIMId = ""
         };
         People.Add(person);
         project.People.Add(person);

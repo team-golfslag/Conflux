@@ -16,6 +16,8 @@ public record Person
     [Key] public Guid Id { get; set; }
 
     public string? SRAMId { get; set; }
+    public required string SCIMId { get; set; }
+
     [JsonPropertyName("orcid_id")]
     public string? ORCiD { get; set; }
 

@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
+using Conflux.Data;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Extensions;
@@ -15,6 +16,8 @@ namespace Conflux.Domain.Logic.Services;
 public interface IUserSessionService
 {
     Task<UserSession?> GetUser();
+    Task<UserSession?> UpdateUser();
+    Task CommitUser(UserSession userSession);
     Task<UserSession?> SetUser(ClaimsPrincipal? claims);
     void ClearUser();
 }
@@ -22,14 +25,17 @@ public interface IUserSessionService
 public class UserSessionService : IUserSessionService
 {
     private const string UserKey = "UserProfile";
+    private readonly ConfluxContext _confluxContext;
     private readonly CollaborationMapper _collaborationMapper;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserSessionService(
-        IHttpContextAccessor httpContextAccessor, CollaborationMapper collaborationMapper,
+        ConfluxContext confluxContext, IHttpContextAccessor httpContextAccessor,
+        CollaborationMapper collaborationMapper,
         IVariantFeatureManager featureManager)
     {
+        _confluxContext = confluxContext;
         _httpContextAccessor = httpContextAccessor;
         _collaborationMapper = collaborationMapper;
         _featureManager = featureManager;
@@ -47,6 +53,33 @@ public class UserSessionService : IUserSessionService
             return userSession;
 
         return await SetUser(null);
+    }
+
+    public async Task<UserSession?> UpdateUser()
+    {
+        var user = await GetUser();
+        if (user is null)
+            return null;
+        
+        var person = _confluxContext.People.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        if (person is null)
+            return user;
+        
+        user.Person = person;
+        await CommitUser(user);
+        
+        return user;
+    }
+
+    public async Task CommitUser(UserSession userSession)
+    {
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return;
+
+        if (_httpContextAccessor.HttpContext.Session is null ||
+            !_httpContextAccessor.HttpContext.Session.IsAvailable) return;
+
+        _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
     }
 
     public async Task<UserSession?> SetUser(ClaimsPrincipal? claims)

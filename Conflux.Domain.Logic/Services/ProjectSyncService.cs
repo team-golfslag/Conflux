@@ -36,7 +36,7 @@ public class ProjectSyncService : IProjectSyncService
             .SingleOrDefaultAsync(p => p.Id == projectId) ?? throw new ProjectNotFoundException(projectId);
 
         // Retrieve the project from the API
-        SCIMGroup? apiProject = await _scimApiClient.GetSCIMGroup(project.SRAMId ?? string.Empty);
+        SCIMGroup? apiProject = await _scimApiClient.GetSCIMGroup(project.SCIMId ?? string.Empty);
         if (apiProject == null) throw new ProjectNotFoundException(projectId);
 
         // Sync the project info

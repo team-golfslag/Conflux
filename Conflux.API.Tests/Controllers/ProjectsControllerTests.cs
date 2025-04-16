@@ -165,6 +165,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = personId,
                 Name = "Test Person",
+                SCIMId = "test-scim-id",
             };
             context.People.Add(person);
             await context.SaveChangesAsync();
@@ -193,6 +194,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = personId,
                 Name = "Test Person",
+                SCIMId = "test-scim-id",
             };
             context.People.Add(person);
             await context.SaveChangesAsync();

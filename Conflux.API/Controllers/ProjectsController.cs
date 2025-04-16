@@ -64,7 +64,7 @@ public class ProjectsController : ControllerBase
         foreach (Project project in projects)
         {
             Collaboration? collaborations =
-                userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SRAMId == project.SRAMId);
+                userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
             if (collaborations is null)
                 continue;
             var roles = await _projectsService.GetRolesFromProject(project);

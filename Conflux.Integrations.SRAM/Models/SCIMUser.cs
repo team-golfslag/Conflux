@@ -7,7 +7,7 @@ namespace Conflux.RepositoryConnections.SRAM.Models;
 
 public class SCIMUser
 {
-    public string? Id { get; set; }
+    public required string Id { get; set; }
     public string? ExternalId { get; set; }
     public string? UserName { get; set; }
     public SCIMName? Name { get; set; }

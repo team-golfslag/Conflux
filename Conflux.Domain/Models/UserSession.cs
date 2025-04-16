@@ -12,16 +12,31 @@ public class UserSession
     public string GivenName { get; set; } = string.Empty;
     public string FamilyName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public Person? Person { get; set; }
     public List<Collaboration> Collaborations { get; set; } = [];
 
-    public static UserSession Development() =>
-        new()
+    public static UserSession Development()
+    {
+        string sramId = Guid.NewGuid() + "@sram.surf.nl";
+        return new()
         {
-            SRAMId = Guid.NewGuid() + "@sram.surf.nl",
+            SRAMId = sramId,
             Name = "Development User",
             GivenName = "Development",
             FamilyName = "User",
             Email = "development@sram.surf.nl",
+            Person = new Person
+            {
+                Id = Guid.NewGuid(),
+                SRAMId = sramId,
+                SCIMId =  Guid.NewGuid() + "@scim.sram.surf.nl",
+                ORCiD = null,
+                Name = "Development User",
+                Roles = [],
+                GivenName = "Development",
+                FamilyName = "User",
+                Email = "development@sram.surf.nl",
+            },
             Collaborations =
             [
                 new()
@@ -35,7 +50,7 @@ public class UserSession
                         Url = "https://example.com/development",
                         LogoUrl = "https://example.com/logo.png",
                         ExternalId = Guid.NewGuid().ToString(),
-                        SRAMId = "SRAM",
+                        SCIMId = "SRAM",
                     },
                     Organization = "Development Organization",
                     Groups =
@@ -49,10 +64,11 @@ public class UserSession
                             Url = "https://example.com/development",
                             LogoUrl = "https://example.com/logo.png",
                             ExternalId = Guid.NewGuid().ToString(),
-                            SRAMId = Guid.NewGuid().ToString(),
+                            SCIMId = Guid.NewGuid().ToString(),
                         },
                     ],
                 },
             ],
         };
+    }
 }

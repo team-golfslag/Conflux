@@ -19,14 +19,14 @@ public class SessionMappingService
 {
     private readonly ConfluxContext _context;
     private readonly IVariantFeatureManager _featureManager;
-    private readonly SCIMApiClient _sramApiClient;
+    private readonly ISCIMApiClient _sramApiClient;
 
     /// <summary>
     /// Constructs a new <see cref="SessionMappingService" />.
     /// </summary>
     /// <param name="context">The Conflux context.</param>
     /// <param name="sramApiClient">The API client which is used to retrieve all user information.</param>
-    public SessionMappingService(ConfluxContext context, SCIMApiClient sramApiClient,
+    public SessionMappingService(ConfluxContext context, ISCIMApiClient sramApiClient,
         IVariantFeatureManager featureManager)
     {
         _featureManager = featureManager;
@@ -69,13 +69,13 @@ public class SessionMappingService
         foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
         {
             Project? existingCollaboration =
-                await _context.Projects.SingleOrDefaultAsync(p => p.SRAMId == group.SRAMId);
+                await _context.Projects.SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
             if (existingCollaboration is null)
             {
                 // We only add the project, the members are added in the next step
                 _context.Projects.Add(new()
                 {
-                    SRAMId = group.SRAMId,
+                    SCIMId = group.SCIMId,
                     Title = group.DisplayName,
                     Description = group.Description,
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
@@ -95,22 +95,35 @@ public class SessionMappingService
         {
             foreach (GroupMember member in group.Members)
             {
-                SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SRAMId);
+                SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
                 if (scimUser is null) continue;
-                Person retrievedPerson = await _context.People.SingleOrDefaultAsync(p => p.SRAMId == scimUser.Id) ??
-                    new()
+                Person? existingPerson = await _context.People.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
+
+
+                if (existingPerson is not null)
+                {
+                    if (existingPerson.SRAMId == null && existingPerson.Email == userSession.Email)
                     {
-                        SRAMId = scimUser.Id,
+                        existingPerson.SRAMId = userSession.SRAMId;
+                        _context.People.Update(existingPerson);
+                    }
+                    continue;
+                }
+
+                Person newPerson = new()
+                    {
+                        SCIMId = scimUser.Id,
                         Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
                         GivenName = scimUser.Name?.GivenName,
                         FamilyName = scimUser.Name?.FamilyName,
                         Email = scimUser.Emails?.FirstOrDefault()?.Value,
                     };
+                
+                // there could be an edge case here where a user has more than one email address
+                if (newPerson.Email == userSession.Email) 
+                    newPerson.SRAMId = userSession.SRAMId;
 
-                Person? existingPerson = await _context.People
-                    .SingleOrDefaultAsync(p => p.SRAMId == retrievedPerson.SRAMId);
-                if (existingPerson is not null) continue;
-                _context.People.Add(retrievedPerson);
+                _context.People.Add(newPerson);
             }
 
             await _context.SaveChangesAsync();
@@ -127,7 +140,7 @@ public class SessionMappingService
         foreach (Collaboration collaboration in userSession.Collaborations)
         {
             Project? projects = await _context.Projects
-                .SingleOrDefaultAsync(p => p.SRAMId == collaboration.CollaborationGroup.SRAMId);
+                .SingleOrDefaultAsync(p => p.SCIMId == collaboration.CollaborationGroup.SCIMId);
             if (projects is null) continue;
             foreach (Role newRole in collaboration.Groups.Select(group => new Role
                 {
@@ -158,10 +171,10 @@ public class SessionMappingService
         {
             Project? project = await _context.Projects
                 .Include(p => p.People)
-                .SingleOrDefaultAsync(p => p.SRAMId == group.SRAMId);
+                .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
 
             var people = await _context.People
-                .Where(p => group.Members.Select(m => m.SRAMId).Contains(p.SRAMId))
+                .Where(p => group.Members.Select(m => m.SCIMId).Contains(p.SCIMId))
                 .ToListAsync();
 
             foreach (Person person in people)
@@ -186,7 +199,7 @@ public class SessionMappingService
             {
                 var people = await _context.People
                     .Where(p => group.Members
-                        .Select(m => m.SRAMId)
+                        .Select(m => m.SCIMId)
                         .Contains(p.SRAMId))
                     .Include(person => person.Roles)
                     .ToListAsync();

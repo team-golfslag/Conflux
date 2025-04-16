@@ -69,7 +69,7 @@ public class Program
         });
 
         bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
-        builder.Services.AddScoped<SCIMApiClient>(provider =>
+        builder.Services.AddSingleton<ISCIMApiClient, SCIMApiClient>(provider =>
         {
             IHttpClientFactory httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
             HttpClient client = httpClientFactory.CreateClient(nameof(SCIMApiClient));

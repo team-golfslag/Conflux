@@ -37,7 +37,7 @@ public class ProjectGetDTO
         new()
         {
             Id = project.Id,
-            SRAMId = project.SRAMId,
+            SRAMId = project.SCIMId,
             RAiDId = project.RAiDId,
             Title = project.Title,
             Description = project.Description,

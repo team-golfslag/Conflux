@@ -82,6 +82,7 @@ public class CollaborationMapper
         }
 
         // Add all connections to the database by first removing all existing connections 
+        await _context.SaveChangesAsync();
         _context.SRAMGroupIdConnections.RemoveRange(_context.SRAMGroupIdConnections);
         _context.SRAMGroupIdConnections.AddRange(allConnections);
         await _context.SaveChangesAsync();
@@ -194,7 +195,7 @@ public class CollaborationMapper
         members.AddRange(scimGroup.Members.Select(member => new GroupMember
         {
             DisplayName = member.Display,
-            SRAMId = member.Value,
+            SCIMId = member.Value,
         }));
 
         string? url = scimGroup.SCIMGroupInfo.Links?.FirstOrDefault(l => l.Name == "sbs_url")?.Value;
@@ -210,7 +211,7 @@ public class CollaborationMapper
             Url = url,
             LogoUrl = logoUrl,
             ExternalId = scimGroup.ExternalId,
-            SRAMId = scimGroup.Id,
+            SCIMId = scimGroup.Id,
             Members = members,
             Created = scimGroup.SCIMMeta.Created,
         };

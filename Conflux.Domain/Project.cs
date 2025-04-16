@@ -14,7 +14,7 @@ public class Project
 {
     [Key] public Guid Id { get; init; }
 
-    public string? SRAMId { get; init; }
+    public string? SCIMId { get; init; }
 
     public string? RAiDId { get; init; }
 

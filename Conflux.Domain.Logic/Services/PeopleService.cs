@@ -54,19 +54,6 @@ public class PeopleService
             .SingleOrDefaultAsync(p => p.Id == id) ?? throw new PersonNotFoundException(id);
 
     /// <summary>
-    /// Creates a new person
-    /// </summary>
-    /// <param name="personDto">The DTO which to convert to a <see cref="Person" /></param>
-    /// <returns>The created person</returns>
-    public async Task<Person> CreatePersonAsync(PersonPostDTO personDto)
-    {
-        Person person = personDto.ToPerson();
-        _context.People.Add(person);
-        await _context.SaveChangesAsync();
-        return person;
-    }
-
-    /// <summary>
     /// Updates a person via PUT
     /// </summary>
     /// <param name="id">The GUID of the person</param>

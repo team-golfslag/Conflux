@@ -41,6 +41,7 @@ public class UserSessionController : ControllerBase
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);
+        await _userSessionService.UpdateUser();
         return Redirect(redirect);
     }
 

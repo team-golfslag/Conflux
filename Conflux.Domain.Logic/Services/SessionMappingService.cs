@@ -200,7 +200,7 @@ public class SessionMappingService
                 var users = await _context.Users
                     .Where(p => group.Members
                         .Select(m => m.SCIMId)
-                        .Contains(p.SRAMId))
+                        .Contains(p.SCIMId))
                     .Include(person => person.Roles)
                     .ToListAsync();
 

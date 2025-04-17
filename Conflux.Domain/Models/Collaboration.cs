@@ -7,7 +7,7 @@ namespace Conflux.Domain.Models;
 
 public class Collaboration
 {
-    public string Organization { get; set; }
-    public Group CollaborationGroup { get; set; }
-    public List<Group> Groups { get; set; }
+    public string? Organization { get; init; }
+    public Group? CollaborationGroup { get; init; }
+    public List<Group>? Groups { get; init; }
 }

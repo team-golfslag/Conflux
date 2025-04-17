@@ -5,13 +5,13 @@
 
 namespace Conflux.RepositoryConnections.SRAM.Models;
 
-public class SCIMUser
+public abstract class SCIMUser
 {
-    public required string Id { get; set; }
-    public string? ExternalId { get; set; }
-    public string? UserName { get; set; }
-    public SCIMName? Name { get; set; }
-    public string? DisplayName { get; set; }
-    public List<string>? Schemas { get; set; }
-    public List<SCIMEmail>? Emails { get; set; }
+    public required string Id { get; init; }
+    public string? ExternalId { get; init; }
+    public string? UserName { get; init; }
+    public SCIMName? Name { get; init; }
+    public string? DisplayName { get; init; }
+    public List<string>? Schemas { get; init; }
+    public List<SCIMEmail>? Emails { get; init; }
 }

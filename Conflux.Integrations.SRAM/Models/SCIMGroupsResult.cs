@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace Conflux.RepositoryConnections.SRAM.Models;
 
-public abstract class SCIMGroupsResult
+public class SCIMGroupsResult
 {
     [JsonPropertyName("Resources")] public List<SCIMGroup>? Groups { get; init; }
 

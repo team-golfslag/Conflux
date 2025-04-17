@@ -5,7 +5,7 @@
 
 namespace Conflux.RepositoryConnections.SRAM.Models;
 
-public abstract class SCIMUser
+public class SCIMUser
 {
     public required string Id { get; init; }
     public string? ExternalId { get; init; }

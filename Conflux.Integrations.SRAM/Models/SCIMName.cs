@@ -5,7 +5,7 @@
 
 namespace Conflux.RepositoryConnections.SRAM.Models;
 
-public abstract class SCIMName
+public class SCIMName
 {
     public string? Formatted { get; set; }
     public string? GivenName { get; set; }

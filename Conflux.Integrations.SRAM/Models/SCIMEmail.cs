@@ -5,7 +5,7 @@
 
 namespace Conflux.RepositoryConnections.SRAM.Models;
 
-public abstract class SCIMEmail
+public class SCIMEmail
 {
     public string? Value { get; set; }
     public string? Type { get; set; }

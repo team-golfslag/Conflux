@@ -50,9 +50,6 @@ public class SessionMappingService
 
         await CollectAndAddRoles(userSession);
 
-        // Intermediate save is needed for coupling the projects, users and roles
-        await _context.SaveChangesAsync();
-
         await CoupleUsersToProject(userSession);
 
         await CoupleRolesToUsers(userSession);
@@ -94,41 +91,41 @@ public class SessionMappingService
         foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
         {
             foreach (GroupMember member in group.Members)
-            {
-                SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
-                if (scimUser is null) continue;
-                User? existingPerson = await _context.Users.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
-
-
-                if (existingPerson is not null)
-                {
-                    if (existingPerson.SRAMId == null && existingPerson.Email == userSession.Email)
-                    {
-                        existingPerson.SRAMId = userSession.SRAMId;
-                        _context.Users.Update(existingPerson);
-                    }
-                    continue;
-                }
-
-                User newUser = new()
-                    {
-                        SCIMId = scimUser.Id,
-                        Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
-                        GivenName = scimUser.Name?.GivenName,
-                        FamilyName = scimUser.Name?.FamilyName,
-                        Email = scimUser.Emails?.FirstOrDefault()?.Value,
-                    };
-                
-                // there could be an edge case here where a user has more than one email address
-                if (newUser.Email == userSession.Email) 
-                    newUser.SRAMId = userSession.SRAMId;
-
-                _context.Users.Add(newUser);
-            }
-
+                await ProcessGroupMember(member, userSession);
             await _context.SaveChangesAsync();
         }
     }
+
+    private async Task ProcessGroupMember(GroupMember member, UserSession userSession)
+    {
+        SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
+        if (scimUser is null)
+            return;
+
+        User? existingPerson = await _context.Users.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
+        if (existingPerson is not null)
+        {
+            if (existingPerson.SRAMId != null || existingPerson.Email != userSession.Email) return;
+            existingPerson.SRAMId = userSession.SRAMId;
+            _context.Users.Update(existingPerson);
+            return;
+        }
+
+        User newUser = new()
+        {
+            SCIMId = scimUser.Id,
+            Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
+            GivenName = scimUser.Name?.GivenName,
+            FamilyName = scimUser.Name?.FamilyName,
+            Email = scimUser.Emails?.FirstOrDefault()?.Value,
+        };
+
+        if (newUser.Email == userSession.Email)
+            newUser.SRAMId = userSession.SRAMId;
+
+        _context.Users.Add(newUser);
+    }
+
 
     /// <summary>
     /// Collects the <see cref="Role" />s which are present in the Projects in the user session,

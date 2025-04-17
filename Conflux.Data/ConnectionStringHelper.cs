@@ -5,7 +5,7 @@
 
 namespace Conflux.Data;
 
-public class ConnectionStringHelper
+public static class ConnectionStringHelper
 {
     /// <summary>
     /// Gets the connection string from environment variables.

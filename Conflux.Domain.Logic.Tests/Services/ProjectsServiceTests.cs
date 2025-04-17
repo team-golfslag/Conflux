@@ -16,8 +16,8 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context;
-    private UserSessionService _userSessionService;
+    private ConfluxContext _context = null!;
+    private UserSessionService _userSessionService = null!;
 
     public async Task InitializeAsync()
     {
@@ -29,7 +29,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
-        _userSessionService = new(null, null, null, null);
+        _userSessionService = new(null!, null!, null!, null!);
     }
 
     public async Task DisposeAsync()

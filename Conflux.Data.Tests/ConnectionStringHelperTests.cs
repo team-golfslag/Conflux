@@ -5,7 +5,7 @@
 
 namespace Conflux.Data.Tests;
 
-public class ConnectionStringHelperTests : IDisposable
+public sealed class ConnectionStringHelperTests : IDisposable
 {
     private readonly string? _originalHost;
     private readonly string? _originalName;
@@ -32,6 +32,15 @@ public class ConnectionStringHelperTests : IDisposable
 
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (!disposing) return;
+
+        // Dispose of managed resources here if needed
         // Restore original environment variables
         Environment.SetEnvironmentVariable("DB_HOST", _originalHost);
         Environment.SetEnvironmentVariable("DB_PORT", _originalPort);

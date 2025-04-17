@@ -125,7 +125,7 @@ public class SCIMApiClientTests
         // Assert
         Assert.NotNull(groups);
         Assert.Single(groups);
-        SCIMGroup firstGroup = groups.First();
+        SCIMGroup firstGroup = groups[0];
         Assert.Equal("dummy-id", firstGroup.Id);
         Assert.Equal("Test Group", firstGroup.DisplayName);
     }

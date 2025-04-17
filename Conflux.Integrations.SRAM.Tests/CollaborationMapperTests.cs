@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.DTOs;
@@ -74,9 +73,9 @@ public class CollaborationMapperTests
 
         Assert.Single(result);
         Assert.Equal(orgName, result[0].Organization);
-        Assert.Equal("Main Group", result[0].CollaborationGroup.DisplayName);
-        Assert.Single(result[0].Groups);
-        Assert.Equal("Sub Group", result[0].Groups[0].DisplayName);
+        Assert.Equal("Main Group", result[0].CollaborationGroup!.DisplayName);
+        Assert.Single(result[0].Groups!);
+        Assert.Equal("Sub Group", result[0].Groups![0].DisplayName);
 
         // Mock verification should only use overridable methods
         _mockScimApiClient.Verify(m => m.GetSCIMGroup("1"), Times.Once);
@@ -123,12 +122,12 @@ public class CollaborationMapperTests
 
         Assert.Single(result);
         Assert.Equal(orgName, result[0].Organization);
-        Assert.Equal("Main Group", result[0].CollaborationGroup.DisplayName);
-        Assert.Single(result[0].Groups);
-        Assert.Equal("Sub Group", result[0].Groups[0].DisplayName);
+        Assert.Equal("Main Group", result[0].CollaborationGroup!.DisplayName);
+        Assert.Single(result[0].Groups!);
+        Assert.Equal("Sub Group", result[0].Groups![0].DisplayName);
 
         // Verify cache was updated
-        List<SRAMGroupIdConnection> connections = _context.SRAMGroupIdConnections.ToList();
+        var connections = await _context.SRAMGroupIdConnections.ToListAsync();
         Assert.Equal(2, connections.Count);
     }
 
@@ -171,12 +170,12 @@ public class CollaborationMapperTests
         Assert.Equal(2, result.Count);
 
         Assert.Equal("org1", result[0].Organization);
-        Assert.Equal("Org1 Co1", result[0].CollaborationGroup.DisplayName);
-        Assert.Single(result[0].Groups);
+        Assert.Equal("Org1 Co1", result[0].CollaborationGroup!.DisplayName);
+        Assert.Single(result[0].Groups!);
 
         Assert.Equal("org2", result[1].Organization);
-        Assert.Equal("Org2 Co2", result[1].CollaborationGroup.DisplayName);
-        Assert.Equal(2, result[1].Groups.Count);
+        Assert.Equal("Org2 Co2", result[1].CollaborationGroup!.DisplayName);
+        Assert.Equal(2, result[1].Groups!.Count);
     }
 
     // Tests for private methods should be removed or tested through public APIs
@@ -196,9 +195,9 @@ public class CollaborationMapperTests
     [Fact]
     public void FormatGroupUrn_WithGroupName_FormatsCorrectly()
     {
-        string orgName = "org";
-        string coName = "co";
-        string groupName = "group";
+        const string orgName = "org";
+        const string coName = "co";
+        const string groupName = "group";
 
         // Use instance method instead of static method
         string result = CollaborationMapper.FormatGroupUrn(orgName, coName, groupName);
@@ -252,7 +251,7 @@ public class CollaborationMapperTests
             },
             SCIMMeta = new()
             {
-                Created = new(2023, 1, 1),
+                Created = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             },
         };
 
@@ -268,7 +267,7 @@ public class CollaborationMapperTests
         Assert.Equal("ext-123", result.ExternalId);
         Assert.Equal("123", result.SCIMId);
         Assert.Equal(2, result.Members.Count);
-        Assert.Equal(new(2023, 1, 1), result.Created);
+        Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.Created);
     }
 
     private static SCIMGroup CreateSCIMGroup(string id, string displayName, string urn) =>
@@ -299,7 +298,7 @@ public class CollaborationMapperTests
             },
         ];
 
-        _mockScimApiClient.Setup(m => m.GetAllGroups()).ReturnsAsync((List<SCIMGroup>)null);
+        _mockScimApiClient.Setup(m => m.GetAllGroups()).ReturnsAsync((List<SCIMGroup>)null!);
 
         // Test exception
         await Assert.ThrowsAsync<GroupNotFoundException>(() =>

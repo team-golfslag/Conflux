@@ -25,8 +25,8 @@ public interface IUserSessionService
 public class UserSessionService : IUserSessionService
 {
     private const string UserKey = "UserProfile";
-    private readonly ConfluxContext _confluxContext;
     private readonly CollaborationMapper _collaborationMapper;
+    private readonly ConfluxContext _confluxContext;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -57,17 +57,17 @@ public class UserSessionService : IUserSessionService
 
     public async Task<UserSession?> UpdateUser()
     {
-        var user = await GetUser();
+        UserSession? user = await GetUser();
         if (user is null)
             return null;
-        
-        var person = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+
+        User? person = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
         if (person is null)
             return user;
-        
+
         user.User = person;
         await CommitUser(user);
-        
+
         return user;
     }
 
@@ -101,11 +101,11 @@ public class UserSessionService : IUserSessionService
         var collaborations = await _collaborationMapper.Map(collaborationDTOs);
         UserSession user = new()
         {
-            SRAMId = _httpContextAccessor.HttpContext?.User.GetClaimValue("personIdentifier"),
-            Name = _httpContextAccessor.HttpContext?.User.GetClaimValue("Name"),
-            GivenName = _httpContextAccessor.HttpContext?.User.GetClaimValue("given_name"),
-            FamilyName = _httpContextAccessor.HttpContext?.User.GetClaimValue("family_name"),
-            Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email"),
+            SRAMId = _httpContextAccessor.HttpContext?.User.GetClaimValue("personIdentifier")!,
+            Name = _httpContextAccessor.HttpContext?.User.GetClaimValue("Name")!,
+            GivenName = _httpContextAccessor.HttpContext?.User.GetClaimValue("given_name")!,
+            FamilyName = _httpContextAccessor.HttpContext?.User.GetClaimValue("family_name")!,
+            Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email")!,
             Collaborations = collaborations,
         };
 

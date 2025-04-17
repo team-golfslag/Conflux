@@ -35,7 +35,6 @@ public class UserSessionController : ControllerBase
     [Authorize]
     public async Task<ActionResult> LogIn([FromQuery] string redirect)
     {
-        Redirect(redirect);
         UserSession? user = await _userSessionService.GetUser();
 
         if (user is null) return Unauthorized();
@@ -66,5 +65,5 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<UserSession>> UserSession() => Ok(await _userSessionService.GetUser());
+    public async Task<ActionResult<UserSession>> UserSession() => await _userSessionService.GetUser() ?? throw new InvalidOperationException();
 }

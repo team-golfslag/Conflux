@@ -54,7 +54,7 @@ public static class NwOpenMapper
 
         Project mappedProject = new()
         {
-            Title = project.Title,
+            Title = project.Title!,
             Description = project.SummaryNl,
             StartDate = startDate,
             EndDate = endDate,
@@ -107,7 +107,7 @@ public static class NwOpenMapper
         {
             Id = Guid.NewGuid(),
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
-            SCIMId = ""
+            SCIMId = "",
         };
         Users.Add(user);
         project.Users.Add(user);
@@ -130,7 +130,7 @@ public static class NwOpenMapper
         Party mappedParty = new()
         {
             Id = Guid.NewGuid(),
-            Name = projectMember.Organisation,
+            Name = projectMember.Organisation!,
         };
 
         project.Parties.Add(mappedParty);

@@ -25,11 +25,11 @@ public class UserSession
             GivenName = "Development",
             FamilyName = "User",
             Email = "development@sram.surf.nl",
-            User = new User
+            User = new()
             {
                 Id = Guid.NewGuid(),
                 SRAMId = sramId,
-                SCIMId =  Guid.NewGuid() + "@scim.sram.surf.nl",
+                SCIMId = Guid.NewGuid() + "@scim.sram.surf.nl",
                 ORCiD = null,
                 Name = "Development User",
                 Roles = [],
@@ -47,8 +47,10 @@ public class UserSession
                         Urn = "urn:mace:surf.nl:sram:group:surf:development",
                         DisplayName = "Development Group",
                         Description = "This is a development group.",
+#pragma warning disable S1075 // Refactor your code not tu use hardcoded URIs
                         Url = "https://example.com/development",
                         LogoUrl = "https://example.com/logo.png",
+#pragma warning restore S1075
                         ExternalId = Guid.NewGuid().ToString(),
                         SCIMId = "SRAM",
                     },
@@ -61,8 +63,10 @@ public class UserSession
                             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_admin",
                             DisplayName = "Development Group",
                             Description = "This is a development group.",
+#pragma warning disable S1075 // Refactor your code not tu use hardcoded URIs
                             Url = "https://example.com/development",
                             LogoUrl = "https://example.com/logo.png",
+#pragma warning restore S1075
                             ExternalId = Guid.NewGuid().ToString(),
                             SCIMId = Guid.NewGuid().ToString(),
                         },

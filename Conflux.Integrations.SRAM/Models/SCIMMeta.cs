@@ -13,9 +13,9 @@ public class SCIMMeta
 
     [JsonPropertyName("lastModified")] public DateTime LastModified { get; init; }
 
-    [JsonPropertyName("location")] public string Location { get; init; }
+    [JsonPropertyName("location")] public required string Location { get; init; }
 
-    [JsonPropertyName("resourceType")] public string ResourceType { get; init; }
+    [JsonPropertyName("resourceType")] public required string ResourceType { get; init; }
 
-    [JsonPropertyName("version")] public string Version { get; init; }
+    [JsonPropertyName("version")] public required string Version { get; init; }
 }

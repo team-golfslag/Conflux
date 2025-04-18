@@ -251,8 +251,20 @@ public class CollaborationMapperTests
             },
             SCIMMeta = new()
             {
-                Created = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Created = new(2023,
+                    1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    DateTimeKind.Utc),
+                Location = "https://example.com",
+                ResourceType = "Group",
+                Version = "1.0",
             },
+            Schemas = [
+                "urn:mace:surf.nl:sram:scim:extension:Group",
+            ],
         };
 
         // Use instance method instead of static method
@@ -281,7 +293,14 @@ public class CollaborationMapperTests
                 Urn = urn,
                 Links = [],
             },
-            SCIMMeta = new(),
+            SCIMMeta = new()
+            {
+                Location = "https://example.com",
+                ResourceType = "Group",
+                Version = "1.0",
+            },
+            ExternalId = "ext-123",
+            Schemas = [],
         };
 
     [Fact]

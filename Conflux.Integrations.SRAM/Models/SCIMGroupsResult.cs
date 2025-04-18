@@ -9,11 +9,11 @@ namespace Conflux.RepositoryConnections.SRAM.Models;
 
 public class SCIMGroupsResult
 {
-    [JsonPropertyName("Resources")] public List<SCIMGroup> Groups { get; init; }
+    [JsonPropertyName("Resources")] public required List<SCIMGroup> Groups { get; init; }
 
     [JsonPropertyName("itemsPerPage")] public int ItemsPerPage { get; init; }
 
-    [JsonPropertyName("schemas")] public List<string> Schemas { get; init; }
+    [JsonPropertyName("schemas")] public required List<string> Schemas { get; init; }
 
     [JsonPropertyName("startIndex")] public int StartIndex { get; init; }
 

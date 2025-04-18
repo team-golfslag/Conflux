@@ -38,22 +38,33 @@ public class SCIMApiClientTests
     public async Task GetSCIMGroup_ReturnsSCIMGroup()
     {
         // Arrange: Prepare a dummy JSON response for SCIMGroup.
-        string json = @"{
-                ""id"": ""dummy-id"",
-                ""displayName"": ""Test Group"",
-                ""externalId"": ""external-id"",
-                ""urn:mace:surf.nl:sram:scim:extension:Group"": {
-                    ""urn"": ""dummy-urn"",
-                    ""description"": ""Dummy description"",
-                    ""links"": [
-                        { ""name"": ""sbs_url"", ""value"": ""http://example.com"" },
-                        { ""name"": ""logo"", ""value"": ""http://example.com/logo.png"" }
-                    ]
-                },
-                ""members"": [
-                    { ""$ref"": ""ref"", ""display"": ""Test Member"", ""value"": ""member1"" }
-                ]
-            }";
+        string json = """
+                      {
+                          "id": "dummy-id",
+                          "displayName": "Test Group",
+                          "externalId": "external-id",
+                          "urn:mace:surf.nl:sram:scim:extension:Group": {
+                              "urn": "dummy-urn",
+                              "description": "Dummy description",
+                              "links": [
+                                  { "name": "sbs_url", "value": "http://example.com" },
+                                  { "name": "logo", "value": "http://example.com/logo.png" }
+                              ]
+                          },
+                          "members": [
+                              { "$ref": "ref", "display": "Test Member", "value": "member1" }
+                          ],
+                          "meta": {
+                              "created": "2023-01-01T00:00:00Z",
+                              "location": "https://example.com",
+                              "resourceType": "Group",
+                              "version": "1.0"
+                          },
+                          "schemas": [
+                              "urn:mace:surf.nl:sram:scim:extension:Group"
+                          ]
+                      }
+                      """;
 
         FakeHttpMessageHandler handler = new(json, HttpStatusCode.OK);
         HttpClient httpClient = new(handler)
@@ -92,7 +103,7 @@ public class SCIMApiClientTests
                                         "id": "dummy-id",
                                         "displayName": "Test Group",
                                         "externalId": "external-id",
-                                        "SCIMGroupInfo": {
+                                        "urn:mace:surf.nl:sram:scim:extension:Group": {
                                             "urn": "dummy-urn",
                                             "description": "Dummy description",
                                             "links": [
@@ -102,6 +113,15 @@ public class SCIMApiClientTests
                                         },
                                         "members": [
                                             { "$ref": "ref1", "display": "Test Member", "value": "member1", "type": "user" }
+                                        ],
+                                        "meta": {
+                                            "created": "2023-01-01T00:00:00Z",
+                                            "location": "https://example.com",
+                                            "resourceType": "Group",
+                                            "version": "1.0"
+                                        },
+                                        "schemas": [
+                                            "urn:mace:surf.nl:sram:scim:extension:Group"
                                         ]
                                     }
                                 ],

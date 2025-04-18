@@ -29,16 +29,18 @@ public class Program
         
         // Configure services
         builder.Services.AddFeatureManagement(builder.Configuration.GetSection("FeatureFlags"));
+#pragma warning disable ASP0000
         IVariantFeatureManager featureManager = builder.Services.BuildServiceProvider().GetRequiredService<IVariantFeatureManager>();
+#pragma warning restore ASP0000
 
-        ConfigureServices(builder, featureManager);
-        ConfigureAuthentication(builder, featureManager);
+        await ConfigureServices(builder, featureManager);
+        await ConfigureAuthentication(builder, featureManager);
         ConfigureCors(builder);
 
         WebApplication app = builder.Build();
         
         // Configure middleware
-        ConfigureMiddleware(app, featureManager);
+        await ConfigureMiddleware(app, featureManager);
         
         // Initialize database
         await InitializeDatabase(app, featureManager);
@@ -46,7 +48,7 @@ public class Program
         await app.RunAsync();
     }
     
-    private static void ConfigureServices(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
+    private static async Task ConfigureServices(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
     {
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
@@ -57,7 +59,7 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
         
-        ConfigureDatabase(builder, featureManager);
+        await ConfigureDatabase(builder, featureManager);
         
         builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>
@@ -68,7 +70,7 @@ public class Program
         });
         
         builder.Services.AddHttpContextAccessor();
-        ConfigureSRAMServices(builder, featureManager);
+        await ConfigureSRAMServices(builder, featureManager);
     }
     
     private static async Task ConfigureDatabase(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
@@ -226,7 +228,7 @@ public class Program
         options.SlidingExpiration = true;
     }
     
-    private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, IConfiguration config, string secret)
+    private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, ConfigurationManager config, string secret)
     {
         IConfigurationSection oidcConfig = config.GetSection("Authentication:SRAM");
         

@@ -16,7 +16,6 @@ public class UserSessionController : ControllerBase
     private readonly IVariantFeatureManager _featureManager;
     private readonly SessionMappingService _sessionMappingService;
     private readonly IUserSessionService _userSessionService;
-    private readonly IConfiguration _configuration;
     private readonly string[] _allowedRedirects;
 
     public UserSessionController(
@@ -28,8 +27,7 @@ public class UserSessionController : ControllerBase
         _userSessionService = userSessionService;
         _sessionMappingService = sessionMappingService;
         _featureManager = featureManager;
-        _configuration = configuration;
-        _allowedRedirects = _configuration.GetSection("Authentication:SRAM:AllowedRedirectUris").Get<string[]>() ?? Array.Empty<string>();
+        _allowedRedirects = configuration.GetSection("Authentication:SRAM:AllowedRedirectUris").Get<string[]>() ?? Array.Empty<string>();
     }
 
     [HttpGet]

@@ -88,7 +88,6 @@ public class CollaborationMapper
         await _context.SaveChangesAsync();
 
         // Map the groups to collaborations
-        // TODO: do we need checking here to ensure all urns are present in the groupMap?
         var collaborations = new List<Collaboration>();
         foreach (CollaborationDTO collaborationDto in collaborationDtos)
         {

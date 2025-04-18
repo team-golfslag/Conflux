@@ -1,16 +1,16 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Conflux.Data;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -22,23 +22,24 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(false);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(false);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>()
+            Collaborations = new(),
         };
 
         // Act
@@ -56,23 +57,24 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>()
+            Collaborations = new(),
         };
 
         // Act
@@ -89,19 +91,20 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -110,22 +113,22 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember>()
+            Members = new(),
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -144,41 +147,45 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
-        var scimUser = new SCIMUser
+        SCIMUser scimUser = new()
         {
             Id = "user-id-1",
             DisplayName = "Test User",
             UserName = "testuser",
-            Name = new SCIMName
+            Name = new()
             {
                 GivenName = "Test",
-                FamilyName = "User"
+                FamilyName = "User",
             },
-            Emails = new List<SCIMEmail>
+            Emails = new()
             {
-                new SCIMEmail { Value = "test@example.com" }
-            }
+                new()
+                {
+                    Value = "test@example.com",
+                },
+            },
         };
         mockSCIMApiClient.Setup(c => c.GetSCIMMemberByExternalId("member-id-1")).ReturnsAsync(scimUser);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var member = new GroupMember
+        GroupMember member = new()
         {
             SCIMId = "member-id-1",
-            DisplayName = "Test Member"
+            DisplayName = "Test Member",
         };
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -187,22 +194,25 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -213,7 +223,7 @@ public class SessionMappingServiceTests
         Assert.Equal("Test Group", context.Projects.First().Title);
 
         Assert.Single(context.Users);
-        var user = context.Users.First();
+        User user = context.Users.First();
         Assert.Equal("Test User", user.Name);
         Assert.Equal("Test", user.GivenName);
         Assert.Equal("User", user.FamilyName);
@@ -228,41 +238,45 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
-        var scimUser = new SCIMUser
+        SCIMUser scimUser = new()
         {
             Id = "user-id-1",
             DisplayName = "Test User",
             UserName = "testuser",
-            Name = new SCIMName
+            Name = new()
             {
                 GivenName = "Test",
-                FamilyName = "User"
+                FamilyName = "User",
             },
-            Emails = new List<SCIMEmail>
+            Emails = new()
             {
-                new SCIMEmail { Value = "test@example.com" }
-            }
+                new()
+                {
+                    Value = "test@example.com",
+                },
+            },
         };
         mockSCIMApiClient.Setup(c => c.GetSCIMMemberByExternalId("member-id-1")).ReturnsAsync(scimUser);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var member = new GroupMember
+        GroupMember member = new()
         {
             SCIMId = "member-id-1",
-            DisplayName = "Test Member"
+            DisplayName = "Test Member",
         };
 
-        var roleGroup = new Group
+        Group roleGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "role-id-1",
@@ -271,10 +285,13 @@ public class SessionMappingServiceTests
             Urn = "role:urn:1",
             ExternalId = "ext-role-1",
             Created = DateTime.UtcNow,
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -283,22 +300,28 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group> { roleGroup }
-                }
-            }
+                    Groups = new()
+                    {
+                        roleGroup,
+                    },
+                },
+            },
         };
 
         // Act
@@ -309,7 +332,7 @@ public class SessionMappingServiceTests
         Assert.Single(context.Users);
         Assert.Single(context.Roles);
 
-        var role = context.Roles.First();
+        Role role = context.Roles.First();
         Assert.Equal("Role Group", role.Name);
         Assert.Equal("Role Description", role.Description);
         Assert.Equal("role:urn:1", role.Urn);
@@ -320,29 +343,30 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         // Add existing project
-        context.Projects.Add(new Project
+        context.Projects.Add(new()
         {
             SCIMId = "group-id-1",
             Title = "Old Title",
             Description = "Old Description",
-            StartDate = DateTime.UtcNow.AddDays(-10)
+            StartDate = DateTime.UtcNow.AddDays(-10),
         });
         await context.SaveChangesAsync();
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -351,22 +375,22 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember>()
+            Members = new(),
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -374,7 +398,7 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        var project = context.Projects.First();
+        Project project = context.Projects.First();
         Assert.Equal("New Title", project.Title);
         Assert.Equal("New Description", project.Description);
     }
@@ -384,17 +408,18 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
         UserSession? userSession = null;
 
@@ -407,26 +432,27 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
         mockSCIMApiClient.Setup(c => c.GetSCIMMemberByExternalId("missing-user-id")).ReturnsAsync((SCIMUser?)null);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var member = new GroupMember
+        GroupMember member = new()
         {
             SCIMId = "missing-user-id",
-            DisplayName = "Missing User"
+            DisplayName = "Missing User",
         };
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -435,22 +461,25 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -466,50 +495,54 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
-        var scimUser = new SCIMUser
+        SCIMUser scimUser = new()
         {
             Id = "user-id-1",
             DisplayName = "Test User",
             UserName = "testuser",
-            Name = new SCIMName
+            Name = new()
             {
                 GivenName = "Test",
-                FamilyName = "User"
+                FamilyName = "User",
             },
-            Emails = new List<SCIMEmail>
+            Emails = new()
             {
-                new SCIMEmail { Value = "test@example.com" }
-            }
+                new()
+                {
+                    Value = "test@example.com",
+                },
+            },
         };
         mockSCIMApiClient.Setup(c => c.GetSCIMMemberByExternalId("member-id-1")).ReturnsAsync(scimUser);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         // Add existing user without SRAM ID
-        context.Users.Add(new User
+        context.Users.Add(new()
         {
             SCIMId = "user-id-1",
             Name = "Existing User",
-            Email = "test@example.com"
+            Email = "test@example.com",
         });
         await context.SaveChangesAsync();
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var member = new GroupMember
+        GroupMember member = new()
         {
             SCIMId = "member-id-1",
-            DisplayName = "Test Member"
+            DisplayName = "Test Member",
         };
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -518,22 +551,25 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -541,7 +577,7 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Users);
-        var user = context.Users.First();
+        User user = context.Users.First();
         Assert.Equal("sram-id-1", user.SRAMId);
     }
 
@@ -550,50 +586,54 @@ public class SessionMappingServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var mockSCIMApiClient = new Mock<ISCIMApiClient>();
-        var scimUser = new SCIMUser
+        SCIMUser scimUser = new()
         {
             Id = "user-id-1",
             DisplayName = "Test User",
             UserName = "testuser",
-            Name = new SCIMName
+            Name = new()
             {
                 GivenName = "Test",
-                FamilyName = "User"
+                FamilyName = "User",
             },
-            Emails = new List<SCIMEmail>
+            Emails = new()
             {
-                new SCIMEmail { Value = "different@example.com" }
-            }
+                new()
+                {
+                    Value = "different@example.com",
+                },
+            },
         };
         mockSCIMApiClient.Setup(c => c.GetSCIMMemberByExternalId("member-id-1")).ReturnsAsync(scimUser);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_" + Guid.NewGuid())
+            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         // Add existing user with different email
-        context.Users.Add(new User
+        context.Users.Add(new()
         {
             SCIMId = "user-id-1",
             Name = "Existing User",
-            Email = "different@example.com"
+            Email = "different@example.com",
         });
         await context.SaveChangesAsync();
 
-        var service = new SessionMappingService(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
+        SessionMappingService service = new(context, mockSCIMApiClient.Object, mockFeatureManager.Object);
 
-        var member = new GroupMember
+        GroupMember member = new()
         {
             SCIMId = "member-id-1",
-            DisplayName = "Test Member"
+            DisplayName = "Test Member",
         };
 
-        var collaborationGroup = new Group
+        Group collaborationGroup = new()
         {
             Id = Guid.NewGuid().ToString(),
             SCIMId = "group-id-1",
@@ -602,22 +642,25 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new List<GroupMember> { member }
+            Members = new()
+            {
+                member,
+            },
         };
 
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new List<Collaboration>
+            Collaborations = new()
             {
-                new Collaboration
+                new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new List<Group>()
-                }
-            }
+                    Groups = new(),
+                },
+            },
         };
 
         // Act
@@ -625,7 +668,7 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Users);
-        var user = context.Users.First();
+        User user = context.Users.First();
         Assert.Null(user.SRAMId);
     }
 }

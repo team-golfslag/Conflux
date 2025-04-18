@@ -126,7 +126,6 @@ public class SessionMappingService : ISessionMappingService
         _context.Users.Add(newUser);
     }
 
-
     /// <summary>
     /// Collects the <see cref="Role" />s which are present in the Projects in the user session,
     /// and adds the to the <see cref="ConfluxContext" />.

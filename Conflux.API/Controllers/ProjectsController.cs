@@ -70,7 +70,7 @@ public class ProjectsController : ControllerBase
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
-    
+
     /// <summary>
     /// Puts a project by its GUID
     /// </summary>

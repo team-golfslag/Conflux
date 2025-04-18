@@ -39,12 +39,13 @@ public class UserSessionControllerTests
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
-{
-    var section = new Mock<IConfigurationSection>();
-    section.Setup(s => s.Value).Returns(r);
-    return section.Object;
-}));        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
+        {
+            var section = new Mock<IConfigurationSection>();
+            section.Setup(s => s.Value).Returns(r);
+            return section.Object;
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
             .Returns(mockConfigSection.Object);
 
         UserSessionController controller = new(
@@ -74,7 +75,7 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
         {
             var section = new Mock<IConfigurationSection>();
             section.Setup(s => s.Value).Returns(r);
@@ -116,12 +117,13 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
         {
             var section = new Mock<IConfigurationSection>();
             section.Setup(s => s.Value).Returns(r);
             return section.Object;
-        }));        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
             .Returns(mockConfigSection.Object);
 
         UserSessionController controller = new(
@@ -151,12 +153,13 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
         {
             var section = new Mock<IConfigurationSection>();
             section.Setup(s => s.Value).Returns(r);
             return section.Object;
-        }));        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
             .Returns(mockConfigSection.Object);
 
         UserSessionController controller = new(
@@ -196,12 +199,13 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
         {
             var section = new Mock<IConfigurationSection>();
             section.Setup(s => s.Value).Returns(r);
             return section.Object;
-        }));        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
             .Returns(mockConfigSection.Object);
 
         UserSessionController controller = new(
@@ -241,12 +245,13 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
-        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r => 
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
         {
             var section = new Mock<IConfigurationSection>();
             section.Setup(s => s.Value).Returns(r);
             return section.Object;
-        }));        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
             .Returns(mockConfigSection.Object);
 
         UserSessionController controller = new(
@@ -270,81 +275,81 @@ mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r 
         Assert.Equal("/", signOutResult.Properties!.RedirectUri);
     }
 
-   [Fact]
-public async Task UserSession_WhenUserExists_ReturnsUserSession()
-{
-    // Arrange
-    var mockUserSessionService = new Mock<IUserSessionService>();
-    var mockSessionMappingService = new Mock<ISessionMappingService>();
-    var mockFeatureManager = new Mock<IVariantFeatureManager>();
-    var mockConfiguration = new Mock<IConfiguration>();
-
-    UserSession userSession = new()
+    [Fact]
+    public async Task UserSession_WhenUserExists_ReturnsUserSession()
     {
-        Email = "test@example.com",
-        Name = "Test User",
-    };
+        // Arrange
+        var mockUserSessionService = new Mock<IUserSessionService>();
+        var mockSessionMappingService = new Mock<ISessionMappingService>();
+        var mockFeatureManager = new Mock<IVariantFeatureManager>();
+        var mockConfiguration = new Mock<IConfiguration>();
 
-    mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
+        UserSession userSession = new()
+        {
+            Email = "test@example.com",
+            Name = "Test User",
+        };
 
-    // Set up configuration
-    string[] allowedRedirects = ["https://valid.example.com"];
-    var mockConfigSection = new Mock<IConfigurationSection>();
-    mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
+        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
+
+        // Set up configuration
+        string[] allowedRedirects = ["https://valid.example.com"];
+        var mockConfigSection = new Mock<IConfigurationSection>();
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
+        {
+            var section = new Mock<IConfigurationSection>();
+            section.Setup(s => s.Value).Returns(r);
+            return section.Object;
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+            .Returns(mockConfigSection.Object);
+
+        UserSessionController controller = new(
+            mockUserSessionService.Object,
+            mockSessionMappingService.Object,
+            mockFeatureManager.Object,
+            mockConfiguration.Object);
+
+        // Act
+        var result = await controller.UserSession();
+
+        // Assert
+        var actionResult = Assert.IsType<ActionResult<UserSession>>(result);
+        UserSession returnedSession = Assert.IsType<UserSession>(actionResult.Value);
+        Assert.Equal("test@example.com", returnedSession.Email);
+        Assert.Equal("Test User", returnedSession.Name);
+    }
+
+    [Fact]
+    public async Task UserSession_WhenUserDoesNotExist_ThrowsInvalidOperationException()
     {
-        var section = new Mock<IConfigurationSection>();
-        section.Setup(s => s.Value).Returns(r);
-        return section.Object;
-    }));
-    mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
-        .Returns(mockConfigSection.Object);
+        // Arrange
+        var mockUserSessionService = new Mock<IUserSessionService>();
+        var mockSessionMappingService = new Mock<ISessionMappingService>();
+        var mockFeatureManager = new Mock<IVariantFeatureManager>();
+        var mockConfiguration = new Mock<IConfiguration>();
 
-    UserSessionController controller = new(
-        mockUserSessionService.Object,
-        mockSessionMappingService.Object,
-        mockFeatureManager.Object,
-        mockConfiguration.Object);
+        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession)null!);
 
-    // Act
-    var result = await controller.UserSession();
+        // Set up configuration
+        string[] allowedRedirects = ["https://valid.example.com"];
+        var mockConfigSection = new Mock<IConfigurationSection>();
+        mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
+        {
+            var section = new Mock<IConfigurationSection>();
+            section.Setup(s => s.Value).Returns(r);
+            return section.Object;
+        }));
+        mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
+            .Returns(mockConfigSection.Object);
 
-    // Assert
-    var actionResult = Assert.IsType<ActionResult<UserSession>>(result);
-    UserSession returnedSession = Assert.IsType<UserSession>(actionResult.Value);
-    Assert.Equal("test@example.com", returnedSession.Email);
-    Assert.Equal("Test User", returnedSession.Name);
-}
+        UserSessionController controller = new(
+            mockUserSessionService.Object,
+            mockSessionMappingService.Object,
+            mockFeatureManager.Object,
+            mockConfiguration.Object);
 
-[Fact]
-public async Task UserSession_WhenUserDoesNotExist_ThrowsInvalidOperationException()
-{
-    // Arrange
-    var mockUserSessionService = new Mock<IUserSessionService>();
-    var mockSessionMappingService = new Mock<ISessionMappingService>();
-    var mockFeatureManager = new Mock<IVariantFeatureManager>();
-    var mockConfiguration = new Mock<IConfiguration>();
-
-    mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession)null!);
-
-    // Set up configuration
-    string[] allowedRedirects = ["https://valid.example.com"];
-    var mockConfigSection = new Mock<IConfigurationSection>();
-    mockConfigSection.Setup(s => s.GetChildren()).Returns(allowedRedirects.Select(r =>
-    {
-        var section = new Mock<IConfigurationSection>();
-        section.Setup(s => s.Value).Returns(r);
-        return section.Object;
-    }));
-    mockConfiguration.Setup(c => c.GetSection("Authentication:SRAM:AllowedRedirectUris"))
-        .Returns(mockConfigSection.Object);
-
-    UserSessionController controller = new(
-        mockUserSessionService.Object,
-        mockSessionMappingService.Object,
-        mockFeatureManager.Object,
-        mockConfiguration.Object);
-
-    // Act & Assert
-    await Assert.ThrowsAsync<InvalidOperationException>(() => controller.UserSession());
-}
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => controller.UserSession());
+    }
 }

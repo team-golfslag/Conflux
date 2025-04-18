@@ -1,3 +1,8 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using System.Security.Claims;
 using Conflux.RepositoryConnections.SRAM.DTOs;
 using Conflux.RepositoryConnections.SRAM.Extensions;
@@ -13,7 +18,7 @@ public class ClaimsPrincipleExtensionsTests
         // Arrange
         var claims = new List<Claim>
         {
-            new("TestType", "TestValue")
+            new("TestType", "TestValue"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -31,7 +36,7 @@ public class ClaimsPrincipleExtensionsTests
         // Arrange
         var claims = new List<Claim>
         {
-            new("OtherType", "TestValue")
+            new("OtherType", "TestValue"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -50,7 +55,7 @@ public class ClaimsPrincipleExtensionsTests
         var claims = new List<Claim>
         {
             new("TestType", "FirstValue"),
-            new("TestType", "SecondValue")
+            new("TestType", "SecondValue"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -68,7 +73,7 @@ public class ClaimsPrincipleExtensionsTests
         // Arrange
         var claims = new List<Claim>
         {
-            new("OtherType", "SomeValue")
+            new("OtherType", "SomeValue"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -86,7 +91,7 @@ public class ClaimsPrincipleExtensionsTests
         // Arrange
         var claims = new List<Claim>
         {
-            new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group1")
+            new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group1"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -108,7 +113,7 @@ public class ClaimsPrincipleExtensionsTests
         // Arrange
         var claims = new List<Claim>
         {
-            new("Role", "urn:mace:surf.nl:sram:group:surf:project1")
+            new("Role", "urn:mace:surf.nl:sram:group:surf:project1"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -131,7 +136,7 @@ public class ClaimsPrincipleExtensionsTests
         {
             new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group1"),
             new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group2"),
-            new("Role", "urn:mace:surf.nl:sram:group:surf:project1")
+            new("Role", "urn:mace:surf.nl:sram:group:surf:project1"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -155,7 +160,7 @@ public class ClaimsPrincipleExtensionsTests
         var claims = new List<Claim>
         {
             new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group1"),
-            new("Role", "urn:mace:surf.nl:sram:group:other:project2:conflux-group2")
+            new("Role", "urn:mace:surf.nl:sram:group:other:project2:conflux-group2"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);
@@ -187,7 +192,7 @@ public class ClaimsPrincipleExtensionsTests
         {
             new("Role", "urn:mace:surf.nl:sram:group:surf:project1:conflux-group1"),
             new("Role", "invalid-format"),
-            new("Role", "urn:different:format")
+            new("Role", "urn:different:format"),
         };
         ClaimsIdentity identity = new(claims);
         ClaimsPrincipal principal = new(identity);

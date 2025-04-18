@@ -144,20 +144,6 @@ public class CollaborationMapper : ICollaborationMapper
     }
 
     /// <summary>
-    /// Formats a group URN based on organization name, collaboration name, and optional group name.
-    /// </summary>
-    /// <param name="orgName">The organization name</param>
-    /// <param name="coName">The collaboration name</param>
-    /// <param name="groupName">Optional group name</param>
-    /// <returns>Formatted URN string</returns>
-    public static string FormatGroupUrn(string orgName, string coName, string? groupName = null)
-        // see https://servicedesk.surf.nl/wiki/spaces/IAM/pages/74226142/Attributes+in+SRAM
-        =>
-            string.IsNullOrEmpty(groupName)
-                ? $"urn:mace:surf.nl:sram:group:{orgName}:{coName}"
-                : $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:{groupName}";
-
-    /// <summary>
     /// Retrieves a group from the SCIM API based on its URN.
     /// </summary>
     /// <param name="groupUrn">The URN of the group to retrieve</param>
@@ -180,6 +166,20 @@ public class CollaborationMapper : ICollaborationMapper
         // Map the SCIM group to a Group object
         return MapSCIMGroup(groupUrn, scimGroup);
     }
+
+    /// <summary>
+    /// Formats a group URN based on organization name, collaboration name, and optional group name.
+    /// </summary>
+    /// <param name="orgName">The organization name</param>
+    /// <param name="coName">The collaboration name</param>
+    /// <param name="groupName">Optional group name</param>
+    /// <returns>Formatted URN string</returns>
+    public static string FormatGroupUrn(string orgName, string coName, string? groupName = null)
+        // see https://servicedesk.surf.nl/wiki/spaces/IAM/pages/74226142/Attributes+in+SRAM
+        =>
+            string.IsNullOrEmpty(groupName)
+                ? $"urn:mace:surf.nl:sram:group:{orgName}:{coName}"
+                : $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:{groupName}";
 
     /// <summary>
     /// Maps a SCIM group to a domain Group object.

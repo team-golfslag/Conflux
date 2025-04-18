@@ -1,3 +1,10 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
+using System.Security.Claims;
+using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Models;
@@ -7,7 +14,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using Moq;
-using System.Security.Claims;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -19,21 +25,22 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(false);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(false);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act
-        var result = await service.GetUser();
+        UserSession? result = await service.GetUser();
 
         // Assert
         Assert.NotNull(result);
@@ -46,12 +53,13 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockHttpContext = new Mock<HttpContext>();
         mockHttpContext.Setup(c => c.Session).Returns((ISession)null!);
@@ -61,7 +69,7 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act & Assert
@@ -73,22 +81,24 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockSession = new Mock<ISession>();
-        var userSession = new UserSession {
+        UserSession userSession = new()
+        {
             Email = "test@example.com",
             Name = "Test User",
-            SRAMId = "test-sram-id"
+            SRAMId = "test-sram-id",
         };
 
         mockSession.Setup(s => s.IsAvailable).Returns(true);
-        var serializedSession = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(userSession);
+        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
         mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
             .Returns(true);
 
@@ -100,11 +110,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act
-        var result = await service.GetUser();
+        UserSession? result = await service.GetUser();
 
         // Assert
         Assert.NotNull(result);
@@ -117,9 +127,10 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
-        var user = new User
+        User user = new()
         {
             Id = Guid.NewGuid(),
             Name = "Database User",
@@ -129,21 +140,22 @@ public class UserSessionServiceTests
         };
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
         var mockSession = new Mock<ISession>();
-        var userSession = new UserSession {
+        UserSession userSession = new()
+        {
             Email = "test@example.com",
             Name = "Test User",
-            SRAMId = "sram-id-1"
+            SRAMId = "sram-id-1",
         };
 
         mockSession.Setup(s => s.IsAvailable).Returns(true);
-        var serializedSession = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(userSession);
+        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
         mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
             .Returns(true);
 
@@ -155,11 +167,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act
-        var result = await service.UpdateUser();
+        UserSession? result = await service.UpdateUser();
 
         // Assert
         Assert.NotNull(result);
@@ -172,23 +184,25 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
         // No user added to database
 
         var mockSession = new Mock<ISession>();
-        var userSession = new UserSession {
+        UserSession userSession = new()
+        {
             Email = "test@example.com",
             Name = "Test User",
-            SRAMId = "sram-id-1"
+            SRAMId = "sram-id-1",
         };
 
         mockSession.Setup(s => s.IsAvailable).Returns(true);
-        var serializedSession = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(userSession);
+        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
         mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
             .Returns(true);
 
@@ -200,11 +214,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act
-        var result = await service.UpdateUser();
+        UserSession? result = await service.UpdateUser();
 
         // Assert
         Assert.NotNull(result);
@@ -217,12 +231,13 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(false);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(false);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockSession = new Mock<ISession>();
 
@@ -234,10 +249,13 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
-        var userSession = new UserSession { Email = "test@example.com" };
+        UserSession userSession = new()
+        {
+            Email = "test@example.com",
+        };
 
         // Act
         await service.CommitUser(userSession);
@@ -251,28 +269,29 @@ public class UserSessionServiceTests
     {
         // Arrange
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None)).ReturnsAsync(true);
+        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(true);
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockSession = new Mock<ISession>();
         mockSession.Setup(s => s.IsAvailable).Returns(true);
 
         var claims = new List<Claim>
         {
-            new Claim("personIdentifier", "test-person-id"),
-            new Claim("Name", "Test User"),
-            new Claim("given_name", "Test"),
-            new Claim("family_name", "User"),
-            new Claim("Email", "test@example.com"),
-            new Claim("Role", "urn:mace:surf.nl:sram:group:org:project1:group1")
+            new("personIdentifier", "test-person-id"),
+            new("Name", "Test User"),
+            new("given_name", "Test"),
+            new("family_name", "User"),
+            new("Email", "test@example.com"),
+            new("Role", "urn:mace:surf.nl:sram:group:org:project1:group1"),
         };
 
-        var identity = new ClaimsIdentity(claims);
-        var principal = new ClaimsPrincipal(identity);
+        ClaimsIdentity identity = new(claims);
+        ClaimsPrincipal principal = new(identity);
 
         var mockHttpContext = new Mock<HttpContext>();
         mockHttpContext.Setup(c => c.User).Returns(principal);
@@ -285,11 +304,11 @@ public class UserSessionServiceTests
         mockCollaborationMapper.Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
             .ReturnsAsync(new List<Collaboration>());
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act
-        var result = await service.SetUser(principal);
+        UserSession? result = await service.SetUser(principal);
 
         // Assert
         Assert.NotNull(result);
@@ -307,9 +326,9 @@ public class UserSessionServiceTests
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
 
         var mockSession = new Mock<ISession>();
         mockSession.Setup(s => s.IsAvailable).Returns(true);
@@ -322,7 +341,7 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
 
-        var service = new UserSessionService(context, mockHttpContextAccessor.Object,
+        UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act

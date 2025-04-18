@@ -262,7 +262,8 @@ public class CollaborationMapperTests
                 ResourceType = "Group",
                 Version = "1.0",
             },
-            Schemas = [
+            Schemas =
+            [
                 "urn:mace:surf.nl:sram:scim:extension:Group",
             ],
         };

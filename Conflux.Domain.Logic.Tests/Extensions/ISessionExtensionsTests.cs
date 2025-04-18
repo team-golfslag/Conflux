@@ -40,7 +40,10 @@ public class ISessionExtensionsTests
         mockSession.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<byte[]>()))
             .Callback<string, byte[]>((_, value) => storedData = value);
         TestClass testObject = new()
-            { Id = 1, Name = "Test" };
+        {
+            Id = 1,
+            Name = "Test",
+        };
 
         // Act
         mockSession.Object.Set("testKey", testObject);
@@ -106,7 +109,11 @@ public class ISessionExtensionsTests
     {
         // Arrange
         var mockSession = new Mock<ISession>();
-        TestClass testObject = new TestClass { Id = 42, Name = "Test Object" };
+        TestClass testObject = new()
+        {
+            Id = 42,
+            Name = "Test Object",
+        };
         byte[]? serializedValue = JsonSerializer.SerializeToUtf8Bytes(testObject);
         mockSession.Setup(s => s.TryGetValue("testKey", out serializedValue)).Returns(true);
 

@@ -144,7 +144,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(projects);
         Assert.Empty(projects);
     }
-    
+
     [Fact]
     public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
     {

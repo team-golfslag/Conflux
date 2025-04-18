@@ -5,7 +5,6 @@
 
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM.DTOs;
-using Conflux.RepositoryConnections.SRAM.Models;
 
 namespace Conflux.RepositoryConnections.SRAM;
 

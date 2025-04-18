@@ -40,7 +40,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             db.Database.EnsureCreated();
             // Clear the database
             db.Database.EnsureDeleted();
-            
+
             // Check if test data is already seeded
             if (db.Projects.Any())
                 return;

@@ -14,13 +14,13 @@ namespace Conflux.API.Controllers;
 public class UserSessionController : ControllerBase
 {
     private readonly IVariantFeatureManager _featureManager;
-    private readonly SessionMappingService _sessionMappingService;
+    private readonly ISessionMappingService _sessionMappingService;
     private readonly IUserSessionService _userSessionService;
     private readonly string[] _allowedRedirects;
 
     public UserSessionController(
         IUserSessionService userSessionService,
-        SessionMappingService sessionMappingService, 
+        ISessionMappingService sessionMappingService, 
         IVariantFeatureManager featureManager,
         IConfiguration configuration)
     {

@@ -15,7 +15,7 @@ namespace Conflux.Domain.Logic.Services;
 /// <summary>
 /// This class maps all the data in the session to the existing domain model
 /// </summary>
-public class SessionMappingService
+public class SessionMappingService : ISessionMappingService
 {
     private readonly ConfluxContext _context;
     private readonly IVariantFeatureManager _featureManager;

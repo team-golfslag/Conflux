@@ -105,7 +105,7 @@ public class Program
         
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
-        builder.Services.AddScoped<SessionMappingService>();
+        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<IProjectSyncService, ProjectSyncService>();
         builder.Services.AddScoped<ProjectsService>();
     }

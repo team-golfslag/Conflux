@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -96,7 +97,7 @@ public class Program
             if (string.IsNullOrEmpty(secret) && sramEnabled)
                 throw new InvalidOperationException("SRAM_SCIM_SECRET not set.");
                 
-            scimClient.SetBearerToken(secret);
+            scimClient.SetBearerToken(secret!);
             return scimClient;
         });
         
@@ -253,8 +254,14 @@ public class Program
             return Task.CompletedTask;
         };
         
-        options.Events.OnRedirectToIdentityProviderForSignOut = context => {
-            context.Response.Redirect(context.Request.Query["redirectUri"]);
+        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+        {
+            string redirectUri = oidcConfig["RedirectUri"]!;
+            if (context.Request.Query.TryGetValue("redirectUri", out StringValues redirectUriValue) &&
+                redirectUriValue.Count > 0)
+                redirectUri = redirectUriValue!;
+            
+            context.Response.Redirect(redirectUri);
             context.HandleResponse();
             return Task.CompletedTask;
         };

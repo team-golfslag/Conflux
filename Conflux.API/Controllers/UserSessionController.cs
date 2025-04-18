@@ -40,9 +40,13 @@ public class UserSessionController : ControllerBase
 
         await _sessionMappingService.CollectSessionData(user);
         await _userSessionService.UpdateUser();
+        if (!IsValidRedirectUrl(redirect))
+        {
+            return new ForbidResult();
+        }
         
         // Validate redirect URL
-        return Redirect(IsValidRedirectUrl(redirect) ? redirect : "/");
+        return Redirect(redirect);
     }
 
     [HttpGet]

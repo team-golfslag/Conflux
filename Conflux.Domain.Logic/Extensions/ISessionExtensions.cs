@@ -6,7 +6,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 
-namespace Conflux.Domain;
+namespace Conflux.Domain.Logic.Extensions;
 
 public static class ISessionExtensions
 {

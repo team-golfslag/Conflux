@@ -5,6 +5,7 @@
 
 using System.Security.Claims;
 using Conflux.Data;
+using Conflux.Domain.Logic.Extensions;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Extensions;
@@ -13,26 +14,17 @@ using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
 
-public interface IUserSessionService
-{
-    Task<UserSession?> GetUser();
-    Task<UserSession?> UpdateUser();
-    Task CommitUser(UserSession userSession);
-    Task<UserSession?> SetUser(ClaimsPrincipal? claims);
-    void ClearUser();
-}
-
 public class UserSessionService : IUserSessionService
 {
     private const string UserKey = "UserProfile";
-    private readonly CollaborationMapper _collaborationMapper;
+    private readonly ICollaborationMapper _collaborationMapper;
     private readonly ConfluxContext _confluxContext;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserSessionService(
         ConfluxContext confluxContext, IHttpContextAccessor httpContextAccessor,
-        CollaborationMapper collaborationMapper,
+        ICollaborationMapper collaborationMapper,
         IVariantFeatureManager featureManager)
     {
         _confluxContext = confluxContext;

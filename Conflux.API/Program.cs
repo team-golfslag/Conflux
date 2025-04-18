@@ -103,7 +103,7 @@ public class Program
             return scimClient;
         });
         
-        builder.Services.AddScoped<CollaborationMapper>();
+        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<SessionMappingService>();
         builder.Services.AddScoped<IProjectSyncService, ProjectSyncService>();

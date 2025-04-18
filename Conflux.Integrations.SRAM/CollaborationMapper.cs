@@ -12,7 +12,7 @@ using Conflux.RepositoryConnections.SRAM.Models;
 
 namespace Conflux.RepositoryConnections.SRAM;
 
-public class CollaborationMapper
+public class CollaborationMapper : ICollaborationMapper
 {
     private readonly ConfluxContext _context;
     private readonly ISCIMApiClient _scimApiClient;

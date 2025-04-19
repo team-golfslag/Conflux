@@ -144,6 +144,7 @@ public class SessionMappingService : ISessionMappingService
                     ProjectId = projects.Id,
                     Name = group.DisplayName,
                     Description = group.Description,
+                    SCIMId = group.SCIMId,
                     Urn = group.Urn,
                 }))
             {

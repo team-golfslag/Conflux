@@ -8,13 +8,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Data", "Conflux.Dat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Data.Tests", "Conflux.Data.Tests\Conflux.Data.Tests.csproj", "{888487E5-6900-4F9D-A312-7E0095FA75B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.RepositoryConnections.NWOpen", "Conflux.RepositoryConnections.NWOpen\Conflux.RepositoryConnections.NWOpen.csproj", "{C12F79F5-9C65-46FF-B3EC-EEEA9203771D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.NWOpen", "Conflux.Integrations.NWOpen\Conflux.Integrations.NWOpen.csproj", "{C12F79F5-9C65-46FF-B3EC-EEEA9203771D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{35EC3A20-F7D5-4CA4-B9FF-8C020891A2C3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RepositoryConnections", "RepositoryConnections", "{F4082EE5-089C-4FED-A12E-7223FDE6D994}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integrations", "Integrations", "{F4082EE5-089C-4FED-A12E-7223FDE6D994}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.RepositoryConnections.Tests", "Conflux.RepositoryConnections.Tests\Conflux.RepositoryConnections.Tests.csproj", "{8070D7B0-A8FB-42DF-B6EE-99296EBF884D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.NWOpen.Tests", "Conflux.Integrations.NWOpen.Tests\Conflux.Integrations.NWOpen.Tests.csproj", "{8070D7B0-A8FB-42DF-B6EE-99296EBF884D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Domain.Logic", "Conflux.Domain.Logic\Conflux.Domain.Logic.csproj", "{BD0FE7A9-F3BD-411B-A138-F2E94A0716F4}"
 EndProject
@@ -23,6 +23,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{40F4DB12-9CD5-4BAD-9D33-9B9644FFCDDB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.API.Tests", "Conflux.API.Tests\Conflux.API.Tests.csproj", "{888AB2B8-8421-402E-B958-B9FFC6E3C939}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.SRAM", "Conflux.Integrations.SRAM\Conflux.Integrations.SRAM.csproj", "{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.SRAM.Tests", "Conflux.Integrations.SRAM.Tests\Conflux.Integrations.SRAM.Tests.csproj", "{8D9BB765-2099-4996-B078-13998F80E4AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +70,14 @@ Global
 		{888AB2B8-8421-402E-B958-B9FFC6E3C939}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{888AB2B8-8421-402E-B958-B9FFC6E3C939}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{888AB2B8-8421-402E-B958-B9FFC6E3C939}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D9BB765-2099-4996-B078-13998F80E4AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D9BB765-2099-4996-B078-13998F80E4AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D9BB765-2099-4996-B078-13998F80E4AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D9BB765-2099-4996-B078-13998F80E4AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{616A6D06-793B-4209-8D5E-D5ACB62B6E0F} = {35EC3A20-F7D5-4CA4-B9FF-8C020891A2C3}
@@ -75,5 +87,7 @@ Global
 		{494F4691-5E3F-4866-A0BF-4D9EFD0D4557} = {40F4DB12-9CD5-4BAD-9D33-9B9644FFCDDB}
 		{BD0FE7A9-F3BD-411B-A138-F2E94A0716F4} = {40F4DB12-9CD5-4BAD-9D33-9B9644FFCDDB}
 		{FF8BC3AE-298B-410C-857B-9DDFD6DC1745} = {40F4DB12-9CD5-4BAD-9D33-9B9644FFCDDB}
+		{D85B0B4F-63CA-4061-9A62-4FC1FC4815CE} = {F4082EE5-089C-4FED-A12E-7223FDE6D994}
+		{8D9BB765-2099-4996-B078-13998F80E4AD} = {F4082EE5-089C-4FED-A12E-7223FDE6D994}
 	EndGlobalSection
 EndGlobal

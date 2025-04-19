@@ -16,7 +16,7 @@ public class PersonAlreadyAddedToProjectException : Exception
     /// <param name="projectId">The ID of the project</param>
     /// <param name="personId">The ID of the person that was already added to the project</param>
     public PersonAlreadyAddedToProjectException(Guid projectId, Guid personId)
-        : base($"Person with ID {personId} was already added to project {projectId}.")
+        : base($"User with ID {personId} was already added to project {projectId}.")
     {
     }
 }

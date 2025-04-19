@@ -3,10 +3,10 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,10 +20,15 @@ namespace Conflux.API.Controllers;
 public class ProjectsController : ControllerBase
 {
     private readonly ProjectsService _projectsService;
+    private readonly IProjectSyncService _projectSyncService;
+    private readonly IUserSessionService _userSessionService;
 
-    public ProjectsController(ConfluxContext context)
+    public ProjectsController(ProjectsService projectsService, IProjectSyncService projectSyncService,
+        IUserSessionService userSessionService)
     {
-        _projectsService = new(context);
+        _projectSyncService = projectSyncService;
+        _projectsService = projectsService;
+        _userSessionService = userSessionService;
     }
 
     /// <summary>
@@ -34,6 +39,7 @@ public class ProjectsController : ControllerBase
     /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
     /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
     /// <returns>Filtered list of projects</returns>
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<Project>>> GetProjectByQuery(
         [FromQuery] string? query,
@@ -46,26 +52,24 @@ public class ProjectsController : ControllerBase
     /// </summary>
     /// <returns>All projects</returns>
     [HttpGet]
+    [Authorize]
     [Route("all")]
-    public async Task<ActionResult<List<Project>>> GetAllProjects() =>
-        await _projectsService.GetAllProjectsAsync();
+    public async Task<ActionResult<List<Project>>> GetAllProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            return Unauthorized();
+        return await _projectsService.GetAllProjectsAsync();
+    }
 
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
     [HttpGet]
+    [Authorize]
     [Route("{id:guid}")]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
-
-    /// <summary>
-    /// Creates a new project
-    /// </summary>
-    /// <param name="projectPostDto">The DTO which to convert to a <see cref="Project" /></param>
-    /// <returns>The request response</returns>
-    [HttpPost]
-    public async Task<ActionResult<Project>> CreateProject([FromBody] ProjectPostDTO projectPostDto) =>
-        await _projectsService.CreateProjectAsync(projectPostDto);
 
     /// <summary>
     /// Puts a project by its GUID
@@ -99,4 +103,13 @@ public class ProjectsController : ControllerBase
     [Route("{projectId:guid}/addPerson/{personId:guid}")]
     public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId, Guid personId) =>
         await _projectsService.AddPersonToProjectAsync(projectId, personId);
+
+    [HttpPost]
+    [Route("{id:guid}/sync")]
+    [Authorize]
+    public async Task<ActionResult> SyncProject([FromRoute] Guid id)
+    {
+        await _projectSyncService.SyncProjectAsync(id);
+        return Ok();
+    }
 }

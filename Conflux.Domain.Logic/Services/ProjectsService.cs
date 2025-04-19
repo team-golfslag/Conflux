@@ -6,6 +6,7 @@
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
@@ -16,10 +17,85 @@ namespace Conflux.Domain.Logic.Services;
 public class ProjectsService
 {
     private readonly ConfluxContext _context;
+    private readonly IUserSessionService _userSessionService;
 
-    public ProjectsService(ConfluxContext context)
+    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
+        _userSessionService = userSessionService;
+    }
+
+    /// <summary>
+    /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
+    /// </summary>
+    /// <returns>A list of projects that the current user has access to</returns>
+    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
+    private async Task<List<Project>> GetAvailableProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+
+        var accessibleSramIds = userSession.Collaborations
+            .Select(c => c.CollaborationGroup.SCIMId)
+            .ToList();
+
+        var data = await _context.Projects
+            .Where(p => p.SCIMId != null && accessibleSramIds.Contains(p.SCIMId))
+            .Select(p => new
+            {
+                Project = p,
+                p.Products,
+                Users = p.Users.Select(person => new
+                {
+                    Person = person,
+                    Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
+                }),
+                p.Parties,
+            })
+            .ToListAsync();
+
+        // create a list of projects with the same size as the data
+        var projects = new List<Project>(data.Count);
+
+        foreach (var project in data)
+        {
+            Project newProject = project.Project;
+            newProject.Products = project.Products;
+            newProject.Users = project.Users.Select(p => p.Person with
+            {
+                Roles = p.Roles.ToList(),
+            }).ToList();
+            newProject.Parties = project.Parties;
+            projects.Add(newProject);
+        }
+
+        return projects;
+    }
+
+    /// <summary>
+    /// Gets all roles for a project that the current user has access to through their SRAM collaborations.
+    /// </summary>
+    /// <param name="project">The project to get roles for</param>
+    /// <returns>
+    /// A list of roles that the user has access to through the project's SRAM connection,
+    /// or null if the user doesn't have access to the project
+    /// </returns>
+    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
+    public async Task<List<Role>?> GetRolesFromProject(Project project)
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        Collaboration? collaboration =
+            userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
+        if (collaboration is null)
+            return null;
+        var roles = await _context.Roles
+            .Where(r => r.ProjectId == project.Id)
+            .ToListAsync();
+
+        return roles.Where(r => collaboration.Groups.Any(g => g.Urn == r.Urn)).ToList();
     }
 
     /// <summary>
@@ -29,11 +105,8 @@ public class ProjectsService
     /// <returns>The project</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id) =>
-        await _context.Projects
-            .Include(p => p.People)
-            .Include(p => p.Products)
-            .Include(p => p.Parties)
-            .SingleOrDefaultAsync(p => p.Id == id)
+        (await GetAvailableProjects())
+        .FirstOrDefault(p => p.Id == id)
         ?? throw new ProjectNotFoundException(id);
 
     /// <summary>
@@ -45,10 +118,7 @@ public class ProjectsService
     /// <returns>Filtered list of projects</returns>
     public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
     {
-        IQueryable<Project> projects = _context.Projects
-            .Include(p => p.People)
-            .Include(p => p.Products)
-            .Include(p => p.Parties);
+        IEnumerable<Project> projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -75,7 +145,7 @@ public class ProjectsService
         if (startDate.HasValue && endDate.HasValue)
             projects = projects.Where(project => project.StartDate <= endDate && project.EndDate >= startDate);
 
-        return await projects.ToListAsync();
+        return projects.ToList();
     }
 
     /// <summary>
@@ -95,12 +165,15 @@ public class ProjectsService
     /// Gets all projects.
     /// </summary>
     /// <returns>All projects</returns>
-    public async Task<List<Project>> GetAllProjectsAsync() =>
-        await _context.Projects
-            .Include(p => p.Products)
-            .Include(p => p.People)
-            .Include(p => p.Parties)
-            .ToListAsync();
+    public async Task<List<Project>> GetAllProjectsAsync()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        var projects = await GetAvailableProjects();
+        return projects
+            .ToList();
+    }
 
     /// <summary>
     /// Updates a project to the database via PUT.
@@ -152,16 +225,16 @@ public class ProjectsService
     /// <returns>The request response</returns>
     public async Task<Project> AddPersonToProjectAsync(Guid projectId, Guid personId)
     {
-        Project project = await _context.Projects.Include(p => p.People).SingleOrDefaultAsync(p => p.Id == projectId)
+        Project project = await _context.Projects.Include(p => p.Users).SingleOrDefaultAsync(p => p.Id == projectId)
             ?? throw new ProjectNotFoundException(projectId);
 
-        Person person = await _context.People.FindAsync(personId)
+        User user = await _context.Users.FindAsync(personId)
             ?? throw new PersonNotFoundException(personId);
 
-        if (project.People.Any(p => p.Id == person.Id))
+        if (project.Users.Any(p => p.Id == user.Id))
             throw new PersonAlreadyAddedToProjectException(projectId, personId);
 
-        project.People.Add(person);
+        project.Users.Add(user);
         await _context.SaveChangesAsync();
         return project;
     }

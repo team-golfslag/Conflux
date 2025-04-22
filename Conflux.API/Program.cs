@@ -162,14 +162,14 @@ public class Program
                 Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
                 switch (exception)
                 {
-                    case ProjectNotFoundException or PersonNotFoundException:
+                    case ProjectNotFoundException or ContributorNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new
                         {
                             error = exception.Message,
                         });
                         break;
-                    case PersonAlreadyAddedToProjectException:
+                    case ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new
                         {
@@ -211,7 +211,7 @@ public class Program
                 TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
                 SeedData seedData = retriever.MapProjectsAsync().Result;
 
-                await context.Users.AddRangeAsync(seedData.Users);
+                await context.Contributors.AddRangeAsync(seedData.Contributors);
                 await context.Products.AddRangeAsync(seedData.Products);
                 await context.Parties.AddRangeAsync(seedData.Parties);
                 await context.Projects.AddRangeAsync(seedData.Projects);

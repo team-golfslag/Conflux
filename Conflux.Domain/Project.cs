@@ -15,11 +15,9 @@ public class Project
 {
     [Key] public Guid Id { get; init; }
 
-    [JsonPropertyName("scim_id")]
-    public string? SCIMId { get; init; }
+    [JsonPropertyName("scim_id")] public string? SCIMId { get; init; }
 
-    [JsonPropertyName("raid_id")]
-    public string? RAiDId { get; init; }
+    [JsonPropertyName("raid_id")] public string? RAiDId { get; init; }
 
     [Required] public required string Title { get; set; }
 
@@ -30,6 +28,8 @@ public class Project
     public DateTime? EndDate { get; set; }
 
     public List<User> Users { get; set; } = [];
+
+    public List<Contributor> Contributors { get; set; } = [];
 
     public List<Product> Products { get; set; } = [];
 

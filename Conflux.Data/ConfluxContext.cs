@@ -15,6 +15,7 @@ namespace Conflux.Data;
 public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
+    public DbSet<Contributor> Contributors { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Party> Parties { get; set; }
@@ -34,6 +35,9 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
             .HasMany(p => p.Products)
             .WithMany();
         modelBuilder.Entity<User>()
+            .HasMany(p => p.Roles)
+            .WithMany();
+        modelBuilder.Entity<Contributor>()
             .HasMany(p => p.Roles)
             .WithMany();
 

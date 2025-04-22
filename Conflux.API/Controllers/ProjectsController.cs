@@ -97,12 +97,13 @@ public class ProjectsController : ControllerBase
     /// Updates a project by adding the person with the provided personId.
     /// </summary>
     /// <param name="projectId">The GUID of the project to update</param>
-    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <param name="contributorId">The GUID of the person to add to the project</param>
     /// <returns>The request response</returns>
     [HttpPost]
-    [Route("{projectId:guid}/addPerson/{personId:guid}")]
-    public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId, Guid personId) =>
-        await _projectsService.AddPersonToProjectAsync(projectId, personId);
+    [Route("{projectId:guid}/add_contributor")]
+    public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId,
+        [FromBody] Guid contributorId) =>
+        await _projectsService.AddContributorToProjectAsync(projectId, contributorId);
 
     [HttpPost]
     [Route("{id:guid}/sync")]

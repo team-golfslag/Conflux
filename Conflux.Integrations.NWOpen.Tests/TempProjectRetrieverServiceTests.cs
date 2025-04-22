@@ -35,7 +35,7 @@ public class TempProjectRetrieverServiceTests
         Assert.NotNull(seedData);
         Assert.Empty(seedData.Projects);
         Assert.Empty(seedData.Products);
-        Assert.Empty(seedData.Users);
+        Assert.Empty(seedData.Contributors);
         Assert.Empty(seedData.Parties);
     }
 
@@ -81,7 +81,7 @@ public class TempProjectRetrieverServiceTests
         // Assert
         Assert.NotNull(seedData);
         Assert.NotNull(seedData.Products);
-        Assert.NotNull(seedData.Users);
+        Assert.NotNull(seedData.Contributors);
         Assert.NotNull(seedData.Parties);
     }
 

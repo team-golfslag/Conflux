@@ -32,24 +32,23 @@ public class UserSessionController : ControllerBase
         _userSessionService = userSessionService;
         _sessionMappingService = sessionMappingService;
         _featureManager = featureManager;
-        _allowedRedirects = configuration.GetSection("Authentication:SRAM:AllowedRedirectUris").Get<string[]>() ??
-            Array.Empty<string>();
+        _allowedRedirects = configuration.GetSection("Authentication:SRAM:AllowedRedirectUris").Get<string[]>() ?? [];
     }
 
     [HttpGet]
     [Route("login")]
     [Authorize]
-    public async Task<ActionResult> LogIn([FromQuery] string redirect)
+    public async Task<ActionResult> LogIn([FromQuery] string redirectUri)
     {
         UserSession? user = await _userSessionService.GetUser();
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);
         await _userSessionService.UpdateUser();
-        if (!IsValidRedirectUrl(redirect)) return new ForbidResult();
+        if (!IsValidRedirectUrl(redirectUri)) return new ForbidResult();
 
         // Validate redirect URL
-        return Redirect(redirect);
+        return Redirect(redirectUri);
     }
 
     [HttpGet]

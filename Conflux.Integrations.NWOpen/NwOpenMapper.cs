@@ -58,6 +58,7 @@ public static class NwOpenMapper
             Description = project.SummaryNl,
             StartDate = startDate,
             EndDate = endDate,
+            SCIMId = "SCIM",
         };
 
         foreach (NwOpenProduct product in project.Products ?? []) MapProduct(mappedProject, product);

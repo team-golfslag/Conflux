@@ -52,7 +52,7 @@ public class UserSession
                         LogoUrl = "https://example.com/logo.png",
 #pragma warning restore S1075
                         ExternalId = Guid.NewGuid().ToString(),
-                        SCIMId = "SRAM",
+                        SCIMId = "SCIM",
                     },
                     Organization = "Development Organization",
                     Groups =

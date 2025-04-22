@@ -5,6 +5,7 @@
 
 using System.Security.Claims;
 using Conflux.Data;
+using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Extensions;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
@@ -79,7 +80,7 @@ public class UserSessionService : IUserSessionService
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
             return UserSession.Development();
         if (_httpContextAccessor.HttpContext?.User is null)
-            throw new InvalidOperationException("User is not authenticated.");
+            throw new UserNotAuthenticatedException();
 
         if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
             return null;
@@ -88,7 +89,7 @@ public class UserSessionService : IUserSessionService
             ? claims.GetCollaborations()
             : _httpContextAccessor.HttpContext?.User.GetCollaborations();
         if (collaborationDTOs is null)
-            throw new InvalidOperationException("User has no collaborations.");
+            throw new UserNotAuthenticatedException();
 
         var collaborations = await _collaborationMapper.Map(collaborationDTOs);
         UserSession user = new()

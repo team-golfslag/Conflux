@@ -53,7 +53,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 Description = "This is a test project.",
                 StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-                SCIMId = "SRAM",
+                SCIMId = "SCIM",
             });
 
             // Add projects for the PUT and PATCH tests
@@ -64,7 +64,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 Description = "This is a test project.",
                 StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-                SCIMId = "SRAM",
+                SCIMId = "SCIM",
             });
             db.Projects.Add(new()
             {
@@ -73,7 +73,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 Description = "This is a test project.",
                 StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-                SCIMId = "SRAM",
+                SCIMId = "SCIM",
             });
 
             db.SaveChanges();

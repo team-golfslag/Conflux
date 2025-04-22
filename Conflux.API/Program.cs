@@ -152,7 +152,11 @@ public class Program
         if (await featureManager.IsEnabledAsync("Swagger"))
         {
             app.UseOpenApi();
-            app.UseSwaggerUi(c => { c.DocumentTitle = "Conflux API"; });
+            app.UseSwaggerUi(c =>
+            {
+                c.DocumentTitle = "Conflux API";
+                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.UniversalDark);
+            });
         }
 
         app.UseExceptionHandler(appBuilder =>

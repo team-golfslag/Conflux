@@ -164,23 +164,30 @@ public class Program
                 {
                     case ProjectNotFoundException or ContributorNotFoundException:
                         context.Response.StatusCode = 404;
-                        await context.Response.WriteAsJsonAsync(new
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = exception.Message,
+                            Error = exception.Message,
                         });
                         break;
                     case ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
-                        await context.Response.WriteAsJsonAsync(new
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = exception.Message,
+                            Error = exception.Message,
+                        });
+                        break;
+                    case UserNotAuthenticatedException:
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
                         });
                         break;
                     default:
                         context.Response.StatusCode = 500;
-                        await context.Response.WriteAsJsonAsync(new
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = "An unexpected error occurred.",
+                            Error = "An unexpected error occurred.",
                         });
                         break;
                 }

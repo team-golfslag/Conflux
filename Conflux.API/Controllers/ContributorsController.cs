@@ -12,10 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Conflux.API.Controllers;
 
 /// <summary>
-/// Represents the controller for managing people
+/// Represents the controller for managing contributors
 /// </summary>
 [Route("contributors")]
 [ApiController]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ContributorsController : ControllerBase
 {
     private readonly ContributorsService _contributorsService;
@@ -26,49 +29,54 @@ public class ContributorsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all people whose name contains the query (case-insensitive)
+    /// Gets all contributors whose name contains the query (case-insensitive)
     /// </summary>
     /// <param name="query">Optional: The string to search in the title or description</param>
-    /// <returns>Filtered list of people</returns>
+    /// <returns>Filtered list of contributors</returns>
     [HttpGet]
+    [ProducesResponseType(typeof(List<Contributor>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Contributor>>> GetProjectByQuery(
         [FromQuery] string? query) =>
         await _contributorsService.GetContributorsByQueryAsync(query);
 
     /// <summary>
-    /// Gets the person by his GUID
+    /// Gets the contributor by his GUID
     /// </summary>
-    /// <param name="id">The GUID of the person</param>
+    /// <param name="id">The GUID of the contributor</param>
     /// <returns>The request response</returns>
     [HttpGet]
     [Route("{id:guid}")]
-    public async Task<ActionResult<Contributor>> GetPersonByIdAsync([FromRoute] Guid id) =>
+    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
+    public async Task<ActionResult<Contributor>> GetContributorByIdAsync([FromRoute] Guid id) =>
         await _contributorsService.GetContributorByIdAsync(id);
 
     /// <summary>
-    /// Creates a new person
+    /// Creates a new contributor via POST
     /// </summary>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
-    public async Task<ActionResult<Contributor>> CreatePerson([FromBody] ContributorPostDTO contributorDTO) =>
+    [ProducesResponseType(typeof(Contributor), StatusCodes.Status201Created)]
+    public async Task<ActionResult<Contributor>> CreateContributor([FromBody] ContributorPostDTO contributorDTO) =>
         await _contributorsService.CreateContributorAsync(contributorDTO);
 
     /// <summary>
-    /// Updates a person via PUT
+    /// Updates a contributor via PUT
     /// </summary>
-    /// <param name="id">The GUID of the person</param>
+    /// <param name="id">The GUID of the contributor</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
-    public async Task<ActionResult<Contributor>> UpdatePerson([FromRoute] Guid id,
+    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
+    public async Task<ActionResult<Contributor>> UpdateContributor([FromRoute] Guid id,
         [FromBody] ContributorPutDTO contributorDTO) =>
         await _contributorsService.UpdateContributorAsync(id, contributorDTO);
 
     [HttpPatch]
     [Route("{id:guid}")]
+    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
     public async Task<ActionResult<Contributor>>
-        PatchPerson([FromRoute] Guid id, [FromBody] ContributorPatchDTO contributorDTO) =>
+        PatchContributor([FromRoute] Guid id, [FromBody] ContributorPatchDTO contributorDTO) =>
         await _contributorsService.PatchContributorAsync(id, contributorDTO);
 }

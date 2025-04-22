@@ -15,7 +15,10 @@ public record User
 {
     [Key] public Guid Id { get; set; }
 
+    [JsonPropertyName("raid_id")]
     public string? SRAMId { get; set; }
+    
+    [JsonPropertyName("scim_id")]
     public required string SCIMId { get; set; }
 
     [JsonPropertyName("orcid_id")]

@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
@@ -14,8 +15,10 @@ public class Project
 {
     [Key] public Guid Id { get; init; }
 
+    [JsonPropertyName("scim_id")]
     public string? SCIMId { get; init; }
 
+    [JsonPropertyName("raid_id")]
     public string? RAiDId { get; init; }
 
     [Required] public required string Title { get; set; }

@@ -5,6 +5,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
@@ -16,5 +17,7 @@ public class Role
     public required string Name { get; init; }
     public string? Description { get; init; }
     public required string Urn { get; init; }
+    
+    [JsonPropertyName("scim_id")]
     public required string SCIMId { get; init; }
 }

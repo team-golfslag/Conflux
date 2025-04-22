@@ -46,6 +46,11 @@ public class ProjectsService
             {
                 Project = p,
                 p.Products,
+                Contributors = p.Contributors.Select(contributor => new
+                {
+                    Contributor = contributor,
+                    Roles = contributor.Roles.Where(role => role.ProjectId == p.Id).ToList(),
+                }),
                 Users = p.Users.Select(person => new
                 {
                     Person = person,

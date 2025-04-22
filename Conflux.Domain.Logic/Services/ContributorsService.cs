@@ -29,7 +29,9 @@ public class ContributorsService
     /// <returns>Filtered list of contributors</returns>
     public async Task<List<Contributor>> GetContributorsByQueryAsync(string? query)
     {
-        IQueryable<Contributor> people = _context.Contributors;
+        var people = _context.Contributors
+            .Include(c => c.Roles)
+            .AsQueryable();
 
         if (string.IsNullOrWhiteSpace(query)) return await people.ToListAsync();
 
@@ -49,6 +51,7 @@ public class ContributorsService
     /// <exception cref="ContributorNotFoundException">Thrown when the contributor is not found</exception>
     public async Task<Contributor> GetContributorByIdAsync(Guid id) =>
         await _context.Contributors
+            .Include(c => c.Roles)
             .SingleOrDefaultAsync(p => p.Id == id) ?? throw new ContributorNotFoundException(id);
 
     /// <summary>

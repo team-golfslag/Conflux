@@ -19,14 +19,14 @@ namespace Conflux.API.Controllers;
 [ApiController]
 public class ProjectsController : ControllerBase
 {
+    private readonly ISRAMProjectSyncService _iSRAMProjectSyncService;
     private readonly ProjectsService _projectsService;
-    private readonly IProjectSyncService _projectSyncService;
     private readonly IUserSessionService _userSessionService;
 
-    public ProjectsController(ProjectsService projectsService, IProjectSyncService projectSyncService,
+    public ProjectsController(ProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
         IUserSessionService userSessionService)
     {
-        _projectSyncService = projectSyncService;
+        _iSRAMProjectSyncService = iSRAMProjectSyncService;
         _projectsService = projectsService;
         _userSessionService = userSessionService;
     }
@@ -109,7 +109,7 @@ public class ProjectsController : ControllerBase
     [Authorize]
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {
-        await _projectSyncService.SyncProjectAsync(id);
+        await _iSRAMProjectSyncService.SyncProjectAsync(id);
         return Ok();
     }
 }

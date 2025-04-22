@@ -12,12 +12,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
 
-public class ProjectSyncService : IProjectSyncService
+public class SRAMProjectSyncService : ISRAMProjectSyncService
 {
     private readonly ConfluxContext _confluxContext;
     private readonly SCIMApiClient _scimApiClient;
 
-    public ProjectSyncService(SCIMApiClient scimApiClient, ConfluxContext confluxContext)
+    public SRAMProjectSyncService(SCIMApiClient scimApiClient, ConfluxContext confluxContext)
     {
         _scimApiClient = scimApiClient;
         _confluxContext = confluxContext;
@@ -61,10 +61,6 @@ public class ProjectSyncService : IProjectSyncService
 
         project.Users.AddRange(newUsers);
 
-        // Sync the project info
-        project.Title = apiProject.DisplayName;
-        project.Description = apiProject.SCIMGroupInfo.Description;
-
         // Get all roles 
         var roles = project.Users.SelectMany(p => p.Roles).DistinctBy(p => p.Id);
         foreach (Role role in roles)
@@ -83,7 +79,7 @@ public class ProjectSyncService : IProjectSyncService
         Group updatedGroup = CollaborationMapper.MapSCIMGroup(role.Urn, updatedScimGroup);
 
         // remove role from all users
-        foreach (User user in project.Users) 
+        foreach (User user in project.Users)
             user.Roles.Remove(role);
 
         Role newRole = new()
@@ -93,7 +89,7 @@ public class ProjectSyncService : IProjectSyncService
             Name = updatedGroup.DisplayName,
             Description = updatedGroup.Description,
             Urn = updatedGroup.Urn,
-            SCIMId = updatedGroup.SCIMId
+            SCIMId = updatedGroup.SCIMId,
         };
 
         foreach (User user in project.Users.Where(u => updatedGroup.Members.Any(m => m.SCIMId == u.SCIMId)))

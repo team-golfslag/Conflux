@@ -5,7 +5,7 @@
 
 namespace Conflux.Domain.Logic.Services;
 
-public interface IProjectSyncService
+public interface ISRAMProjectSyncService
 {
     Task SyncProjectAsync(Guid projectId);
 }

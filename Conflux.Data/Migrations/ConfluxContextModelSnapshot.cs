@@ -17,10 +17,43 @@ namespace Conflux.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Conflux.Domain.Contributor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FamilyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GivenName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ORCiD")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "orcid_id");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Contributors");
+                });
 
             modelBuilder.Entity("Conflux.Domain.Party", b =>
                 {
@@ -73,10 +106,12 @@ namespace Conflux.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RAiDId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "raid_id");
 
                     b.Property<string>("SCIMId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scim_id");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp with time zone");
@@ -108,7 +143,8 @@ namespace Conflux.Data.Migrations
 
                     b.Property<string>("SCIMId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scim_id");
 
                     b.Property<string>("Urn")
                         .IsRequired()
@@ -157,14 +193,31 @@ namespace Conflux.Data.Migrations
 
                     b.Property<string>("SCIMId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scim_id");
 
                     b.Property<string>("SRAMId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "raid_id");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ContributorRole", b =>
+                {
+                    b.Property<Guid>("ContributorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RolesId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ContributorId", "RolesId");
+
+                    b.HasIndex("RolesId");
+
+                    b.ToTable("ContributorRole");
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -212,11 +265,33 @@ namespace Conflux.Data.Migrations
                     b.ToTable("RoleUser");
                 });
 
+            modelBuilder.Entity("Conflux.Domain.Contributor", b =>
+                {
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithMany("Contributors")
+                        .HasForeignKey("ProjectId");
+                });
+
             modelBuilder.Entity("Conflux.Domain.Party", b =>
                 {
                     b.HasOne("Conflux.Domain.Project", null)
                         .WithMany("Parties")
                         .HasForeignKey("ProjectId");
+                });
+
+            modelBuilder.Entity("ContributorRole", b =>
+                {
+                    b.HasOne("Conflux.Domain.Contributor", null)
+                        .WithMany()
+                        .HasForeignKey("ContributorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Conflux.Domain.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -266,6 +341,8 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("Conflux.Domain.Project", b =>
                 {
+                    b.Navigation("Contributors");
+
                     b.Navigation("Parties");
                 });
 #pragma warning restore 612, 618

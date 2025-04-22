@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain;
-using Conflux.RepositoryConnections.NWOpen;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Data;
@@ -39,21 +38,5 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
             .WithMany();
 
         base.OnModelCreating(modelBuilder);
-    }
-
-    /// <summary>
-    /// Seeds the database with initial data.
-    /// </summary>
-    public async Task SeedDataAsync()
-    {
-        TemporaryProjectRetriever projectRetriever = TemporaryProjectRetriever.GetInstance();
-        SeedData seedData = projectRetriever.MapProjectsAsync().Result;
-
-        await Users.AddRangeAsync(seedData.Users);
-        await Products.AddRangeAsync(seedData.Products);
-        await Parties.AddRangeAsync(seedData.Parties);
-        await Projects.AddRangeAsync(seedData.Projects);
-
-        await SaveChangesAsync();
     }
 }

@@ -7,6 +7,7 @@ using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.RepositoryConnections.NWOpen;
 using Conflux.RepositoryConnections.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using NWOpen.Net.Services;
 
 namespace Conflux.API;
 
@@ -79,7 +81,10 @@ public class Program
         if (!await featureManager.IsEnabledAsync("DatabaseConnection"))
             return;
 
-        string? connectionString = builder.Configuration.GetConnectionString("Database") ??
+        builder.Services.AddHttpClient<INWOpenService, NWOpenService>();
+        builder.Services.AddSingleton<TempProjectRetrieverService>();
+
+        string connectionString = builder.Configuration.GetConnectionString("Database") ??
             ConnectionStringHelper.GetConnectionStringFromEnvironment();
         builder.Services.AddDbContextPool<ConfluxContext>(opt =>
             opt.UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly("Conflux.Data")));
@@ -202,7 +207,17 @@ public class Program
                 await context.Database.MigrateAsync();
 
             if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Users.AnyAsync())
-                await context.SeedDataAsync();
+            {
+                TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
+                SeedData seedData = retriever.MapProjectsAsync().Result;
+
+                await context.Users.AddRangeAsync(seedData.Users);
+                await context.Products.AddRangeAsync(seedData.Products);
+                await context.Parties.AddRangeAsync(seedData.Parties);
+                await context.Projects.AddRangeAsync(seedData.Projects);
+
+                await context.SaveChangesAsync();
+            }
         }
     }
 

@@ -11,35 +11,16 @@ namespace Conflux.RepositoryConnections.NWOpen;
 /// <summary>
 /// Maps NWOpen data to domain objects. Singleton class.
 /// </summary>
-public class TemporaryProjectRetriever
+public class TempProjectRetrieverService
 {
-    private static TemporaryProjectRetriever? _instance;
-
-    private static readonly Lock Lock = new();
-
-    private readonly NWOpenService _service;
+    private readonly INWOpenService _service;
 
     /// <summary>
-    /// Constructs the <see cref="TemporaryProjectRetriever" />
+    /// Constructs the <see cref="TempProjectRetrieverService" />
     /// </summary>
-    private TemporaryProjectRetriever()
+    public TempProjectRetrieverService(INWOpenService service)
     {
-        _service = new(new(new HttpClientHandler()));
-    }
-
-    /// <summary>
-    /// Gets the instance of the <see cref="TemporaryProjectRetriever" />
-    /// </summary>
-    /// <returns>The instance of the <see cref="TemporaryProjectRetriever" /></returns>
-    public static TemporaryProjectRetriever GetInstance()
-    {
-        if (_instance != null) return _instance;
-        lock (Lock)
-        {
-            _instance ??= new();
-        }
-
-        return _instance;
+        _service = service;
     }
 
     /// <summary>
@@ -49,7 +30,7 @@ public class TemporaryProjectRetriever
     /// <returns>The mapped projects</returns>
     public Task<SeedData> MapProjectsAsync(int numberOfResults = 100)
     {
-        NWOpenResult? result = _service.Query().WithNumberOfResults(numberOfResults).Execute().Result;
+        NWOpenResult? result = _service.Query().WithNumberOfResults(numberOfResults).ExecuteAsync().Result;
         if (result == null) return Task.FromResult(new SeedData());
 
         SeedData projects = NwOpenMapper.MapProjects(result.Projects);

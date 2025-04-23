@@ -6,25 +6,54 @@
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Logic.Services;
+using Conflux.RepositoryConnections.NWOpen;
+using Conflux.RepositoryConnections.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
+using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using NWOpen.Net.Services;
+using SwaggerThemes;
 
 namespace Conflux.API;
 
-#pragma warning disable S1118 // Since we run integration tests in Conflux.API.Tests, we need a public Program class
+#pragma warning disable S1118
 public class Program
 #pragma warning restore S1118
 {
     public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-        
-        IConfigurationSection featureFlags = builder.Configuration.GetSection("FeatureFlags");
 
+        // Configure services
+        builder.Services.AddFeatureManagement(builder.Configuration.GetSection("FeatureFlags"));
+#pragma warning disable ASP0000
+        IVariantFeatureManager featureManager =
+            builder.Services.BuildServiceProvider().GetRequiredService<IVariantFeatureManager>();
+#pragma warning restore ASP0000
+
+        await ConfigureServices(builder, featureManager);
+        await ConfigureAuthentication(builder, featureManager);
+        ConfigureCors(builder);
+
+        WebApplication app = builder.Build();
+
+        // Configure middleware
+        await ConfigureMiddleware(app, featureManager);
+
+        // Initialize database
+        await InitializeDatabase(app, featureManager);
+
+        await app.RunAsync();
+    }
+
+    private static async Task ConfigureServices(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
+    {
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
@@ -32,75 +61,77 @@ public class Program
         });
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddControllers();
-        builder.Services.AddSwaggerDocument(c => 
-        {
-            c.Title = "Conflux API";
-        });
-        
-        if (!featureFlags.GetValue<bool>("NoDatabaseConnection", false))
-        {
-            string connectionString = builder.Configuration.GetConnectionString("Database") ??
-                ConnectionStringHelper.GetConnectionStringFromEnvironment();
-            builder.Services.AddDbContextPool<ConfluxContext>(opt =>
-                opt.UseNpgsql(
-                    connectionString,
-                    npgsqlOptions =>
-                        npgsqlOptions.MigrationsAssembly("Conflux.Data")));
-        }
-        
-        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
 
+        await ConfigureDatabase(builder, featureManager);
+
+        builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>
         {
-            // Set session idle timeout to 20 minutes for production environments.
             options.IdleTimeout = TimeSpan.FromMinutes(20);
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
         });
 
-        // get sram secret from environment variable
-        string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
-        if (string.IsNullOrEmpty(sramSecret))
-            throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
-        
-        builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-            })
-            .AddCookie()
-            .AddOpenIdConnect(options =>
-            {
-                IConfigurationSection oidcConfig = builder.Configuration.GetSection("Authentication:SRAM");
-                
-                options.Authority = oidcConfig["Authority"];
-                options.ClientId = oidcConfig["ClientId"];
-                options.ClientSecret = sramSecret;
+        builder.Services.AddHttpContextAccessor();
+        await ConfigureSRAMServices(builder, featureManager);
+    }
 
-                options.CallbackPath = oidcConfig["CallbackPath"];
-                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.ResponseType = OpenIdConnectResponseType.Code;
-                options.SaveTokens = true;
-                options.GetClaimsFromUserInfoEndpoint = true;
+    private static async Task ConfigureDatabase(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
+    {
+        if (!await featureManager.IsEnabledAsync("DatabaseConnection"))
+            return;
 
-                var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
-                if (scopes != null)
-                    foreach (string scope in scopes)
-                        options.Scope.Add(scope);
+        builder.Services.AddHttpClient<INWOpenService, NWOpenService>();
+        builder.Services.AddSingleton<TempProjectRetrieverService>();
 
-                var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
-                if (claimMappings != null)
-                    foreach (var mapping in claimMappings)
-                        options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
+        string connectionString = builder.Configuration.GetConnectionString("Database") ??
+            ConnectionStringHelper.GetConnectionStringFromEnvironment();
+        builder.Services.AddDbContextPool<ConfluxContext>(opt =>
+            opt.UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly("Conflux.Data")));
+    }
 
-                options.Events.OnRedirectToIdentityProvider = context =>
-                {
-                    context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
-                    return Task.CompletedTask;
-                };
-            });
+    private static async Task ConfigureSRAMServices(WebApplicationBuilder builder,
+        IVariantFeatureManager featureManager)
+    {
+        builder.Services.AddHttpClient<SCIMApiClient>(client =>
+        {
+            client.BaseAddress = new("https://sram.surf.nl/api/scim/v2/");
+        });
 
+        bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
+        builder.Services.AddSingleton<ISCIMApiClient, SCIMApiClient>(provider =>
+        {
+            HttpClient client = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(SCIMApiClient));
+            SCIMApiClient scimClient = new(client);
+
+            string? secret = Environment.GetEnvironmentVariable("SRAM_SCIM_SECRET");
+            if (string.IsNullOrEmpty(secret) && sramEnabled)
+                throw new InvalidOperationException("SRAM_SCIM_SECRET not set.");
+
+            scimClient.SetBearerToken(secret!);
+            return scimClient;
+        });
+
+        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
+        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
+        builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
+        builder.Services.AddScoped<ProjectsService>();
+    }
+
+    private static async Task ConfigureAuthentication(WebApplicationBuilder builder,
+        IVariantFeatureManager featureManager)
+    {
+        bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
+        if (sramEnabled)
+            SetupAuth(builder);
+        else
+            SetupDevelopmentAuth(builder);
+    }
+
+    private static void ConfigureCors(WebApplicationBuilder builder)
+    {
         string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         if (allowedOrigins is null || allowedOrigins.Length == 0)
             throw new InvalidOperationException("Allowed origins must be specified in configuration.");
@@ -111,79 +142,181 @@ public class Program
             {
                 policy.WithOrigins(allowedOrigins)
                     .AllowAnyMethod()
+                    .AllowCredentials()
                     .AllowAnyHeader();
             });
         });
+    }
 
-        WebApplication app = builder.Build();
-        
-        
-        if (featureFlags.GetValue<bool>("Swagger", false))
+    private static async Task ConfigureMiddleware(WebApplication app, IVariantFeatureManager featureManager)
+    {
+        if (await featureManager.IsEnabledAsync("Swagger"))
         {
             app.UseOpenApi();
             app.UseSwaggerUi(c =>
             {
                 c.DocumentTitle = "Conflux API";
+                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.UniversalDark);
             });
         }
 
-        // Add exception handling middleware
         app.UseExceptionHandler(appBuilder =>
         {
             appBuilder.Run(async context =>
             {
-                IExceptionHandlerFeature? exception = context.Features.Get<IExceptionHandlerFeature>();
-                switch (exception?.Error)
+                Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+                switch (exception)
                 {
-                    case ProjectNotFoundException:
-                    case PersonNotFoundException:
+                    case ProjectNotFoundException or ContributorNotFoundException:
                         context.Response.StatusCode = 404;
-                        await context.Response.WriteAsJsonAsync(new
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = exception.Error.Message,
+                            Error = exception.Message,
                         });
                         break;
-                    case PersonAlreadyAddedToProjectException:
-                        context.Response.StatusCode = 409; // Conflict
-                        await context.Response.WriteAsJsonAsync(new
+                    case ContributorAlreadyAddedToProjectException:
+                        context.Response.StatusCode = 409;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = exception.Error.Message,
+                            Error = exception.Message,
+                        });
+                        break;
+                    case UserNotAuthenticatedException:
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
                         });
                         break;
                     default:
                         context.Response.StatusCode = 500;
-                        await context.Response.WriteAsJsonAsync(new
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            error = "An unexpected error occurred.",
+                            Error = "An unexpected error occurred.",
                         });
                         break;
                 }
             });
         });
 
+        app.UseCors("AllowLocalhost");
         app.UseHttpsRedirection();
         app.MapControllers();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseSession();
+    }
 
-        app.UseCors("AllowLocalhost");
-
-        // Ensure the database is created and seeded
+    private static async Task InitializeDatabase(WebApplication app, IVariantFeatureManager featureManager)
+    {
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
-        
-        // If we have a database service and it is required.
-        if (services.GetService<ConfluxContext>() != null || !featureFlags.GetValue<bool>("NoDatabaseConnection", false)) 
+
+        if (services.GetService<ConfluxContext>() != null || await featureManager.IsEnabledAsync("DatabaseConnection"))
         {
             ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-            if (context.Database.IsRelational()) await context.Database.MigrateAsync();
-    
-            // Seed the database for development, if necessary
-            if (featureFlags.GetValue<bool>("SeedDatabase", false) && !await context.People.AnyAsync())
-                await context.SeedDataAsync();
-        }
+            if (context.Database.IsRelational())
+                await context.Database.MigrateAsync();
 
-        await app.RunAsync();
+            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Projects.AnyAsync())
+            {
+                TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
+                SeedData seedData = retriever.MapProjectsAsync().Result;
+
+                await context.Contributors.AddRangeAsync(seedData.Contributors);
+                await context.Products.AddRangeAsync(seedData.Products);
+                await context.Parties.AddRangeAsync(seedData.Parties);
+                await context.Projects.AddRangeAsync(seedData.Projects);
+
+                await context.SaveChangesAsync();
+            }
+        }
+    }
+
+    private static void SetupDevelopmentAuth(WebApplicationBuilder builder)
+    {
+        builder.Services.AddAuthentication("DevelopmentAuthScheme")
+            .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>("DevelopmentAuthScheme", _ => { })
+            .AddCookie(ConfigureCookieAuth);
+    }
+
+    private static void SetupAuth(WebApplicationBuilder builder)
+    {
+        string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(sramSecret))
+            throw new InvalidOperationException("SRAM secret must be specified in environment variable.");
+
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie(ConfigureCookieAuth)
+            .AddOpenIdConnect(options => ConfigureOpenIdConnect(options, builder.Configuration, sramSecret));
+    }
+
+    private static void ConfigureCookieAuth(CookieAuthenticationOptions options)
+    {
+        options.Events.OnSignedIn = context =>
+        {
+            IUserSessionService userSessionService =
+                context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+            userSessionService.SetUser(context.Principal);
+            return Task.CompletedTask;
+        };
+
+        options.Events.OnSigningOut = context =>
+        {
+            IUserSessionService userSessionService =
+                context.HttpContext.RequestServices.GetRequiredService<IUserSessionService>();
+            userSessionService.ClearUser();
+            context.HttpContext.Session?.Clear();
+            return Task.CompletedTask;
+        };
+
+        options.LogoutPath = "/logout";
+        options.SlidingExpiration = true;
+    }
+
+    private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, ConfigurationManager config, string secret)
+    {
+        IConfigurationSection oidcConfig = config.GetSection("Authentication:SRAM");
+
+        options.Authority = oidcConfig["Authority"];
+        options.ClientId = oidcConfig["ClientId"];
+        options.ClientSecret = secret;
+        options.CallbackPath = oidcConfig["CallbackPath"];
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        options.SaveTokens = true;
+        options.GetClaimsFromUserInfoEndpoint = true;
+
+        var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+        if (scopes != null)
+            foreach (string scope in scopes)
+                options.Scope.Add(scope);
+
+        var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
+        if (claimMappings != null)
+            foreach (var mapping in claimMappings)
+                options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
+
+        options.Events.OnRedirectToIdentityProvider = context =>
+        {
+            context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
+            return Task.CompletedTask;
+        };
+
+        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+        {
+            string redirectUri = oidcConfig["RedirectUri"]!;
+            if (context.Request.Query.TryGetValue("redirectUri", out StringValues redirectUriValue) &&
+                redirectUriValue.Count > 0)
+                redirectUri = redirectUriValue!;
+
+            context.Response.Redirect(redirectUri);
+            context.HandleResponse();
+            return Task.CompletedTask;
+        };
     }
 }

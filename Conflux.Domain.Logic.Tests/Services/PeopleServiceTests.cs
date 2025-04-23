@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class PeopleServiceTests : IAsyncLifetime
+public class ContributorsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private ConfluxContext _context;
@@ -36,170 +36,167 @@ public class PeopleServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreatePersonAsync_ShouldCreatePerson()
+    public async Task CreateContributorAsync_ShouldCreateContributor()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
+        ContributorsService contributorsService = new(_context);
 
-        // Create a test person
-        PersonPostDTO dto = new()
+        ContributorPostDTO dto = new()
         {
             Name = "John Doe",
         };
 
         // Act
-        Person person = await peopleService.CreatePersonAsync(dto);
+        Contributor contributor = await contributorsService.CreateContributorAsync(dto);
 
         // Assert
-        Assert.NotNull(person);
-        Assert.Single(await _context.People.Where(p => p.Id == person.Id).ToListAsync());
+        Assert.NotNull(contributor);
+        Assert.Single(await _context.Contributors.Where(p => p.Id == contributor.Id).ToListAsync());
     }
 
     [Fact]
-    public async Task GetPersonById_ShouldReturnPerson_WhenPersonExists()
+    public async Task GetContributorById_ShouldReturnContributor_WhenContributorExists()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
+        ContributorsService contributorsService = new(_context);
 
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
-        // Insert a test person
-        Person testPerson = new()
+        Contributor testContributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test Contributor",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act
-        Person person = await peopleService.GetPersonByIdAsync(personId);
+        Contributor contributor = await contributorsService.GetContributorByIdAsync(contributorId);
 
         // Assert
-        Assert.NotNull(person);
-        Assert.Equal(testPerson.Name, person.Name);
+        Assert.NotNull(contributor);
+        Assert.Equal(testContributor.Name, contributor.Name);
     }
 
     [Fact]
-    public async Task GetPersonById_ShouldReturnNotFound_WhenPersonDoesNotExist()
+    public async Task GetContributorById_ShouldReturnNotFound_WhenContributorDoesNotExist()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
+        ContributorsService contributorService = new(_context);
 
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Act & Assert
-        await Assert.ThrowsAsync<PersonNotFoundException>(() => peopleService.GetPersonByIdAsync(personId));
+        await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
+            contributorService.GetContributorByIdAsync(contributorId));
     }
 
     [Fact]
-    public async Task CreatePerson_ShouldCreatePerson()
+    public async Task CreateContributor_ShouldCreateContributor()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
-        // Create a test person
-        PersonPostDTO testPerson = new()
+        ContributorsService contributorsService = new(_context);
+        ContributorPostDTO testContributor = new()
         {
-            Name = "Test Person",
+            Name = "Test Contributor",
         };
 
         // Act
-        Person person = await peopleService.CreatePersonAsync(testPerson);
+        Contributor contributor = await contributorsService.CreateContributorAsync(testContributor);
         await _context.SaveChangesAsync();
-        Person retrievedPerson = await _context.People.SingleAsync(p => p.Id == person.Id);
+        Contributor retrievedContributor = await _context.Contributors.SingleAsync(p => p.Id == contributor.Id);
 
         // Assert
-        Assert.NotNull(person);
-        Assert.Equal(retrievedPerson.Name, person.Name);
-        Assert.Equal(retrievedPerson.Id, person.Id);
-        Assert.Equal(testPerson.Name, person.Name);
+        Assert.NotNull(contributor);
+        Assert.Equal(retrievedContributor.Name, contributor.Name);
+        Assert.Equal(retrievedContributor.Id, contributor.Id);
+        Assert.Equal(testContributor.Name, contributor.Name);
     }
 
     [Fact]
-    public async Task UpdatePersonAsync_ShouldUpdateName()
+    public async Task UpdateContributorAsync_ShouldUpdateName()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
-        Guid personId = Guid.NewGuid();
-        Person testPerson = new()
+        ContributorsService contributorsService = new(_context);
+        Guid contributorId = Guid.NewGuid();
+        Contributor testContributor = new()
         {
-            Id = personId,
+            Id = contributorId,
             Name = "Original Name",
         };
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
-        // Create a PersonPutDTO with a new name
-        PersonPutDTO updateDto = new()
+        ContributorPutDTO updateDto = new()
         {
             Name = "Updated Name",
         };
 
         // Act
-        Person updatedPerson = await peopleService.UpdatePersonAsync(personId, updateDto);
+        Contributor updatedContributor = await contributorsService.UpdateContributorAsync(contributorId, updateDto);
 
         // Assert
-        Assert.NotNull(updatedPerson);
-        Assert.Equal("Updated Name", updatedPerson.Name);
-        Assert.Equal(personId, updatedPerson.Id);
+        Assert.NotNull(updatedContributor);
+        Assert.Equal("Updated Name", updatedContributor.Name);
+        Assert.Equal(contributorId, updatedContributor.Id);
     }
 
     [Fact]
-    public async Task PatchPersonAsync_ShouldUpdateName_WhenNameProvided()
+    public async Task PatchContributorAsync_ShouldUpdateName_WhenNameProvided()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
-        Guid personId = Guid.NewGuid();
-        Person testPerson = new()
+        ContributorsService contributorsService = new(_context);
+        Guid contributorId = Guid.NewGuid();
+        Contributor contributor = new()
         {
-            Id = personId,
+            Id = contributorId,
             Name = "Original Name",
         };
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
-        // Create a PersonPatchDTO with a new name
-        PersonPatchDTO patchDto = new()
+        // Create a ContributorPatchDTO with a new name
+        ContributorPatchDTO patchDto = new()
         {
             Name = "Patched Name",
         };
 
         // Act
-        Person patchedPerson = await peopleService.PatchPersonAsync(personId, patchDto);
+        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
 
         // Assert
-        Assert.NotNull(patchedPerson);
-        Assert.Equal("Patched Name", patchedPerson.Name);
-        Assert.Equal(personId, patchedPerson.Id);
+        Assert.NotNull(patchedContributor);
+        Assert.Equal("Patched Name", patchedContributor.Name);
+        Assert.Equal(contributorId, patchedContributor.Id);
     }
 
     [Fact]
-    public async Task PatchPersonAsync_ShouldNotChangeName_WhenNameIsNull()
+    public async Task PatchContributorAsync_ShouldNotChangeName_WhenNameIsNull()
     {
         // Arrange
-        PeopleService peopleService = new(_context);
-        Guid personId = Guid.NewGuid();
-        Person testPerson = new()
+        ContributorsService contributorsService = new(_context);
+        Guid contributorId = Guid.NewGuid();
+
+        Contributor testContributor = new()
         {
-            Id = personId,
+            Id = contributorId,
             Name = "Original Name",
         };
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
-        // Create a PersonPatchDTO with no name provided (null)
-        PersonPatchDTO patchDto = new()
+        ContributorPatchDTO patchDto = new()
         {
             Name = null,
         };
 
         // Act
-        Person patchedPerson = await peopleService.PatchPersonAsync(personId, patchDto);
+        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
 
         // Assert
-        Assert.NotNull(patchedPerson);
-        Assert.Equal("Original Name", patchedPerson.Name);
-        Assert.Equal(personId, patchedPerson.Id);
+        Assert.NotNull(patchedContributor);
+        Assert.Equal("Original Name", patchedContributor.Name);
+        Assert.Equal(contributorId, patchedContributor.Id);
     }
 }

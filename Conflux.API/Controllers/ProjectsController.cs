@@ -3,10 +3,10 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,13 +17,21 @@ namespace Conflux.API.Controllers;
 /// </summary>
 [Route("projects/")]
 [ApiController]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ProjectsController : ControllerBase
 {
+    private readonly ISRAMProjectSyncService _iSRAMProjectSyncService;
     private readonly ProjectsService _projectsService;
+    private readonly IUserSessionService _userSessionService;
 
-    public ProjectsController(ConfluxContext context)
+    public ProjectsController(ProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
+        IUserSessionService userSessionService)
     {
-        _projectsService = new(context);
+        _iSRAMProjectSyncService = iSRAMProjectSyncService;
+        _projectsService = projectsService;
+        _userSessionService = userSessionService;
     }
 
     /// <summary>
@@ -34,7 +42,9 @@ public class ProjectsController : ControllerBase
     /// <param name="startDate">Optional: Only return projects starting on or after this date</param>
     /// <param name="endDate">Optional: Only return projects ending on or before this date</param>
     /// <returns>Filtered list of projects</returns>
+    [Authorize]
     [HttpGet]
+    [ProducesResponseType(typeof(List<Project>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Project>>> GetProjectByQuery(
         [FromQuery] string? query,
         [FromQuery(Name = "start_date")] DateTime? startDate,
@@ -46,26 +56,26 @@ public class ProjectsController : ControllerBase
     /// </summary>
     /// <returns>All projects</returns>
     [HttpGet]
+    [Authorize]
     [Route("all")]
-    public async Task<ActionResult<List<Project>>> GetAllProjects() =>
-        await _projectsService.GetAllProjectsAsync();
+    [ProducesResponseType(typeof(List<Project>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<Project>>> GetAllProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            return Unauthorized();
+        return await _projectsService.GetAllProjectsAsync();
+    }
 
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
     [HttpGet]
+    [Authorize]
     [Route("{id:guid}")]
+    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
     public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
-
-    /// <summary>
-    /// Creates a new project
-    /// </summary>
-    /// <param name="projectPostDto">The DTO which to convert to a <see cref="Project" /></param>
-    /// <returns>The request response</returns>
-    [HttpPost]
-    public async Task<ActionResult<Project>> CreateProject([FromBody] ProjectPostDTO projectPostDto) =>
-        await _projectsService.CreateProjectAsync(projectPostDto);
 
     /// <summary>
     /// Puts a project by its GUID
@@ -75,6 +85,7 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
+    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
     public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectPutDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
@@ -86,17 +97,31 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPatch]
     [Route("{id:guid}")]
+    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
     public async Task<ActionResult<Project>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
-        Ok(await _projectsService.PatchProjectAsync(id, projectDto));
+        await _projectsService.PatchProjectAsync(id, projectDto);
 
     /// <summary>
-    /// Updates a project by adding the person with the provided personId.
+    /// Updates a project by adding the contributor with the provided personId.
     /// </summary>
     /// <param name="projectId">The GUID of the project to update</param>
-    /// <param name="personId">The GUID of the person to add to the project</param>
+    /// <param name="contributorId">The GUID of the contributor to add to the project</param>
     /// <returns>The request response</returns>
     [HttpPost]
-    [Route("{projectId:guid}/addPerson/{personId:guid}")]
-    public async Task<ActionResult<Project>> AddPersonToProjectAsync([FromRoute] Guid projectId, Guid personId) =>
-        await _projectsService.AddPersonToProjectAsync(projectId, personId);
+    [Route("{projectId:guid}/contributors")]
+    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<Project>> AddContributorToProjectAsync([FromRoute] Guid projectId,
+        [FromBody] Guid contributorId) =>
+        await _projectsService.AddContributorToProjectAsync(projectId, contributorId);
+
+    [HttpPost]
+    [Route("{id:guid}/sync")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult> SyncProject([FromRoute] Guid id)
+    {
+        await _iSRAMProjectSyncService.SyncProjectAsync(id);
+        return Ok();
+    }
 }

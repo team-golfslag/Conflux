@@ -16,7 +16,8 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context;
+    private ConfluxContext _context = null!;
+    private UserSessionService _userSessionService = null!;
 
     public async Task InitializeAsync()
     {
@@ -28,6 +29,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
+        _userSessionService = new(null!, null!, null!, null!);
     }
 
     public async Task DisposeAsync()
@@ -44,7 +46,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
@@ -66,7 +68,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
 
         // Insert a test project
         Project originalProject = new()
@@ -118,7 +120,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PatchProjectAsync_ShouldPatchExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context);
+        ProjectsService service = new(_context, _userSessionService);
 
         // Insert a test project
         Project originalProject = new()
@@ -163,13 +165,13 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
+    public async Task AddContributorToProjectAsync_ShouldReturnProject_WhenProjectAndContributorExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Insert a test project
         Project testProject = new()
@@ -184,49 +186,49 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context.Projects.Add(testProject);
         await _context.SaveChangesAsync();
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test contributor
+        Contributor contributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test User",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         // Act
-        Project project = await projectsService.AddPersonToProjectAsync(projectId, personId);
+        Project project = await projectsService.AddContributorToProjectAsync(projectId, contributorId);
 
         // Assert
         Assert.NotNull(project);
         Assert.Equal(projectId, project.Id);
         Assert.Equal(testProject.Title, project.Title);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Equal(project.Contributors[0].Id, contributor.Id);
+        Assert.Equal(project.Contributors[0].Name, contributor.Name);
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
+    public async Task AddContributorToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
-            projectsService.AddPersonToProjectAsync(projectId, personId));
+            projectsService.AddContributorToProjectAsync(projectId, contributorId));
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldThrow_WhenPersonDoesNotExist()
+    public async Task AddContributorToProjectAsync_ShouldThrow_WhenContributorDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
 
         // Insert a test project
         Project testProject = new()
@@ -242,18 +244,18 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<PersonNotFoundException>(() =>
-            projectsService.AddPersonToProjectAsync(projectId, personId));
+        await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
+            projectsService.AddContributorToProjectAsync(projectId, userId));
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
+    public async Task AddContributorToProjectAsync_ShouldReturnProject_WhenContributorAlreadyExists()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Insert a test project
         Project testProject = new()
@@ -264,32 +266,33 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProject);
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        Contributor contributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test User",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         // Act
-        await projectsService.AddPersonToProjectAsync(projectId, personId);
+        await projectsService.AddContributorToProjectAsync(projectId, contributorId);
 
         // Assert
-        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
-            projectsService.AddPersonToProjectAsync(projectId, personId));
+        await Assert.ThrowsAsync<ContributorAlreadyAddedToProjectException>(() =>
+            projectsService.AddContributorToProjectAsync(projectId, contributorId));
     }
 
     [Fact]
-    public async Task AddPersonToProject_ShouldReturnProject_WhenSuccessful()
+    public async Task AddContributorToProject_ShouldReturnProject_WhenSuccessful()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
+
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Create a test project
         Project testProject = new()
@@ -303,57 +306,58 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProject);
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        Contributor contributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test Contributor",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         // Act
-        Project project = await projectsService.AddPersonToProjectAsync(projectId, testPerson.Id);
+        Project project = await projectsService.AddContributorToProjectAsync(projectId, contributor.Id);
 
         // Assert
         Assert.NotNull(project);
-        Assert.Equal(project.People[0].Id, testPerson.Id);
-        Assert.Equal(project.People[0].Name, testPerson.Name);
+        Assert.Single(project.Contributors);
+        Assert.Equal(project.Contributors[0].Id, contributor.Id);
+        Assert.Equal(project.Contributors[0].Name, contributor.Name);
     }
 
     [Fact]
-    public async Task AddPersonToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    public async Task AddContributorToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
-        // Insert a test person
-        Person testPerson = new()
+        // Insert a test user
+        Contributor contributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test Contributor",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
-            projectsService.AddPersonToProjectAsync(projectId, personId));
+            projectsService.AddContributorToProjectAsync(projectId, contributorId));
     }
 
     [Fact]
-    public async Task AddPersonToProject_ShouldReturnBadRequest_WhenPersonAlreadyAdded()
+    public async Task AddContributorToProject_ShouldReturnBadRequest_WhenContributorAlreadyAdded()
     {
         // Arrange
-        ProjectsService projectsService = new(_context);
+        ProjectsService projectsService = new(_context, _userSessionService);
 
         Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Create a test project
         Project testProjectDto = new()
@@ -367,21 +371,20 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         _context.Projects.Add(testProjectDto);
 
-        // Insert a test person
-        Person testPerson = new()
+        Contributor contributor = new()
         {
-            Id = personId,
-            Name = "Test Person",
+            Id = contributorId,
+            Name = "Test Contributor",
         };
 
-        _context.People.Add(testPerson);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         // Act & Assert
-        Project resultProject = await projectsService.AddPersonToProjectAsync(projectId, personId);
+        Project resultProject = await projectsService.AddContributorToProjectAsync(projectId, contributorId);
         Assert.NotNull(resultProject);
 
-        await Assert.ThrowsAsync<PersonAlreadyAddedToProjectException>(() =>
-            projectsService.AddPersonToProjectAsync(projectId, personId));
+        await Assert.ThrowsAsync<ContributorAlreadyAddedToProjectException>(() =>
+            projectsService.AddContributorToProjectAsync(projectId, contributorId));
     }
 }

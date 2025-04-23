@@ -13,6 +13,9 @@ namespace Conflux.API.Tests;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // This is a unique name for the in-memory database to avoid conflicts between tests
+    private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.NewGuid()}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -27,7 +30,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             // Add in-memory DB context
             services.AddDbContext<ConfluxContext>(options =>
-                options.UseInMemoryDatabase("InMemoryConfluxTestDb"));
+                options.UseInMemoryDatabase(_databaseName));
 
             // Build and seed
             ServiceProvider provider = services.BuildServiceProvider();
@@ -35,6 +38,45 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             using IServiceScope scope = provider.CreateScope();
             ConfluxContext db = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
             db.Database.EnsureCreated();
+            // Clear the database
+            db.Database.EnsureDeleted();
+
+            // Check if test data is already seeded
+            if (db.Projects.Any())
+                return;
+
+            // Add some projects
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000001"),
+                Title = "Test Project",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SCIMId = "SCIM",
+            });
+
+            // Add projects for the PUT and PATCH tests
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000002"),
+                Title = "Test Project 2",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SCIMId = "SCIM",
+            });
+            db.Projects.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000003"),
+                Title = "Test Project 3",
+                Description = "This is a test project.",
+                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+                SCIMId = "SCIM",
+            });
+
+            db.SaveChanges();
         });
     }
 }

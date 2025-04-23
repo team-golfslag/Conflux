@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -31,35 +30,5 @@ public class ConfluxContextTests
 
         // Assert
         Assert.NotNull(context);
-    }
-
-    /// <summary>
-    /// Given a database context
-    /// When SeedDataAsync is called
-    /// Then the database should be seeded with the correct data
-    /// </summary>
-    [Fact]
-    public async Task SeedDataAsync_ShouldSeedDataCorrectly()
-    {
-        // Arrange
-        await _postgres.StartAsync();
-
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString()).Options;
-
-        ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
-
-        // Act
-        await context.SeedDataAsync();
-
-        var projects = await context.Projects.ToListAsync();
-
-        // Assertions
-        Assert.NotEmpty(projects);
-
-        Project project = projects[0];
-
-        Assert.NotNull(project);
     }
 }

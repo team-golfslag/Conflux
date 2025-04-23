@@ -36,22 +36,6 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task CreateProject_ReturnsCreated()
-    {
-        ProjectPostDTO newProject = new()
-        {
-            Title = "Integration Project",
-            Description = "Test project",
-        };
-
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/projects", newProject);
-        response.EnsureSuccessStatusCode();
-
-        Project? created = await response.Content.ReadFromJsonAsync<Project>();
-        Assert.Equal("Integration Project", created?.Title);
-    }
-
-    [Fact]
     public async Task GetProjectById_ReturnsNotFound_ForInvalidId()
     {
         Guid invalidId = Guid.NewGuid();
@@ -63,13 +47,12 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task PutProject_UpdatesProject()
     {
         // First, create a new project
-        ProjectPostDTO newProject = new()
+        Project? project;
+        using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            Title = "Original Title",
-            Description = "To be updated",
-        };
-        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/projects", newProject);
-        Project? created = await createRes.Content.ReadFromJsonAsync<Project>();
+            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000002"));
+        }
 
         // Then, update it
         ProjectPutDTO updatedProject = new()
@@ -77,7 +60,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             Title = "Updated Title",
             Description = "Updated description",
         };
-        HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{created!.Id}", updatedProject);
+        HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
         putRes.EnsureSuccessStatusCode();
 
         Project? updated = await putRes.Content.ReadFromJsonAsync<Project>();
@@ -87,19 +70,18 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task PatchProject_UpdatesDescriptionOnly()
     {
-        ProjectPostDTO newProject = new()
+        Project? project;
+        using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            Title = "Patch Test",
-            Description = "Before patch",
-        };
-        HttpResponseMessage createRes = await _client.PostAsJsonAsync("/projects", newProject);
-        Project? created = await createRes.Content.ReadFromJsonAsync<Project>();
+            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000003"));
+        }
 
         ProjectPatchDTO patchDto = new()
         {
             Description = "After patch",
         };
-        HttpResponseMessage patchRes = await _client.PatchAsJsonAsync($"/projects/{created!.Id}", patchDto);
+        HttpResponseMessage patchRes = await _client.PatchAsJsonAsync($"/projects/{project!.Id}", patchDto);
         patchRes.EnsureSuccessStatusCode();
 
         Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>();
@@ -109,50 +91,30 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetProjects_ByQuery_ReturnsMatchingProjects()
     {
-        // Arrange
-        ProjectPostDTO project = new()
-        {
-            Title = "Solar Panel Research",
-            Description = "Test description",
-        };
-        await _client.PostAsJsonAsync("/projects", project);
-
+        // Arrange: not needed, already seeded
         // Act
-        HttpResponseMessage response = await _client.GetAsync("/projects?query=solar");
+        HttpResponseMessage response = await _client.GetAsync("/projects?query=test");
 
         // Assert
         response.EnsureSuccessStatusCode();
         var projects = await response.Content.ReadFromJsonAsync<Project[]>();
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title.Contains("Solar Panel Research"));
+        Assert.Contains(projects, p => p.Title.Contains("Test Project"));
     }
 
     [Fact]
     public async Task GetProjects_ByDateRange_ReturnsMatchingProjects()
     {
-        // Arrange
-        ProjectPostDTO project = new()
-        {
-            Title = "Dated Project",
-            Description = "Project with specific dates",
-            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2024, 12, 31, 0, 0, 0, DateTimeKind.Utc),
-        };
-        JsonContent content = JsonContent.Create(project, options: new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        });
-        await _client.PostAsync("/projects", content);
-
+        // Arrange already seeded
         // Act
-        const string url = "/projects?query=dated&start_date=2024-01-01T00:00:00Z&end_date=2024-12-31T23:59:59Z";
+        const string url = "/projects?query=test&start_date=2024-01-01T00:00:00Z&end_date=2024-12-31T23:59:59Z";
         HttpResponseMessage response = await _client.GetAsync(url);
 
         // Assert
         response.EnsureSuccessStatusCode();
         var projects = await response.Content.ReadFromJsonAsync<Project[]>();
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title == "Dated Project");
+        Assert.Contains(projects, p => p.Title == "Test Project");
     }
 
     [Fact]
@@ -184,88 +146,47 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_AddsPersonSuccessfully()
+    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
     {
-        // Arrange: Create a new project using the API
-        ProjectPostDTO newProject = new()
-        {
-            Title = "Test Project",
-            Description = "Project for add person testing",
-        };
-        HttpResponseMessage createProjectRes = await _client.PostAsJsonAsync("/projects", newProject);
-        createProjectRes.EnsureSuccessStatusCode();
-        Project? project = await createProjectRes.Content.ReadFromJsonAsync<Project>();
-        Assert.NotNull(project);
-
-        // Arrange: Create a new person by seeding the database
-        Guid personId = Guid.NewGuid();
+        // Arrange: Create a contributor in the database
+        Guid contributorId = Guid.NewGuid();
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
             ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
+            User user = new()
             {
-                Id = personId,
-                Name = "Test Person",
+                Id = contributorId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
             };
-            context.People.Add(person);
-            await context.SaveChangesAsync();
-        }
-
-        // Act: Call the AddPersonToProjectAsync endpoint
-        HttpResponseMessage addRes = await _client.PostAsync($"/projects/{project!.Id}/addPerson/{personId}", null);
-        addRes.EnsureSuccessStatusCode();
-        Project? updatedProject = await addRes.Content.ReadFromJsonAsync<Project>();
-
-        // Assert: The updated project should contain the person
-        Assert.NotNull(updatedProject);
-        Assert.NotNull(updatedProject!.People);
-        Assert.Contains(updatedProject.People, p => p.Id == personId);
-    }
-
-    [Fact]
-    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
-    {
-        // Arrange: Create a person in the database
-        Guid personId = Guid.NewGuid();
-        using (IServiceScope scope = _factory.Services.CreateScope())
-        {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            Person person = new()
-            {
-                Id = personId,
-                Name = "Test Person",
-            };
-            context.People.Add(person);
+            context.Users.Add(user);
             await context.SaveChangesAsync();
         }
 
         // Act: Use a non-existent project ID
         Guid nonExistentProjectId = Guid.NewGuid();
         HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{nonExistentProjectId}/addPerson/{personId}", null);
+            await _client.PostAsync($"/projects/{nonExistentProjectId}/contributors/{contributorId}", null);
 
         // Assert: The response should be NotFound
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenPersonDoesNotExist()
+    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenContributorDoesNotExist()
     {
-        // Arrange: Create a new project using the API
-        ProjectPostDTO newProject = new()
+        // Arrange: Query the database for an existing project
+        Project? project;
+        using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            Title = "Test Project",
-            Description = "Project for add person testing",
-        };
-        HttpResponseMessage createProjectRes = await _client.PostAsJsonAsync("/projects", newProject);
-        createProjectRes.EnsureSuccessStatusCode();
-        Project? project = await createProjectRes.Content.ReadFromJsonAsync<Project>();
-        Assert.NotNull(project);
+            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000001"));
+        }
 
-        // Act: Use a non-existent person ID
-        Guid nonExistentPersonId = Guid.NewGuid();
+        // Act: Use a non-existent contributor ID
+        Guid nonExistentContributorId = Guid.NewGuid();
         HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{project!.Id}/addPerson/{nonExistentPersonId}", null);
+            await _client.PostAsync($"/projects/{project!.Id}/addContributor/{nonExistentContributorId}", null);
 
         // Assert: The response should be NotFound
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

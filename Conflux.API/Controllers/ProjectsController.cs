@@ -108,7 +108,7 @@ public class ProjectsController : ControllerBase
     /// <param name="contributorId">The GUID of the contributor to add to the project</param>
     /// <returns>The request response</returns>
     [HttpPost]
-    [Route("{projectId:guid}/add_contributor")]
+    [Route("{projectId:guid}/contributors")]
     [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Project>> AddContributorToProjectAsync([FromRoute] Guid projectId,

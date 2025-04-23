@@ -4,7 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 
 namespace Conflux.Domain.Logic.Services;
 

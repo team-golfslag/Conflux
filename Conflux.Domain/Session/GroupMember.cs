@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Models;
+namespace Conflux.Domain.Session;
 
 public class GroupMember
 {

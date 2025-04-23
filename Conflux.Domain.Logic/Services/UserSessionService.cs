@@ -7,7 +7,7 @@ using System.Security.Claims;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Extensions;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;

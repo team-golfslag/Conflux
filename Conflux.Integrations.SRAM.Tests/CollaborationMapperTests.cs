@@ -4,7 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.DTOs;
 using Conflux.RepositoryConnections.SRAM.Exceptions;

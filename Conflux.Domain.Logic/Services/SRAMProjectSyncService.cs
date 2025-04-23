@@ -5,7 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 using Conflux.RepositoryConnections.SRAM;
 using Conflux.RepositoryConnections.SRAM.Models;
 using Microsoft.EntityFrameworkCore;

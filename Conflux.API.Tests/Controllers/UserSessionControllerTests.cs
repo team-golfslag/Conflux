@@ -5,7 +5,7 @@
 
 using Conflux.API.Controllers;
 using Conflux.Domain.Logic.Services;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;

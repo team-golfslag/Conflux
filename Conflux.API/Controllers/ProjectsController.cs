@@ -6,7 +6,7 @@
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
-using Conflux.Domain.Models;
+using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

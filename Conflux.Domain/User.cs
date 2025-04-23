@@ -9,20 +9,17 @@ using System.Text.Json.Serialization;
 namespace Conflux.Domain;
 
 /// <summary>
-/// Represents a person.
+/// Represents a user.
 /// </summary>
 public record User
 {
     [Key] public Guid Id { get; set; }
 
-    [JsonPropertyName("raid_id")]
-    public string? SRAMId { get; set; }
-    
-    [JsonPropertyName("scim_id")]
-    public required string SCIMId { get; set; }
+    [JsonPropertyName("raid_id")] public string? SRAMId { get; set; }
 
-    [JsonPropertyName("orcid_id")]
-    public string? ORCiD { get; set; }
+    [JsonPropertyName("scim_id")] public required string SCIMId { get; set; }
+
+    [JsonPropertyName("orcid_id")] public string? ORCiD { get; set; }
 
     [Required] public required string Name { get; set; }
 

@@ -98,9 +98,9 @@ public static class NwOpenMapper
     }
 
     /// <summary>
-    /// Maps a project member to a person.
+    /// Maps a project member to a contributor.
     /// </summary>
-    /// <param name="project">The project to which the person is added</param>
+    /// <param name="project">The project to which the contributor is added</param>
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapContributor(Project project, NwOpenProjectMember projectMember)
     {

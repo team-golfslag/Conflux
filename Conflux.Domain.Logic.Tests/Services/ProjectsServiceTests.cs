@@ -165,7 +165,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenProjectAndPersonExist()
+    public async Task AddContributorToProjectAsync_ShouldReturnProject_WhenProjectAndContributorExist()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
@@ -208,7 +208,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
+    public async Task AddContributorToProjectAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
@@ -222,7 +222,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldThrow_WhenPersonDoesNotExist()
+    public async Task AddContributorToProjectAsync_ShouldThrow_WhenContributorDoesNotExist()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
@@ -249,7 +249,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ShouldReturnProject_WhenPersonAlreadyExists()
+    public async Task AddContributorToProjectAsync_ShouldReturnProject_WhenContributorAlreadyExists()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
@@ -285,14 +285,14 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProject_ShouldReturnProject_WhenSuccessful()
+    public async Task AddContributorToProject_ShouldReturnProject_WhenSuccessful()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
 
 
         Guid projectId = Guid.NewGuid();
-        Guid userId = Guid.NewGuid();
+        Guid contributorId = Guid.NewGuid();
 
         // Create a test project
         Project testProject = new()
@@ -309,7 +309,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Insert a test user
         Contributor contributor = new()
         {
-            Id = userId,
+            Id = contributorId,
             Name = "Test Contributor",
         };
 
@@ -327,7 +327,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddPersonToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
+    public async Task AddContributorToProject_ShouldReturnNotFound_WhenProjectDoesNotExist()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);
@@ -351,7 +351,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AddContributorToProject_ShouldReturnBadRequest_WhenPersonAlreadyAdded()
+    public async Task AddContributorToProject_ShouldReturnBadRequest_WhenContributorAlreadyAdded()
     {
         // Arrange
         ProjectsService projectsService = new(_context, _userSessionService);

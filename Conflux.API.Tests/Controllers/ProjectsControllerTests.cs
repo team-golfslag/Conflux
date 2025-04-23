@@ -146,16 +146,16 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
+    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
     {
-        // Arrange: Create a person in the database
-        Guid personId = Guid.NewGuid();
+        // Arrange: Create a contributor in the database
+        Guid contributorId = Guid.NewGuid();
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
             ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
             User user = new()
             {
-                Id = personId,
+                Id = contributorId,
                 Name = "Test User",
                 SCIMId = "test-scim-id",
             };
@@ -166,14 +166,14 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         // Act: Use a non-existent project ID
         Guid nonExistentProjectId = Guid.NewGuid();
         HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{nonExistentProjectId}/addPerson/{personId}", null);
+            await _client.PostAsync($"/projects/{nonExistentProjectId}/contributors/{contributorId}", null);
 
         // Assert: The response should be NotFound
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
-    public async Task AddPersonToProjectAsync_ReturnsNotFound_WhenPersonDoesNotExist()
+    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenContributorDoesNotExist()
     {
         // Arrange: Query the database for an existing project
         Project? project;
@@ -183,10 +183,10 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000001"));
         }
 
-        // Act: Use a non-existent person ID
-        Guid nonExistentPersonId = Guid.NewGuid();
+        // Act: Use a non-existent contributor ID
+        Guid nonExistentContributorId = Guid.NewGuid();
         HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{project!.Id}/addPerson/{nonExistentPersonId}", null);
+            await _client.PostAsync($"/projects/{project!.Id}/addContributor/{nonExistentContributorId}", null);
 
         // Assert: The response should be NotFound
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

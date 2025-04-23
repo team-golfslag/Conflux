@@ -18,6 +18,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using SwaggerThemes;
 
 namespace Conflux.API;
 
@@ -217,7 +218,7 @@ public class Program
             if (context.Database.IsRelational())
                 await context.Database.MigrateAsync();
 
-            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Users.AnyAsync())
+            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Projects.AnyAsync())
             {
                 TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
                 SeedData seedData = retriever.MapProjectsAsync().Result;

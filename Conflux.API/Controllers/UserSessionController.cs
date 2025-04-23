@@ -37,7 +37,7 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Route("login")]
-    [Authorize]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public async Task<ActionResult> LogIn([FromQuery] string redirectUri)
     {
         UserSession? user = await _userSessionService.GetUser();
@@ -53,6 +53,7 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Route("logout")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public async Task<ActionResult> LogOut([FromQuery] string redirectUri)
     {
         // Validate redirect URL

@@ -99,7 +99,7 @@ public class ProjectsController : ControllerBase
     [Route("{id:guid}")]
     [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
     public async Task<ActionResult<Project>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
-        Ok(await _projectsService.PatchProjectAsync(id, projectDto));
+        await _projectsService.PatchProjectAsync(id, projectDto);
 
     /// <summary>
     /// Updates a project by adding the contributor with the provided personId.

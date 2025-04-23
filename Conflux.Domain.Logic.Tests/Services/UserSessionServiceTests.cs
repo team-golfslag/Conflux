@@ -6,6 +6,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
+using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Models;
 using Conflux.RepositoryConnections.SRAM;
@@ -73,7 +74,7 @@ public class UserSessionServiceTests
             mockCollaborationMapper.Object, mockFeatureManager.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetUser());
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => service.GetUser());
     }
 
     [Fact]
@@ -302,7 +303,7 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         mockCollaborationMapper.Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
-            .ReturnsAsync(new List<Collaboration>());
+            .ReturnsAsync([]);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object);

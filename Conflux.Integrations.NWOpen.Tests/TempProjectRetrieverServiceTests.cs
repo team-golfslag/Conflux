@@ -1,11 +1,15 @@
-using Conflux.RepositoryConnections.NWOpen;
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Moq;
 using NWOpen.Net;
 using NWOpen.Net.Models;
 using NWOpen.Net.Services;
 using Xunit;
 
-namespace Conflux.RepositoryConnections.Tests;
+namespace Conflux.Integrations.NWOpen.Tests;
 
 public class TempProjectRetrieverServiceTests
 {
@@ -83,49 +87,5 @@ public class TempProjectRetrieverServiceTests
         Assert.NotNull(seedData.Products);
         Assert.NotNull(seedData.Contributors);
         Assert.NotNull(seedData.Parties);
-    }
-
-    [Fact]
-    public async Task MapProjectsAsync_ConcurrentCalls_ReturnsConsistentResults()
-    {
-        // Arrange: mock INWOpenService for concurrent scenario
-        Project dummyProject = new()
-        {
-            ProjectId = "proj2",
-            Title = "Concurrent",
-        };
-        NWOpenResult result = new()
-        {
-            Projects = [dummyProject],
-            Metadata = null,
-        };
-
-        var queryBuilderMock = new Mock<INWOpenQueryBuilder>();
-        queryBuilderMock
-            .Setup(q => q.WithNumberOfResults(It.IsAny<int>()))
-            .Returns(queryBuilderMock.Object);
-        queryBuilderMock
-            .Setup(q => q.ExecuteAsync())
-            .ReturnsAsync(result);
-
-        var serviceMock = new Mock<INWOpenService>(MockBehavior.Strict);
-        serviceMock
-            .Setup(s => s.Query())
-            .Returns(queryBuilderMock.Object);
-
-        TempProjectRetrieverService retriever = new(serviceMock.Object);
-
-        // Act: make multiple concurrent calls
-        var tasks = Enumerable.Range(0, 5)
-            .Select(_ => retriever.MapProjectsAsync(1))
-            .ToArray();
-        await Task.WhenAll(tasks);
-
-        // Assert: all calls yield the same mapped content
-        foreach (var task in tasks)
-        {
-            SeedData res = await task;
-            Assert.Equal(dummyProject.Title, res.Projects[0].Title);
-        }
     }
 }

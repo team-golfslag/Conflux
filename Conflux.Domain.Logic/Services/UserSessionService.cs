@@ -8,8 +8,8 @@ using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Extensions;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM;
-using Conflux.RepositoryConnections.SRAM.Extensions;
+using Conflux.Integrations.SRAM;
+using Conflux.Integrations.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.FeatureManagement;
 

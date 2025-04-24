@@ -5,10 +5,10 @@
 
 using Conflux.Data;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM;
-using Conflux.RepositoryConnections.SRAM.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
+using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Models;
 
 namespace Conflux.Domain.Logic.Services;
 

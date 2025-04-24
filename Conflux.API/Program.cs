@@ -7,8 +7,8 @@ using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
-using Conflux.RepositoryConnections.NWOpen;
-using Conflux.RepositoryConnections.SRAM;
+using Conflux.Integrations.NWOpen;
+using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -18,6 +18,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using SRAM.SCIM.Net;
 using SwaggerThemes;
 
 namespace Conflux.API;

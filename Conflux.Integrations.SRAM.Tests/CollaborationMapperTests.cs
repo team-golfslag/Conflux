@@ -5,12 +5,12 @@
 
 using Conflux.Data;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM;
-using Conflux.RepositoryConnections.SRAM.DTOs;
-using Conflux.RepositoryConnections.SRAM.Exceptions;
-using Conflux.RepositoryConnections.SRAM.Models;
+using Conflux.Integrations.SRAM.DTOs;
+using Conflux.Integrations.SRAM.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Models;
 using Xunit;
 
 namespace Conflux.Integrations.SRAM.Tests;

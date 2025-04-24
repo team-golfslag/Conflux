@@ -10,7 +10,7 @@ using NwOpenProject = NWOpen.Net.Models.Project;
 using NwOpenProduct = NWOpen.Net.Models.Product;
 using NwOpenProjectMember = NWOpen.Net.Models.ProjectMember;
 
-namespace Conflux.RepositoryConnections.NWOpen;
+namespace Conflux.Integrations.NWOpen;
 
 public static class NwOpenMapper
 {

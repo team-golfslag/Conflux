@@ -4,11 +4,11 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
-using Conflux.RepositoryConnections.SRAM.DTOs;
-using Conflux.RepositoryConnections.SRAM.Extensions;
+using Conflux.Integrations.SRAM.DTOs;
+using Conflux.Integrations.SRAM.Extensions;
 using Xunit;
 
-namespace Conflux.RepositoryConnections.SRAM.Tests.Extensions;
+namespace Conflux.Integrations.SRAM.Tests;
 
 public class ClaimsPrincipleExtensionsTests
 {

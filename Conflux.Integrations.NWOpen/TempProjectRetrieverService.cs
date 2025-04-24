@@ -6,7 +6,7 @@
 using NWOpen.Net.Models;
 using NWOpen.Net.Services;
 
-namespace Conflux.RepositoryConnections.NWOpen;
+namespace Conflux.Integrations.NWOpen;
 
 /// <summary>
 /// Maps NWOpen data to domain objects. Singleton class.

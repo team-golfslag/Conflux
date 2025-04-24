@@ -6,12 +6,12 @@
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM.DTOs;
-using Conflux.RepositoryConnections.SRAM.Exceptions;
+using Conflux.Integrations.SRAM.DTOs;
+using Conflux.Integrations.SRAM.Exceptions;
 using SRAM.SCIM.Net;
 using SRAM.SCIM.Net.Models;
 
-namespace Conflux.RepositoryConnections.SRAM;
+namespace Conflux.Integrations.SRAM;
 
 public class CollaborationMapper : ICollaborationMapper
 {

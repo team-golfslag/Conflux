@@ -5,7 +5,6 @@
 
 using Conflux.Data;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using SRAM.SCIM.Net;

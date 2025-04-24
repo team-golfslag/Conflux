@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.RepositoryConnections.SRAM.Exceptions;
+namespace Conflux.Integrations.SRAM.Exceptions;
 
 public class GroupNotFoundException : Exception
 {

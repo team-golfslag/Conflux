@@ -1,11 +1,15 @@
-using Conflux.RepositoryConnections.NWOpen;
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using Moq;
 using NWOpen.Net;
 using NWOpen.Net.Models;
 using NWOpen.Net.Services;
 using Xunit;
 
-namespace Conflux.RepositoryConnections.Tests;
+namespace Conflux.Integrations.NWOpen.Tests;
 
 public class TempProjectRetrieverServiceTests
 {

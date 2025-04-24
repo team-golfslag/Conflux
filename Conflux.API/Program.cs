@@ -18,6 +18,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using SRAM.SCIM.Net;
 using SwaggerThemes;
 
 namespace Conflux.API;

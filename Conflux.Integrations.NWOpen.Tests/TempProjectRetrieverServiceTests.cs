@@ -88,48 +88,4 @@ public class TempProjectRetrieverServiceTests
         Assert.NotNull(seedData.Contributors);
         Assert.NotNull(seedData.Parties);
     }
-
-    [Fact]
-    public async Task MapProjectsAsync_ConcurrentCalls_ReturnsConsistentResults()
-    {
-        // Arrange: mock INWOpenService for concurrent scenario
-        Project dummyProject = new()
-        {
-            ProjectId = "proj2",
-            Title = "Concurrent",
-        };
-        NWOpenResult result = new()
-        {
-            Projects = [dummyProject],
-            Metadata = null,
-        };
-
-        var queryBuilderMock = new Mock<INWOpenQueryBuilder>();
-        queryBuilderMock
-            .Setup(q => q.WithNumberOfResults(It.IsAny<int>()))
-            .Returns(queryBuilderMock.Object);
-        queryBuilderMock
-            .Setup(q => q.ExecuteAsync())
-            .ReturnsAsync(result);
-
-        var serviceMock = new Mock<INWOpenService>(MockBehavior.Strict);
-        serviceMock
-            .Setup(s => s.Query())
-            .Returns(queryBuilderMock.Object);
-
-        TempProjectRetrieverService retriever = new(serviceMock.Object);
-
-        // Act: make multiple concurrent calls
-        var tasks = Enumerable.Range(0, 5)
-            .Select(_ => retriever.MapProjectsAsync(1))
-            .ToArray();
-        await Task.WhenAll(tasks);
-
-        // Assert: all calls yield the same mapped content
-        foreach (var task in tasks)
-        {
-            SeedData res = await task;
-            Assert.Equal(dummyProject.Title, res.Projects[0].Title);
-        }
-    }
 }

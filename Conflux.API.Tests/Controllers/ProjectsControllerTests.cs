@@ -146,6 +146,36 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetProjects_ByTitleOrder_ReturnsOrderedProjects()
+    {
+        // Arrange: not needed, already seeded
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/projects?order_by=titleAsc");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        Assert.NotNull(projects);
+        Assert.True(projects.Length <= 1 ||
+            string.Compare(projects[0].Title, projects[1].Title, StringComparison.Ordinal) < 0);
+    }
+
+    [Fact]
+    public async Task GetProjects_ByStartDateOrder_ReturnsOrderedProjects()
+    {
+        // Arrange: not needed, already seeded
+        // Act
+        HttpResponseMessage response = await _client.GetAsync("/projects?order_by=startDateAsc");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        Assert.NotNull(projects);
+        Assert.True(projects.Length <= 1 || projects[0].StartDate == null ||
+            projects[1].StartDate == null || projects[0].StartDate <= projects[1].StartDate);
+    }
+
+    [Fact]
     public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
     {
         // Arrange: Create a contributor in the database

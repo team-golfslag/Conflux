@@ -10,9 +10,15 @@ namespace Conflux.Domain;
 /// <summary>
 /// Represents a party.
 /// </summary>
-public class Party
+public class Organisation
 {
     [Key] public Guid Id { get; set; }
+
+    public string SchemaUri => "https://ror.org/";
+
+    public string? RORId { get; set; }
+
+    public List<OrganisationRole> Roles { get; set; } = [];
 
     [Required] public required string Name { get; set; }
 }

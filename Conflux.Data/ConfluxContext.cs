@@ -16,10 +16,14 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 {
     public DbSet<User> Users { get; set; }
     public DbSet<Contributor> Contributors { get; set; }
+    public DbSet<ContributorRole> ContributorRoles { get; set; }
+    public DbSet<ContributorPosition> ContributorPositions { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<Project> Projects { get; set; }
-    public DbSet<Party> Parties { get; set; }
-    public DbSet<Role> Roles { get; set; }
+    public DbSet<Organisation> Organisations { get; set; }
+    public DbSet<OrganisationRole> OrganisationRoles { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
+
     public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 
     /// <summary>
@@ -35,9 +39,6 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
             .HasMany(p => p.Products)
             .WithMany();
         modelBuilder.Entity<User>()
-            .HasMany(p => p.Roles)
-            .WithMany();
-        modelBuilder.Entity<Contributor>()
             .HasMany(p => p.Roles)
             .WithMany();
 

@@ -3,6 +3,7 @@ using System;
 using Conflux.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    partial class ConfluxContextModelSnapshot : ModelSnapshot
+    [Migration("20250423142932_AnotherOne")]
+    partial class AnotherOne
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,25 +58,6 @@ namespace Conflux.Data.Migrations
                     b.ToTable("Contributors");
                 });
 
-            modelBuilder.Entity("Conflux.Domain.ContributorPosition", b =>
-                {
-                    b.Property<Guid>("ContributorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("ContributorId", "Position");
-
-                    b.ToTable("ContributorPositions");
-                });
-
             modelBuilder.Entity("Conflux.Domain.ContributorRole", b =>
                 {
                     b.Property<Guid>("ContributorId")
@@ -87,7 +71,7 @@ namespace Conflux.Data.Migrations
                     b.ToTable("ContributorRoles");
                 });
 
-            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+            modelBuilder.Entity("Conflux.Domain.Party", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -100,33 +84,11 @@ namespace Conflux.Data.Migrations
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("RORId")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Organisations");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
-                {
-                    b.Property<Guid>("OrganisationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("OrganisationId", "Role");
-
-                    b.ToTable("OrganisationRoles");
+                    b.ToTable("Parties");
                 });
 
             modelBuilder.Entity("Conflux.Domain.Product", b =>
@@ -310,15 +272,6 @@ namespace Conflux.Data.Migrations
                         .HasForeignKey("ProjectId");
                 });
 
-            modelBuilder.Entity("Conflux.Domain.ContributorPosition", b =>
-                {
-                    b.HasOne("Conflux.Domain.Contributor", null)
-                        .WithMany("Positions")
-                        .HasForeignKey("ContributorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Conflux.Domain.ContributorRole", b =>
                 {
                     b.HasOne("Conflux.Domain.Contributor", null)
@@ -328,20 +281,11 @@ namespace Conflux.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+            modelBuilder.Entity("Conflux.Domain.Party", b =>
                 {
                     b.HasOne("Conflux.Domain.Project", null)
-                        .WithMany("Organisations")
+                        .WithMany("Parties")
                         .HasForeignKey("ProjectId");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
-                {
-                    b.HasOne("Conflux.Domain.Organisation", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("OrganisationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Conflux.Domain.Project", b =>
@@ -419,13 +363,6 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("Conflux.Domain.Contributor", b =>
                 {
-                    b.Navigation("Positions");
-
-                    b.Navigation("Roles");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
-                {
                     b.Navigation("Roles");
                 });
 
@@ -433,7 +370,7 @@ namespace Conflux.Data.Migrations
                 {
                     b.Navigation("Contributors");
 
-                    b.Navigation("Organisations");
+                    b.Navigation("Parties");
                 });
 #pragma warning restore 612, 618
         }

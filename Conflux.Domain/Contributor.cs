@@ -11,12 +11,14 @@ namespace Conflux.Domain;
 public record Contributor
 {
     [Key] public Guid Id { get; init; } = Guid.NewGuid();
+    public string SchemaUri => "https://orcid.org/";
 
     [JsonPropertyName("orcid_id")] public string? ORCiD { get; set; }
 
     [Required] public required string Name { get; set; }
 
-    public List<Role> Roles { get; set; } = [];
+    public List<ContributorRole> Roles { get; set; } = [];
+    public List<ContributorPosition> Positions { get; set; } = [];
 
     public string? GivenName { get; set; }
     public string? FamilyName { get; set; }

@@ -18,6 +18,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using RAiD.Net;
 using SwaggerThemes;
 
 namespace Conflux.API;
@@ -117,6 +118,7 @@ public class Program
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
+        builder.Services.AddScoped<IRAiDService, RAiDService>();
         builder.Services.AddScoped<ProjectsService>();
     }
 
@@ -156,7 +158,7 @@ public class Program
             app.UseSwaggerUi(c =>
             {
                 c.DocumentTitle = "Conflux API";
-                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.UniversalDark);
+                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.Monokai);
             });
         }
 
@@ -225,7 +227,7 @@ public class Program
 
                 await context.Contributors.AddRangeAsync(seedData.Contributors);
                 await context.Products.AddRangeAsync(seedData.Products);
-                await context.Parties.AddRangeAsync(seedData.Parties);
+                await context.Organisations.AddRangeAsync(seedData.Organisations);
                 await context.Projects.AddRangeAsync(seedData.Projects);
 
                 await context.SaveChangesAsync();

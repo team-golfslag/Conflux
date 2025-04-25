@@ -17,7 +17,7 @@ public class Project
 
     [JsonPropertyName("scim_id")] public string? SCIMId { get; init; }
 
-    [JsonPropertyName("raid_id")] public string? RAiDId { get; init; }
+    public RAiDInfo? RAiDInfo { get; init; }
 
     [Required] public required string Title { get; set; }
 
@@ -33,5 +33,7 @@ public class Project
 
     public List<Product> Products { get; set; } = [];
 
-    public List<Party> Parties { get; set; } = [];
+    public List<Organisation> Organisations { get; set; } = [];
+
+    public DateTime LastestEdit { get; set; } = DateTime.UtcNow;
 }

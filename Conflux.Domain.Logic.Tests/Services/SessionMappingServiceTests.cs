@@ -49,7 +49,7 @@ public class SessionMappingServiceTests
         mockSCIMApiClient.Verify(c => c.GetSCIMMemberByExternalId(It.IsAny<string>()), Times.Never);
         Assert.Empty(context.Projects);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class SessionMappingServiceTests
         // Assert
         Assert.Empty(context.Projects);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class SessionMappingServiceTests
         Assert.Equal("Test Group", context.Projects.First().Title);
         Assert.Equal("Test Description", context.Projects.First().Description);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public class SessionMappingServiceTests
         Assert.Equal("test@example.com", user.Email);
         Assert.Equal("sram-id-1", user.SRAMId);
 
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -330,12 +330,12 @@ public class SessionMappingServiceTests
         // Assert
         Assert.Single(context.Projects);
         Assert.Single(context.Users);
-        Assert.Single(context.Roles);
+        Assert.Single(context.UserRoles);
 
-        Role role = context.Roles.First();
-        Assert.Equal("Role Group", role.Name);
-        Assert.Equal("Role Description", role.Description);
-        Assert.Equal("role:urn:1", role.Urn);
+        UserRole userRole = context.UserRoles.First();
+        Assert.Equal("Role Group", userRole.Name);
+        Assert.Equal("Role Description", userRole.Description);
+        Assert.Equal("role:urn:1", userRole.Urn);
     }
 
     [Fact]

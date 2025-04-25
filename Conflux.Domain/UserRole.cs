@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
-public class Role
+public class UserRole
 {
     [Key] public required Guid Id { get; init; }
     [ForeignKey(nameof(Project))] public required Guid ProjectId { get; init; }
@@ -17,7 +17,6 @@ public class Role
     public required string Name { get; init; }
     public string? Description { get; init; }
     public required string Urn { get; init; }
-    
-    [JsonPropertyName("scim_id")]
-    public required string SCIMId { get; init; }
+
+    [JsonPropertyName("scim_id")] public required string SCIMId { get; init; }
 }

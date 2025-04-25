@@ -127,7 +127,7 @@ public class SessionMappingService : ISessionMappingService
     }
 
     /// <summary>
-    /// Collects the <see cref="Role" />s which are present in the Projects in the user session,
+    /// Collects the <see cref="UserRole" />s which are present in the Projects in the user session,
     /// and adds the to the <see cref="ConfluxContext" />.
     /// </summary>
     /// <param name="userSession">The user session to collect the roles from.</param>
@@ -138,7 +138,7 @@ public class SessionMappingService : ISessionMappingService
             Project? projects = await _context.Projects
                 .SingleOrDefaultAsync(p => p.SCIMId == collaboration.CollaborationGroup.SCIMId);
             if (projects is null) continue;
-            foreach (Role newRole in collaboration.Groups.Select(group => new Role
+            foreach (UserRole newRole in collaboration.Groups.Select(group => new UserRole
                 {
                     Id = Guid.NewGuid(),
                     ProjectId = projects.Id,
@@ -148,10 +148,10 @@ public class SessionMappingService : ISessionMappingService
                     Urn = group.Urn,
                 }))
             {
-                Role? existingRole = await _context.Roles
+                UserRole? existingRole = await _context.UserRoles
                     .SingleOrDefaultAsync(r => r.Urn == newRole.Urn);
                 if (existingRole is not null) continue;
-                _context.Roles.Add(newRole);
+                _context.UserRoles.Add(newRole);
             }
 
             await _context.SaveChangesAsync();
@@ -203,7 +203,7 @@ public class SessionMappingService : ISessionMappingService
 
                 foreach (var roles in users.Select(role => role.Roles))
                 {
-                    Role? role = await _context.Roles
+                    UserRole? role = await _context.UserRoles
                         .SingleOrDefaultAsync(r => r.Urn == group.Urn);
                     if (role is null) continue;
                     if (roles.Contains(role)) continue;

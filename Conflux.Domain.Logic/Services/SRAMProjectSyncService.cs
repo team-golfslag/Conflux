@@ -63,7 +63,7 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
 
         // Get all roles 
         var roles = project.Users.SelectMany(p => p.Roles).DistinctBy(p => p.Id);
-        foreach (Role role in roles)
+        foreach (UserRole role in roles)
             await SyncProjectRoleAsync(project, role);
 
         // Update project in database
@@ -71,18 +71,18 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         await _confluxContext.SaveChangesAsync();
     }
 
-    public async Task SyncProjectRoleAsync(Project project, Role role)
+    public async Task SyncProjectRoleAsync(Project project, UserRole userRole)
     {
         SCIMGroup? updatedScimGroup = await _scimApiClient.GetSCIMGroup(project.SCIMId ?? string.Empty);
         if (updatedScimGroup == null) throw new ProjectNotFoundException(project.Id);
 
-        Group updatedGroup = CollaborationMapper.MapSCIMGroup(role.Urn, updatedScimGroup);
+        Group updatedGroup = CollaborationMapper.MapSCIMGroup(userRole.Urn, updatedScimGroup);
 
         // remove role from all users
         foreach (User user in project.Users)
-            user.Roles.Remove(role);
+            user.Roles.Remove(userRole);
 
-        Role newRole = new()
+        UserRole newUserRole = new()
         {
             Id = Guid.NewGuid(),
             ProjectId = project.Id,
@@ -93,6 +93,6 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         };
 
         foreach (User user in project.Users.Where(u => updatedGroup.Members.Any(m => m.SCIMId == u.SCIMId)))
-            user.Roles.Add(newRole);
+            user.Roles.Add(newUserRole);
     }
 }

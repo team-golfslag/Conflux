@@ -37,7 +37,7 @@ public class NwOpenMapperTests
         SeedData seedData = NwOpenMapper.MapProjects(emptyProjects);
 
         // Assert
-        Assert.Empty(seedData.Parties);
+        Assert.Empty(seedData.Organisations);
         Assert.Empty(seedData.Contributors);
         Assert.Empty(seedData.Products);
         Assert.Empty(seedData.Projects);
@@ -105,9 +105,9 @@ public class NwOpenMapperTests
         Contributor mappedUser = result.Contributors[0];
         Assert.Equal("John Doe", mappedUser.Name);
 
-        Assert.Single(result.Parties);
-        Party mappedParty = result.Parties[0];
-        Assert.Equal("TestOrg", mappedParty.Name);
+        Assert.Single(result.Organisations);
+        Organisation mappedOrganisation = result.Organisations[0];
+        Assert.Equal("TestOrg", mappedOrganisation.Name);
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ public class NwOpenMapperTests
         // Use reflection because the properties are static + private getters
         Type mapperType = typeof(NwOpenMapper);
 
-        ClearListProperty<Party>(mapperType, "Parties");
+        ClearListProperty<Organisation>(mapperType, "Organisations");
         ClearListProperty<Contributor>(mapperType, "Contributors");
         ClearListProperty<Product>(mapperType, "Products");
         ClearListProperty<Project>(mapperType, "Projects");

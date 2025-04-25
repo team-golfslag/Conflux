@@ -46,17 +46,13 @@ public class ProjectsService
             {
                 Project = p,
                 p.Products,
-                Contributors = p.Contributors.Select(contributor => new
-                {
-                    Contributor = contributor,
-                    Roles = contributor.Roles.Where(role => role.ProjectId == p.Id).ToList(),
-                }),
+                p.Contributors,
                 Users = p.Users.Select(person => new
                 {
                     Person = person,
                     Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
                 }),
-                p.Parties,
+                Parties = p.Organisations,
             })
             .ToListAsync();
 
@@ -71,7 +67,7 @@ public class ProjectsService
             {
                 Roles = p.Roles.ToList(),
             }).ToList();
-            newProject.Parties = project.Parties;
+            newProject.Organisations = project.Parties;
             projects.Add(newProject);
         }
 
@@ -87,7 +83,7 @@ public class ProjectsService
     /// or null if the user doesn't have access to the project
     /// </returns>
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    public async Task<List<Role>?> GetRolesFromProject(Project project)
+    public async Task<List<UserRole>?> GetRolesFromProject(Project project)
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -96,7 +92,7 @@ public class ProjectsService
             userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
         if (collaboration is null)
             return null;
-        var roles = await _context.Roles
+        var roles = await _context.UserRoles
             .Where(r => r.ProjectId == project.Id)
             .ToListAsync();
 

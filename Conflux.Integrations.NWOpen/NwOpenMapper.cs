@@ -14,7 +14,7 @@ namespace Conflux.RepositoryConnections.NWOpen;
 
 public static class NwOpenMapper
 {
-    private static List<Party> Parties { get; } = [];
+    private static List<Organisation> Organisations { get; } = [];
     private static List<Contributor> Contributors { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
@@ -23,14 +23,17 @@ public static class NwOpenMapper
     /// Maps a list of NWOpen projects to domain projects
     /// </summary>
     /// <param name="projects">The list of NWOpen projects to be mapped</param>
-    /// <returns>A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and parties</returns>
+    /// <returns>
+    /// A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and
+    /// organisations
+    /// </returns>
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
         foreach (NwOpenProject project in projects) MapProject(project);
 
         return new()
         {
-            Parties = Parties,
+            Organisations = Organisations,
             Contributors = Contributors,
             Products = Products,
             Projects = Projects,
@@ -51,7 +54,6 @@ public static class NwOpenMapper
             ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
             : null;
 
-
         Project mappedProject = new()
         {
             Title = project.Title!,
@@ -66,7 +68,7 @@ public static class NwOpenMapper
         foreach (NwOpenProjectMember projectMember in project.ProjectMembers ?? [])
         {
             MapContributor(mappedProject, projectMember);
-            MapParty(mappedProject, projectMember);
+            MapOrganisation(mappedProject, projectMember);
         }
 
         Projects.Add(mappedProject);
@@ -104,36 +106,91 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapContributor(Project project, NwOpenProjectMember projectMember)
     {
+        Guid contributorId = Guid.NewGuid();
         Contributor contributor = new()
         {
-            Id = Guid.NewGuid(),
+            Id = contributorId,
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            Roles =
+            [
+                new()
+                {
+                    ContributorId = contributorId,
+                    RoleType = ContributorRoleType.Conceptualization,
+                },
+                new()
+                {
+                    ContributorId = contributorId,
+                    RoleType = ContributorRoleType.Methodology,
+                },
+                new()
+                {
+                    ContributorId = contributorId,
+                    RoleType = ContributorRoleType.Validation,
+                },
+            ],
+            Positions =
+            [
+                new()
+                {
+                    ContributorId = contributorId,
+                    Position = ContributorPositionType.CoInvestigator,
+                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    EndDate = project.EndDate,
+                },
+            ],
         };
         Contributors.Add(contributor);
         project.Contributors.Add(contributor);
     }
 
     /// <summary>
-    /// Maps a project member's organisation to a party.
+    /// Maps a project member's organisation to a organisation.
     /// </summary>
-    /// <param name="project">The project to which the party is added</param>
-    /// <param name="projectMember">The member from which the party is retrieved</param>
-    private static void MapParty(Project project, NwOpenProjectMember projectMember)
+    /// <param name="project">The project to which the organisation is added</param>
+    /// <param name="projectMember">The member from which the organisation is retrieved</param>
+    private static void MapOrganisation(Project project, NwOpenProjectMember projectMember)
     {
-        var parties = Parties.Where(p => p.Name == projectMember.Organisation).ToList();
-        if (parties.Count != 0)
+        var organisations = Organisations.Where(p => p.Name == projectMember.Organisation).ToList();
+        if (organisations.Count != 0)
         {
-            project.Parties.Add(parties[0]);
+            project.Organisations.Add(organisations[0]);
             return;
         }
 
-        Party mappedParty = new()
+        Guid organisationId = Guid.NewGuid();
+
+        Organisation mappedOrganisation = new()
         {
-            Id = Guid.NewGuid(),
+            Id = organisationId,
             Name = projectMember.Organisation!,
+            Roles =
+            [
+                new()
+                {
+                    OrganisationId = organisationId,
+                    Role = OrganisationRoleType.Contractor,
+                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    EndDate = project.EndDate,
+                },
+                new()
+                {
+                    OrganisationId = Guid.NewGuid(),
+                    Role = OrganisationRoleType.Funder,
+                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    EndDate = project.EndDate,
+                },
+                new()
+                {
+                    OrganisationId = Guid.NewGuid(),
+                    Role = OrganisationRoleType.Facility,
+                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    EndDate = project.EndDate,
+                },
+            ],
         };
 
-        project.Parties.Add(mappedParty);
-        Parties.Add(mappedParty);
+        project.Organisations.Add(mappedOrganisation);
+        Organisations.Add(mappedOrganisation);
     }
 }

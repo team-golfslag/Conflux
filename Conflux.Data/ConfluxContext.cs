@@ -19,6 +19,7 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public DbSet<ContributorRole> ContributorRoles { get; set; }
     public DbSet<ContributorPosition> ContributorPositions { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Organisation> Organisations { get; set; }
     public DbSet<OrganisationRole> OrganisationRoles { get; set; }

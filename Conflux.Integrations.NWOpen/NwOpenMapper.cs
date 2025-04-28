@@ -88,11 +88,22 @@ public static class NwOpenMapper
             return;
         }
 
+        Guid productId = Guid.NewGuid();
+
         Product mappedProduct = new()
         {
-            Id = Guid.NewGuid(),
+            Id = productId,
             Title = product.Title ?? "No title",
             Url = product.UrlOpenAccess,
+            Type = ProductType.DataPaper,
+            Categories =
+            [
+                new()
+                {
+                    ProductId = productId,
+                    Type = ProductCategoryType.Input,
+                },
+            ],
         };
 
         project.Products.Add(mappedProduct);

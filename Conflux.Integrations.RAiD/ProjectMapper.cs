@@ -15,22 +15,7 @@ public static class ProjectMapper
         {
             Title =
             [
-                new()
-                {
-                    Text = project.Title,
-                    Type = new() // TODO make an enum for this and set SchemaUri default value
-                    {
-                        Id = "https://vocabulary.raid.org/title.type.id/380",
-                        SchemaUri = "https://vocabulary.raid.org/title.type.schema/376",
-                    },
-                    StartDate = project.StartDate ?? DateTime.UtcNow,
-                    EndDate = project.EndDate,
-                    Language = new() // TODO make an enum for this and set SchemaUri default value
-                    {
-                        Id = "eng",
-                        SchemaUri = "https://www.iso.org/standard/74575.html",
-                    },
-                },
+                MapProjectTitle(project),
             ],
             Date = new()
             {
@@ -71,6 +56,19 @@ public static class ProjectMapper
             RelatedObject = project.Products.Select(MapProduct).ToList(),
             AlternateIdentifier = null, // Not implemented for now
             SpatialCoverage = null,     // Not implemented for now
+        };
+
+    // TODO Make multiple titles per project.
+    private static RAiDTitle MapProjectTitle(Project project) =>
+        new()
+        {
+            Text = project.Title,
+            Type = new() // TODO make an enum for this and set SchemaUri default value
+            {
+                Id = "https://vocabulary.raid.org/title.type.id/380",
+                SchemaUri = "https://vocabulary.raid.org/title.type.schema/376",
+            },
+            StartDate = project.StartDate ?? DateTime.UtcNow,
         };
 
     private static RAiDContributorRole MapContributorRole(ContributorRole role) =>
@@ -118,5 +116,5 @@ public static class ProjectMapper
             Role = organisation.Roles.Select(MapOrganisationRole).ToList(),
         };
 
-    public static RAiDRelatedObject MapProduct(Product product) => throw new NotImplementedException();
+    private static RAiDRelatedObject MapProduct(Product product) => throw new NotImplementedException();
 }

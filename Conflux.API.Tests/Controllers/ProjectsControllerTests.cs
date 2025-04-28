@@ -55,16 +55,26 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         }
 
         // Then, update it
-        ProjectPutDTO updatedProject = new()
+        ProjectDTO updatedProject = new()
         {
-            Title = "Updated Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Updated Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Updated description",
         };
         HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
         putRes.EnsureSuccessStatusCode();
 
         Project? updated = await putRes.Content.ReadFromJsonAsync<Project>();
-        Assert.Equal("Updated Title", updated?.Title);
+        Assert.NotNull(updated);
+        Assert.Single(updated.Titles);
+        Assert.Equal("Updated Title", updated.Titles[0].Text);
     }
 
     [Fact]
@@ -99,7 +109,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         var projects = await response.Content.ReadFromJsonAsync<Project[]>();
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title.Contains("Test Project"));
+        Assert.Contains(projects, p => p.Titles[0].Text.Contains("Test Project"));
     }
 
     [Fact]
@@ -114,18 +124,26 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         var projects = await response.Content.ReadFromJsonAsync<Project[]>();
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title == "Test Project");
+        Assert.Contains(projects, p => p.Titles[0].Text == "Test Project");
     }
 
     [Fact]
     public async Task GetProjects_ByNonMatchingDateRange_ReturnsEmpty()
     {
         // Arrange
-        ProjectPostDTO project = new()
+        ProjectDTO project = new()
         {
-            Title = "Outdated Project",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Outdated Project",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Old project",
-            StartDate = new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            StartDate = new(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };
         JsonContent content = JsonContent.Create(project, options: new()

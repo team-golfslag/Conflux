@@ -3,38 +3,49 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
-
 namespace Conflux.Domain.Logic.DTOs;
 
 /// <summary>
 /// The Data Transfer Object for <see cref="Project" /> with POST.
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
-public class ProjectPostDTO
+public class ProjectDTO
 #pragma warning restore S101
 {
     public Guid? Id { get; init; }
 
-    [Required] public required string Title { get; init; }
-
+    public List<ProjectTitleDTO> Titles { get; init; } = [];
     public string? Description { get; init; }
 
-    public DateTime? StartDate { get; init; }
+    public DateTime StartDate { get; init; }
 
     public DateTime? EndDate { get; init; }
 
+    // TODO: Make this DTO
+    // public List<UserDTO> Users { get; init; } = [];
+
+    public List<ContributorDTO> Contributors { get; init; } = [];
+
+    // TODO: Make this DTO
+    // public List<ProductDTO> Products { get; init; } = [];
+
+    // TODO: Make this DTO
+    // public List<OrganisationDTO> Organisations { get; init; } = [];
+
     /// <summary>
-    /// Converts a <see cref="ProjectPostDTO" /> to a <see cref="Project" />
+    /// Converts a <see cref="ProjectDTO" /> to a <see cref="Project" />
     /// </summary>
     /// <returns>The converted <see cref="Project" /></returns>
-    public Project ToProject() =>
-        new()
+    public Project ToProject()
+    {
+        Guid projectId = Guid.NewGuid();
+        return new()
         {
-            Id = Guid.NewGuid(),
-            Title = Title,
+            Id = projectId,
+            Titles = Titles.ConvertAll(t => t.ToProjectTitle(projectId)),
             Description = Description,
-            StartDate = StartDate.HasValue ? DateTime.SpecifyKind(StartDate.Value, DateTimeKind.Utc) : null,
+            StartDate = DateTime.SpecifyKind(StartDate, DateTimeKind.Utc),
             EndDate = EndDate.HasValue ? DateTime.SpecifyKind(EndDate.Value, DateTimeKind.Utc) : null,
         };
+    }
 }

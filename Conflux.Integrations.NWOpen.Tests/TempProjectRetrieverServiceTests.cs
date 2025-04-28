@@ -52,10 +52,10 @@ public class TempProjectRetrieverServiceTests
         {
             Metadata = new()
             {
-                ApiType = null,
-                Version = null,
-                Funder = null,
-                RorId = null,
+                ApiType = null!,
+                Version = null!,
+                Funder = null!,
+                RorId = null!,
             },
             Projects = [dummyProject],
         };
@@ -97,7 +97,7 @@ public class TempProjectRetrieverServiceTests
         NWOpenResult result = new()
         {
             Projects = [dummyProject],
-            Metadata = null,
+            Metadata = null!,
         };
 
         var queryBuilderMock = new Mock<INWOpenQueryBuilder>();
@@ -125,7 +125,8 @@ public class TempProjectRetrieverServiceTests
         foreach (var task in tasks)
         {
             SeedData res = await task;
-            Assert.Equal(dummyProject.Title, res.Projects[0].Title);
+            Assert.Single(res.Projects[0].Titles);
+            Assert.Equal(dummyProject.Title, res.Projects[0].Titles[0].Text);
         }
     }
 }

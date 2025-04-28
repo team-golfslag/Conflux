@@ -19,11 +19,9 @@ public class Project
 
     public RAiDInfo? RAiDInfo { get; init; }
 
-    [Required] public required string Title { get; set; }
-
     public string? Description { get; set; }
 
-    public DateTime? StartDate { get; set; }
+    public DateTime StartDate { get; set; }
 
     public DateTime? EndDate { get; set; }
 
@@ -34,6 +32,8 @@ public class Project
     public List<Product> Products { get; set; } = [];
 
     public List<Organisation> Organisations { get; set; } = [];
+
+    public List<ProjectTitle> Titles { get; set; } = [];
 
     public DateTime LastestEdit { get; set; } = DateTime.UtcNow;
 }

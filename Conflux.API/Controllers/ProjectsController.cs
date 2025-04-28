@@ -86,7 +86,7 @@ public class ProjectsController : ControllerBase
     [HttpPut]
     [Route("{id:guid}")]
     [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectPutDTO projectDto) =>
+    public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
     /// <summary>

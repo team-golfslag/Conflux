@@ -52,7 +52,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
             new()
             {
-                Title = "Non-existent project",
+                Titles =
+                [
+                    new()
+                    {
+                        Text = "non-existent project",
+                        Type = TitleType.Primary,
+                        StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    },
+                ],
                 Description = "Will not update",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
@@ -74,9 +82,17 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project originalProject = new()
         {
             Id = Guid.NewGuid(),
-            Title = "Original Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Original Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Original Description",
-            StartDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
@@ -84,9 +100,17 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Prepare Put DTO
-        ProjectPutDTO putDto = new()
+        ProjectDTO putDto = new()
         {
-            Title = "Updated Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Updated Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Updated Description",
             StartDate = new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
@@ -97,17 +121,20 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(updatedProject);
-        Assert.Equal("Updated Title", updatedProject.Title);
+        Assert.Single(updatedProject.Titles);
+        Assert.Equal("Updated Title", updatedProject.Titles[0].Text);
         Assert.Equal("Updated Description", updatedProject.Description);
-        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
+        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
         // Double-check by re-querying from the database
-        Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
+        Project? reloaded = await _context.Projects.Include(p => p.Titles)
+            .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
-        Assert.Equal("Updated Title", reloaded.Title);
+        Assert.Single(reloaded.Titles);
+        Assert.Equal("Updated Title", reloaded.Titles[0].Text);
         Assert.Equal("Updated Description", reloaded.Description);
-        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
+        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }
 
@@ -126,9 +153,17 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project originalProject = new()
         {
             Id = Guid.NewGuid(),
-            Title = "Original Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Original Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Original Description",
-            StartDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
@@ -139,7 +174,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Prepare patch DTO
         ProjectPatchDTO patchDto = new()
         {
-            Title = "Patched Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Patched Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Patched Description",
             StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
@@ -150,17 +193,19 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(patchedProject);
-        Assert.Equal("Patched Title", patchedProject.Title);
+        Assert.Equal("Patched Title", patchedProject.Titles[0].Text);
         Assert.Equal("Patched Description", patchedProject.Description);
-        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
+        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
 
         // Double-check by re-querying from the database
-        Project? reloaded = await _context.Projects.FindAsync(originalProject.Id);
+        Project? reloaded = await _context.Projects
+            .Include(p => p.Titles)
+            .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
-        Assert.Equal("Patched Title", reloaded.Title);
+        Assert.Equal("Patched Title", reloaded.Titles[0].Text);
         Assert.Equal("Patched Description", reloaded.Description);
-        Assert.Equal(new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
+        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }
 
@@ -177,7 +222,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project testProject = new()
         {
             Id = projectId,
-            Title = "Test Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Test Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Test Description",
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -202,7 +255,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Assert
         Assert.NotNull(project);
         Assert.Equal(projectId, project.Id);
-        Assert.Equal(testProject.Title, project.Title);
+        Assert.Equal(testProject.Titles, project.Titles);
         Assert.Equal(project.Contributors[0].Id, contributor.Id);
         Assert.Equal(project.Contributors[0].Name, contributor.Name);
     }
@@ -234,7 +287,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project testProject = new()
         {
             Id = projectId,
-            Title = "Test Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Test Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Test Description",
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -261,7 +322,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project testProject = new()
         {
             Id = projectId,
-            Title = "Test Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Test Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
         };
 
         _context.Projects.Add(testProject);
@@ -298,7 +367,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project testProject = new()
         {
             Id = projectId,
-            Title = "Test Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Test Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Test Description",
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -363,7 +440,15 @@ public class ProjectsServiceTests : IAsyncLifetime
         Project testProjectDto = new()
         {
             Id = projectId,
-            Title = "Test Title",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Test Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Test Description",
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc),

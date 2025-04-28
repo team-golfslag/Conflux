@@ -26,6 +26,7 @@ public class SessionMappingService : ISessionMappingService
     /// </summary>
     /// <param name="context">The Conflux context.</param>
     /// <param name="sramApiClient">The API client which is used to retrieve all user information.</param>
+    /// <param name="featureManager">The feature manager.</param>
     public SessionMappingService(ConfluxContext context, ISCIMApiClient sramApiClient,
         IVariantFeatureManager featureManager)
     {
@@ -69,18 +70,40 @@ public class SessionMappingService : ISessionMappingService
                 await _context.Projects.SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
             if (existingCollaboration is null)
             {
+                Guid projectId = Guid.NewGuid();
                 // We only add the project, the members are added in the next step
                 _context.Projects.Add(new()
                 {
+                    Id = projectId,
                     SCIMId = group.SCIMId,
-                    Title = group.DisplayName,
+                    Titles =
+                    [
+                        new()
+                        {
+                            ProjectId = projectId,
+                            Text = group.DisplayName,
+                            Type = TitleType.Primary,
+                            StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
+                            EndDate = null,
+                        },
+                    ],
                     Description = group.Description,
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
             else
             {
-                existingCollaboration.Title = group.DisplayName;
+                existingCollaboration.Titles =
+                [
+                    new()
+                    {
+                        ProjectId = existingCollaboration.Id,
+                        Text = group.DisplayName,
+                        Type = TitleType.Primary,
+                        StartDate = existingCollaboration.StartDate,
+                        EndDate = null,
+                    },
+                ];
                 existingCollaboration.Description = group.Description;
             }
         }

@@ -13,16 +13,15 @@ public static class ProjectMapper
     public static RAiDCreateRequest MapProjectCreation(Project project) =>
         new()
         {
-            Title =
-            [
-                MapProjectTitle(project),
-            ],
+            Title = project.Titles.ConvertAll(MapProjectTitle),
             Date = new()
             {
-                StartDate = project.StartDate ?? DateTime.UtcNow,
+                StartDate = project.StartDate,
                 EndDate = project.EndDate,
             },
+
             Description =
+
             [
                 new()
                 {
@@ -49,26 +48,33 @@ public static class ProjectMapper
                 EmbargoExpiry = null, // Not implemented for now
                 Statement = null,     // Not implemented for now
             },
-            Contributor = project.Contributors.Select(MapContributor).ToList(),
-            Organisation = project.Organisations.Select(MapOrganisation).ToList(),
+            Contributor = project.Contributors.ConvertAll(MapContributor),
+            Organisation = project.Organisations.ConvertAll(MapOrganisation),
             Subject = null,     // Not implemented for now
             RelatedRaid = null, // Not implemented for now
-            RelatedObject = project.Products.Select(MapProduct).ToList(),
+            RelatedObject = project.Products.ConvertAll(MapProduct),
             AlternateIdentifier = null, // Not implemented for now
             SpatialCoverage = null,     // Not implemented for now
         };
 
-    // TODO Make multiple titles per project.
-    private static RAiDTitle MapProjectTitle(Project project) =>
+    private static RAiDTitle MapProjectTitle(ProjectTitle title) =>
         new()
         {
-            Text = project.Title,
-            Type = new() // TODO make an enum for this and set SchemaUri default value
+            Text = title.Text,
+            Type = new()
             {
-                Id = "https://vocabulary.raid.org/title.type.id/380",
-                SchemaUri = "https://vocabulary.raid.org/title.type.schema/376",
+                Id = title.TypeUri,
+                SchemaUri = title.TypeSchemaUri,
             },
-            StartDate = project.StartDate ?? DateTime.UtcNow,
+            StartDate = title.StartDate,
+            EndDate = title.EndDate,
+            Language = title.Language == null
+                ? null
+                : new()
+                {
+                    SchemaUri = title.LanguageSchemaUri,
+                    Id = title.Language,
+                },
         };
 
     private static RAiDContributorRole MapContributorRole(ContributorRole role) =>

@@ -47,6 +47,7 @@ public class ProjectsService
                 Project = p,
                 p.Products,
                 p.Contributors,
+                p.Titles,
                 Users = p.Users.Select(person => new
                 {
                     Person = person,
@@ -63,6 +64,8 @@ public class ProjectsService
         {
             Project newProject = project.Project;
             newProject.Products = project.Products;
+            newProject.Contributors = project.Contributors;
+            newProject.Titles = project.Titles;
             newProject.Users = project.Users.Select(p => p.Person with
             {
                 Roles = p.Roles.ToList(),
@@ -126,7 +129,7 @@ public class ProjectsService
             string loweredQuery = query.ToLowerInvariant();
 #pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
             projects = projects.Where(project =>
-                project.Title.ToLower().Contains(loweredQuery) ||
+                project.Titles.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)) ||
                 (project.Description ?? "").ToLower().Contains(loweredQuery));
 #pragma warning restore CA1862
         }
@@ -134,7 +137,7 @@ public class ProjectsService
         if (startDate.HasValue)
         {
             startDate = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
-            projects = projects.Where(project => project.StartDate != null && project.StartDate >= startDate);
+            projects = projects.Where(project => project.StartDate >= startDate);
         }
 
         if (endDate.HasValue)
@@ -154,7 +157,7 @@ public class ProjectsService
     /// </summary>
     /// <param name="dto">The DTO which to convert to a <see cref="Project" /></param>
     /// <returns>The created project</returns>
-    public async Task<Project> CreateProjectAsync(ProjectPostDTO dto)
+    public async Task<Project> CreateProjectAsync(ProjectDTO dto)
     {
         Project project = dto.ToProject();
         _context.Projects.Add(project);
@@ -183,12 +186,12 @@ public class ProjectsService
     /// <param name="dto">The Data Transfer Object for the project</param>
     /// <returns>The added project</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<Project> PutProjectAsync(Guid id, ProjectPutDTO dto)
+    public async Task<Project> PutProjectAsync(Guid id, ProjectDTO dto)
     {
         Project project = await _context.Projects.FindAsync(id)
             ?? throw new ProjectNotFoundException(id);
 
-        project.Title = dto.Title;
+        project.Titles = dto.Titles.ConvertAll(title => title.ToProjectTitle(id));
         project.Description = dto.Description;
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
@@ -206,10 +209,10 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> PatchProjectAsync(Guid id, ProjectPatchDTO dto)
     {
-        Project project = await _context.Projects.FindAsync(id)
+        Project project = await _context.Projects.Include(p => p.Titles).SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
-        project.Title = dto.Title ?? project.Title;
+        project.Titles = dto.Titles?.ConvertAll(t => t.ToProjectTitle(id)) ?? project.Titles;
         project.Description = dto.Description ?? project.Description;
         project.StartDate = dto.StartDate ?? project.StartDate;
         project.EndDate = dto.EndDate ?? project.EndDate;

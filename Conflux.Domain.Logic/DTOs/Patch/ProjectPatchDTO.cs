@@ -12,7 +12,7 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectPatchDTO
 #pragma warning restore S101
 {
-    public string? Title { get; init; }
+    public List<ProjectTitleDTO>? Titles { get; init; }
 
     public string? Description { get; init; }
 

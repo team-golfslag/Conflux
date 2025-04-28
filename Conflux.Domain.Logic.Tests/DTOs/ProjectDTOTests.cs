@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.DTOs;
 
-public class ProjectPutDTOTests
+public class ProjectDTOTests
 {
     /// <summary>
     /// Given a valid ProjectDTO with Title, Description, StartDate, and EndDate,
@@ -19,25 +19,36 @@ public class ProjectPutDTOTests
     public void ToProject_ShouldConvertDTOToProject()
     {
         // Arrange
-        ProjectPostDTO postDto = new()
+        ProjectDTO dto = new()
         {
             Id = Guid.NewGuid(),
-            Title = "Test Project",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
             Description = "Test Description",
-            StartDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            StartDate = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
 
         // Act
-        Project project = postDto.ToProject();
+        Project project = dto.ToProject();
 
         // Assert
         Assert.NotNull(project);
-        Assert.NotEqual(postDto.Id, project.Id);
-        Assert.Equal(postDto.Title, project.Title);
-        Assert.Equal(postDto.Description, project.Description);
-        Assert.Equal(postDto.StartDate, project.StartDate);
-        Assert.Equal(postDto.EndDate, project.EndDate);
+        Assert.NotEqual(dto.Id, project.Id);
+        Assert.NotEmpty(project.Titles);
+        Assert.Equal(dto.Titles[0].Text, project.Titles[0].Text);
+        Assert.Equal(dto.Titles[0].Type, project.Titles[0].Type);
+        Assert.Equal(dto.Titles[0].StartDate, project.Titles[0].StartDate);
+        Assert.Equal(dto.Description, project.Description);
+        Assert.Equal(dto.StartDate, project.StartDate);
+        Assert.Equal(dto.EndDate, project.EndDate);
         Assert.NotEqual(Guid.Empty, project.Id);
     }
 }

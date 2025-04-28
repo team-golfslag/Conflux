@@ -37,6 +37,7 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Route("login")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status302Found)]
     public async Task<ActionResult> LogIn([FromQuery] string redirectUri)
     {

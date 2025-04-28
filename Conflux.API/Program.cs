@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
@@ -59,6 +60,7 @@ public class Program
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
             options.JsonSerializerOptions.WriteIndented = true;
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
         builder.Services.AddEndpointsApiExplorer();

@@ -91,7 +91,7 @@ public class NwOpenMapperTests
         // Assert
         Assert.Single(result.Projects);
         Project mappedProject = result.Projects[0];
-        Assert.Equal("Test Project", mappedProject.Title);
+        Assert.Equal("Test Project", mappedProject.Titles[0].Text);
         Assert.Equal("Summary", mappedProject.Description);
         Assert.Equal(new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
         Assert.Equal(new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);

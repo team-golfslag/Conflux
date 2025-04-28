@@ -46,17 +46,31 @@ public static class NwOpenMapper
     /// <param name="project">The NWOpen project to map</param>
     private static void MapProject(NwOpenProject project)
     {
-        DateTime? startDate = project.StartDate.HasValue
+        DateTime startDate = project.StartDate.HasValue
             ? DateTime.SpecifyKind(project.StartDate.Value, DateTimeKind.Utc)
-            : null;
+            : DateTime.UtcNow;
 
         DateTime? endDate = project.EndDate.HasValue
             ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
             : null;
 
+        Guid projectId = Guid.NewGuid();
+
         Project mappedProject = new()
         {
-            Title = project.Title!,
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = project.Title ?? "No Title",
+                    Type = TitleType.Primary,
+                    Language = "nld",
+                    StartDate = startDate,
+                    EndDate = endDate,
+                },
+            ],
             Description = project.SummaryNl,
             StartDate = startDate,
             EndDate = endDate,
@@ -146,7 +160,7 @@ public static class NwOpenMapper
                 {
                     ContributorId = contributorId,
                     Position = ContributorPositionType.CoInvestigator,
-                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
             ],
@@ -181,21 +195,21 @@ public static class NwOpenMapper
                 {
                     OrganisationId = organisationId,
                     Role = OrganisationRoleType.Contractor,
-                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
                 new()
                 {
                     OrganisationId = Guid.NewGuid(),
                     Role = OrganisationRoleType.Funder,
-                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
                 new()
                 {
                     OrganisationId = Guid.NewGuid(),
                     Role = OrganisationRoleType.Facility,
-                    StartDate = project.StartDate ?? DateTime.UtcNow,
+                    StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
             ],

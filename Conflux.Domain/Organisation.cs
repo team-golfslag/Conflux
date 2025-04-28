@@ -12,7 +12,7 @@ namespace Conflux.Domain;
 /// </summary>
 public class Organisation
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public Guid Id { get; init; }
 
     public string SchemaUri => "https://ror.org/";
 

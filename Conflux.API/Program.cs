@@ -3,6 +3,8 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Collections.Specialized;
+using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
@@ -11,6 +13,7 @@ using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -124,11 +127,112 @@ public class Program
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,
         IVariantFeatureManager featureManager)
     {
+        AuthenticationBuilder authBuilder = builder.Services.AddAuthentication();
+
+        // Add ORCID authentication regardless of which primary auth is used
+        AddOrcidAuth(authBuilder, builder.Configuration);
+
         bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
         if (sramEnabled)
             SetupAuth(builder);
         else
             SetupDevelopmentAuth(builder);
+    }
+
+    private static void AddOrcidAuth(AuthenticationBuilder authBuilder, IConfiguration config)
+    {
+        // TODO: make sure not both SRAM and ORCID are used at the same time
+        IConfigurationSection orcidConfig = config.GetSection("Authentication:Orcid");
+
+        string? orcidSecret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(orcidSecret))
+        {
+            Console.WriteLine("Warning: ORCID_CLIENT_SECRET not set. ORCID integration disabled.");
+            return;
+        }
+
+        // Configure cookies without explicit domain
+        authBuilder.AddCookie("OrcidCookie", options =>
+        {
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        });
+
+        authBuilder.AddOAuth("orcid", options =>
+        {
+            options.ClientId = orcidConfig["ClientId"];
+            options.ClientSecret = orcidSecret;
+            options.CallbackPath = orcidConfig["CallbackPath"];
+            options.AuthorizationEndpoint = "https://sandbox.orcid.org/oauth/authorize";
+            options.TokenEndpoint = "https://sandbox.orcid.org/oauth/token";
+            options.UserInformationEndpoint = "https://sandbox.orcid.org/oauth/userinfo";
+            options.SignInScheme = "OrcidCookie";
+            options.SaveTokens = true;
+
+            // Configure correlation cookie without domain
+            options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+            options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+            // Configure ORCID scope
+            options.Scope.Clear();
+            options.Scope.Add("/authenticate");
+
+            // Map claims
+            options.ClaimActions.Clear();
+            options.ClaimActions.MapJsonKey("sub", "orcid");
+
+            options.Events = new()
+            {
+                OnRedirectToAuthorizationEndpoint = context =>
+                {
+                    // Get the redirect URI from configuration
+                    string redirectUri = orcidConfig["RedirectUri"];
+
+                    // Build authorization URL with correct redirect URI
+                    string authorizationUrl = context.RedirectUri;
+
+                    // Update redirect_uri parameter
+                    UriBuilder uriBuilder = new UriBuilder(authorizationUrl);
+                    NameValueCollection query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+                    query["redirect_uri"] = redirectUri;
+                    uriBuilder.Query = query.ToString();
+                    authorizationUrl = uriBuilder.ToString();
+
+                    context.Response.Redirect(authorizationUrl);
+                    return Task.CompletedTask;
+                },
+                OnCreatingTicket = context =>
+                {
+                    // Extract ORCID ID from token response
+                    if (context.TokenResponse.Response.RootElement.TryGetProperty("orcid", out var orcidProp))
+                    {
+                        string? orcidId = orcidProp.GetString();
+                        context.Identity?.AddClaim(new("sub", orcidId));
+                    }
+
+                    string finalRedirectUri = context.Properties.Items.TryGetValue("finalRedirect", out var redirect)
+                        ? redirect as string ?? "/orcid/finalize"
+                        : "/orcid/finalize";
+                    context.Properties.Items["CustomRedirect"] =
+                        $"/orcid/finalize?redirectUri={Uri.EscapeDataString(finalRedirectUri)}";
+
+                    return Task.CompletedTask;
+                },
+                OnTicketReceived = context =>
+                {
+                    // Check if we have a custom redirect set in OnCreatingTicket
+                    if (context.Properties.Items.TryGetValue("CustomRedirect", out var customRedirect))
+                    {
+                        context.Response.Redirect(customRedirect);
+                        context.HandleResponse();
+                    }
+
+                    return Task.CompletedTask;
+                },
+            };
+        });
     }
 
     private static void ConfigureCors(WebApplicationBuilder builder)

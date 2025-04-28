@@ -59,7 +59,7 @@ public class ContributorsService
     /// </summary>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The created contributor</returns>
-    public async Task<Contributor> CreateContributorAsync(ContributorPostDTO contributorDTO)
+    public async Task<Contributor> CreateContributorAsync(ContributorDTO contributorDTO)
     {
         Contributor person = contributorDTO.ToContributor();
         _context.Contributors.Add(person);
@@ -72,7 +72,7 @@ public class ContributorsService
     /// </summary>
     /// <param name="id">The GUID of the contributor</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
-    public async Task<Contributor> UpdateContributorAsync(Guid id, ContributorPutDTO contributorDTO)
+    public async Task<Contributor> UpdateContributorAsync(Guid id, ContributorDTO contributorDTO)
     {
         Contributor person = await GetContributorByIdAsync(id);
         person.Name = contributorDTO.Name;

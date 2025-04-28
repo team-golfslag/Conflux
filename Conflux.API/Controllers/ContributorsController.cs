@@ -57,7 +57,7 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPost]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status201Created)]
-    public async Task<ActionResult<Contributor>> CreateContributor([FromBody] ContributorPostDTO contributorDTO) =>
+    public async Task<ActionResult<Contributor>> CreateContributor([FromBody] ContributorDTO contributorDTO) =>
         await _contributorsService.CreateContributorAsync(contributorDTO);
 
     /// <summary>
@@ -70,7 +70,7 @@ public class ContributorsController : ControllerBase
     [Route("{id:guid}")]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
     public async Task<ActionResult<Contributor>> UpdateContributor([FromRoute] Guid id,
-        [FromBody] ContributorPutDTO contributorDTO) =>
+        [FromBody] ContributorDTO contributorDTO) =>
         await _contributorsService.UpdateContributorAsync(id, contributorDTO);
 
     [HttpPatch]

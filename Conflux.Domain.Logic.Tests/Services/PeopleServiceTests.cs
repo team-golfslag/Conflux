@@ -41,7 +41,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorsService = new(_context);
 
-        ContributorPostDTO dto = new()
+        ContributorDTO dto = new()
         {
             Name = "John Doe",
         };
@@ -97,7 +97,7 @@ public class ContributorsServiceTests : IAsyncLifetime
     {
         // Arrange
         ContributorsService contributorsService = new(_context);
-        ContributorPostDTO testContributor = new()
+        ContributorDTO testContributor = new()
         {
             Name = "Test Contributor",
         };
@@ -128,7 +128,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
-        ContributorPutDTO updateDto = new()
+        ContributorDTO updateDto = new()
         {
             Name = "Updated Name",
         };

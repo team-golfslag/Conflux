@@ -170,9 +170,9 @@ public class Program
             options.ClientId = orcidConfig["ClientId"];
             options.ClientSecret = orcidSecret;
             options.CallbackPath = orcidConfig["CallbackPath"];
-            options.AuthorizationEndpoint = "https://sandbox.orcid.org/oauth/authorize";
-            options.TokenEndpoint = "https://sandbox.orcid.org/oauth/token";
-            options.UserInformationEndpoint = "https://sandbox.orcid.org/oauth/userinfo";
+            options.AuthorizationEndpoint = orcidConfig["AuthorizationEndpoint"];
+            options.TokenEndpoint = orcidConfig["TokenEndpoint"];
+            options.UserInformationEndpoint = orcidConfig["UserInformationEndpoint"];
             options.SignInScheme = "OrcidCookie";
             options.SaveTokens = true;
 

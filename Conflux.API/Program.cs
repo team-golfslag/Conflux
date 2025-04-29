@@ -81,6 +81,20 @@ public class Program
 
         builder.Services.AddHttpContextAccessor();
         await ConfigureSRAMServices(builder, featureManager);
+
+        // Configure Forwarded Headers options
+        // This helps the application correctly determine the client's scheme (http/https) and host
+        // when running behind a reverse proxy (like Docker, Nginx, etc.)
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            // Forward the X-Forwarded-For (client IP) and X-Forwarded-Proto (http/https) headers
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            // By default, only loopback proxies are trusted.
+            // Clear these restrictions if your proxy is not on the same machine.
+            // Be careful with this in production; ideally, configure KnownProxies/KnownNetworks.
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
     }
 
     private static async Task ConfigureDatabase(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
@@ -316,8 +330,13 @@ public class Program
         app.UseCors("AllowLocalhost");
         app.UseHttpsRedirection();
         app.UseSession();
+
+        app.UseRouting();
+        
+
         app.UseAuthentication();
         app.UseAuthorization();
+
         app.MapControllers();
     }
 

@@ -15,9 +15,11 @@ public class UserSession
     public User? User { get; set; }
     public List<Collaboration> Collaborations { get; set; } = [];
 
+    public static readonly Guid DevelopmentUserId = Guid.Parse("b0ee16ff-6e23-4266-b503-b93a003c1c05");
+
     public static UserSession Development()
     {
-        string sramId = Guid.NewGuid() + "@sram.surf.nl";
+        string sramId = DevelopmentUserId + "@sram.surf.nl";
         return new()
         {
             SRAMId = sramId,
@@ -27,9 +29,9 @@ public class UserSession
             Email = "development@sram.surf.nl",
             User = new()
             {
-                Id = Guid.NewGuid(),
+                Id = DevelopmentUserId,
                 SRAMId = sramId,
-                SCIMId = Guid.NewGuid() + "@scim.sram.surf.nl",
+                SCIMId = DevelopmentUserId + "@scim.sram.surf.nl",
                 ORCiD = null,
                 Name = "Development User",
                 Roles = [],

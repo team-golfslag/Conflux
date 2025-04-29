@@ -7,8 +7,10 @@ using System.Collections.Specialized;
 using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
+using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
@@ -215,6 +217,8 @@ public class Program
                     {
                         string? orcidId = orcidProp.GetString();
                         context.Identity?.AddClaim(new("sub", orcidId));
+                        // set in session
+                        context.HttpContext.Session.SetString("orcid", orcidId);
                     }
 
                     string finalRedirectUri = context.Properties.Items.TryGetValue("finalRedirect", out var redirect)
@@ -322,25 +326,28 @@ public class Program
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
 
-        if (services.GetService<ConfluxContext>() != null || await featureManager.IsEnabledAsync("DatabaseConnection"))
-        {
-            ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-            if (context.Database.IsRelational())
-                await context.Database.MigrateAsync();
+        if (services.GetService<ConfluxContext>() == null && !await featureManager.IsEnabledAsync("DatabaseConnection")) 
+            return;
 
-            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Projects.AnyAsync())
-            {
-                TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
-                SeedData seedData = retriever.MapProjectsAsync().Result;
+        ConfluxContext context = services.GetRequiredService<ConfluxContext>();
+        if (context.Database.IsRelational())
+            await context.Database.MigrateAsync();
 
-                await context.Contributors.AddRangeAsync(seedData.Contributors);
-                await context.Products.AddRangeAsync(seedData.Products);
-                await context.Parties.AddRangeAsync(seedData.Parties);
-                await context.Projects.AddRangeAsync(seedData.Projects);
+        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync()) 
+            return;
 
-                await context.SaveChangesAsync();
-            }
-        }
+        TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
+        SeedData seedData = retriever.MapProjectsAsync().Result;
+
+        User devUser = UserSession.Development().User!;
+        if (!await context.Users.AnyAsync(u => u.Id == devUser.Id))
+            context.Users.Add(devUser);
+        await context.Contributors.AddRangeAsync(seedData.Contributors);
+        await context.Products.AddRangeAsync(seedData.Products);
+        await context.Parties.AddRangeAsync(seedData.Parties);
+        await context.Projects.AddRangeAsync(seedData.Projects);
+
+        await context.SaveChangesAsync();
     }
 
     private static void SetupDevelopmentAuth(WebApplicationBuilder builder)

@@ -63,6 +63,8 @@ public class OrcidController : ControllerBase
 
         _context.Users.Update(userSession.User);
         await _context.SaveChangesAsync();
+
+        await _userSessionService.UpdateUser();
         
         return Ok();
     }
@@ -86,12 +88,14 @@ public class OrcidController : ControllerBase
         
         // Get the authenticated result from ORCID
         AuthenticateResult authenticateResult = await HttpContext.AuthenticateAsync("OrcidCookie");
-        if (!authenticateResult.Succeeded)
-            return BadRequest("ORCID authentication failed: " + 
-                (authenticateResult.Failure?.Message ?? "Unknown reason"));
+        string? orcidId = authenticateResult.Principal?.FindFirstValue("sub");
+        if (orcidId == null)
+        {
+            // get from session
+            orcidId = HttpContext.Session.GetString("orcid");
+        }
 
         // Extract the ORCID ID from claims
-        string? orcidId = authenticateResult.Principal.FindFirstValue("sub");
         if (string.IsNullOrEmpty(orcidId)) 
             return BadRequest("Could not retrieve ORCID ID from claims");
 
@@ -105,16 +109,31 @@ public class OrcidController : ControllerBase
 
         userSession.User.ORCiD = orcidId;
 
-        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
-        {
-            Console.WriteLine($"User {userSession.User.Name} linked ORCID ID: {orcidId}");
-            return Redirect(redirectUri);
-        }
+        _context.Users.Update(userSession.User);
+        await _context.SaveChangesAsync();
+        await _userSessionService.UpdateUser();
+
+        return Redirect(redirectUri);
+    }
+    
+    [HttpGet("unlink")]
+    public async Task<IActionResult> OrcidUnlink()
+    {
+        // Get current user
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession == null) 
+            return Unauthorized("User not logged in");
+
+        if (userSession.User == null) 
+            return BadRequest("User session does not contain a user");
+
+        userSession.User.ORCiD = null;
 
         _context.Users.Update(userSession.User);
         await _context.SaveChangesAsync();
+        await _userSessionService.UpdateUser();
 
-        return Redirect(redirectUri);
+        return Ok();
     }
     
     [HttpGet("redirect")]

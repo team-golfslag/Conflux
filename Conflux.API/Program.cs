@@ -207,24 +207,6 @@ public class Program
 
             options.Events = new()
             {
-                OnRedirectToAuthorizationEndpoint = context =>
-                {
-                    // Get the *explicit* RedirectUri from configuration.
-                    // This MUST exactly match one of the Redirect URIs registered with ORCID for your application.
-                    string configuredRedirectUri = orcidConfig["RedirectUri"];
-
-                    if (!string.IsNullOrEmpty(configuredRedirectUri))
-                    {
-                        // Set the RedirectUri property on the outgoing protocol message.
-                        // The handler will use this value when communicating with ORCID.
-                        // This ensures the redirect_uri parameter sent to ORCID matches your registration,
-                        // especially important if the auto-generated one (based on request headers + CallbackPath)
-                        // might differ due to proxy setups or specific host configurations.
-                        context.RedirectUri = configuredRedirectUri;
-                    }
-                    // Allow the handler to complete the redirect. Do not manually redirect here.
-                    return Task.CompletedTask;
-                },
                 OnCreatingTicket = context =>
                 {
                     // Extract ORCID ID from token response

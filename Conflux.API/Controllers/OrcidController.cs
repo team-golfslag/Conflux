@@ -131,13 +131,7 @@ public class OrcidController : ControllerBase
         
         // 2. Get the authenticated result from ORCID via the cookie scheme
         AuthenticateResult authenticateResult = await HttpContext.AuthenticateAsync("OrcidCookie"); // Already done above
-        if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
-        {
-             return BadRequest("ORCID authentication failed or principal not found.");
-        }
-
-        // 3. Extract the ORCID ID from claims (using the standard NameIdentifier claim type)
-        string? orcidId = authenticateResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier); 
+        string? orcidId = authenticateResult.Principal?.FindFirstValue(ClaimTypes.NameIdentifier); 
         if (string.IsNullOrEmpty(orcidId)) 
         {
              // Fallback to session if claim is missing (though it shouldn't be if configured correctly)
@@ -148,7 +142,7 @@ public class OrcidController : ControllerBase
              }
         }
 
-        // 4. Get current primary user session
+        // 3. Get current primary user session
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession == null || userSession.User == null) 
         {
@@ -157,7 +151,7 @@ public class OrcidController : ControllerBase
             return Unauthorized("Primary user session not found or invalid. Please log in again.");
         }
 
-        // 5. Fetch the corresponding User entity from the database
+        // 4. Fetch the corresponding User entity from the database
         User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
         if (dbUser == null)
         {
@@ -165,10 +159,10 @@ public class OrcidController : ControllerBase
             return NotFound($"User with ID {userSession.User.Id} not found in database.");
         }
 
-        // 6. Update *only* the ORCiD property on the tracked entity
+        // 5. Update *only* the ORCiD property on the tracked entity
         dbUser.ORCiD = orcidId;
 
-        // 7. Save changes for the single property update
+        // 6. Save changes for the single property update
         try
         {
             await _context.SaveChangesAsync();
@@ -181,10 +175,10 @@ public class OrcidController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while linking the ORCID.");
         }
 
-        // 8. Update the user session state to reflect the change
+        // 7. Update the user session state to reflect the change
         await _userSessionService.UpdateUser();
 
-        // 9. Redirect to the final, validated destination
+        // 8. Redirect to the final, validated destination
         return Redirect(safeRedirectUri);
     }
     

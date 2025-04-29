@@ -36,6 +36,10 @@ public class UserSessionService : IUserSessionService
 
     public async Task<UserSession?> GetUser()
     {
+        // if there is no http context, we are in a test
+        if (_httpContextAccessor.HttpContext == null) 
+            return UserSession.Development();
+
         if (_httpContextAccessor.HttpContext.Session is null ||
             !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);

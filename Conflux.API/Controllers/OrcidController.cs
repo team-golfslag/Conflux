@@ -5,13 +5,11 @@
 
 using System.Security.Claims;
 using Conflux.Data;
-using Conflux.Domain;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 
 namespace Conflux.API.Controllers;
@@ -35,16 +33,38 @@ public class OrcidController : ControllerBase
     
     [HttpGet("link")]
     [Authorize] // User must be logged in with primary auth
-    public IActionResult LinkOrcid([FromQuery] string redirectUri)
+    public async Task<IActionResult> LinkOrcid([FromQuery] string redirectUri)
     {
         // Validate redirect URL
         string safeRedirectUri = IsValidRedirectUrl(redirectUri) ? redirectUri : "/orcid/redirect";
-        return Challenge(new AuthenticationProperties
+
+        if (await _featureManager.IsEnabledAsync("OrcidAuthentication"))
         {
-            RedirectUri = "/orcid/redirect",
-            // Store additional info if needed
-            Items = { { "finalRedirect", safeRedirectUri } }
-        }, "orcid"); // Use the ORCID scheme name
+            return Challenge(new AuthenticationProperties
+            {
+                RedirectUri = "/orcid/redirect",
+                // Store additional info if needed
+                Items = { { "finalRedirect", safeRedirectUri } }
+            }, "orcid");
+        }
+        
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession == null) 
+            return Unauthorized("User not logged in");
+
+        if (userSession.User == null) 
+            return BadRequest("User session does not contain a user");
+
+        userSession.User.ORCiD = "0000-0002-1825-0097"; // Example ORCID ID
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+        {
+            return Redirect(redirectUri);
+        }
+
+        _context.Users.Update(userSession.User);
+        await _context.SaveChangesAsync();
+        
+        return Ok();
     }
 
     private bool IsValidRedirectUrl(string url)
@@ -87,7 +107,6 @@ public class OrcidController : ControllerBase
 
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
         {
-            userSession.User.ORCiD = orcidId;
             Console.WriteLine($"User {userSession.User.Name} linked ORCID ID: {orcidId}");
             return Redirect(redirectUri);
         }

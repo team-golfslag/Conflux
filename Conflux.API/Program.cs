@@ -128,20 +128,25 @@ public class Program
         IVariantFeatureManager featureManager)
     {
         AuthenticationBuilder authBuilder = builder.Services.AddAuthentication();
+        bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
+        bool orcidEnabled = await featureManager.IsEnabledAsync("ORCIDAuthentication");
+
+        // both enabled and development env
+        if (sramEnabled && orcidEnabled && builder.Environment.IsDevelopment())
+            throw new InvalidOperationException(
+                "Both SRAM and ORCID authentication cannot be enabled at the same time in development.");
 
         // Add ORCID authentication regardless of which primary auth is used
         AddOrcidAuth(authBuilder, builder.Configuration);
 
-        bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
         if (sramEnabled)
-            SetupAuth(builder);
+            SetupSRAMAuth(builder);
         else
             SetupDevelopmentAuth(builder);
     }
 
     private static void AddOrcidAuth(AuthenticationBuilder authBuilder, IConfiguration config)
     {
-        // TODO: make sure not both SRAM and ORCID are used at the same time
         IConfigurationSection orcidConfig = config.GetSection("Authentication:Orcid");
 
         string? orcidSecret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
@@ -345,7 +350,7 @@ public class Program
             .AddCookie(ConfigureCookieAuth);
     }
 
-    private static void SetupAuth(WebApplicationBuilder builder)
+    private static void SetupSRAMAuth(WebApplicationBuilder builder)
     {
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
         if (string.IsNullOrEmpty(sramSecret))

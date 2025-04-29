@@ -3,8 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.Collections.Specialized;
-using System.Security.Claims;
 using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain;
@@ -15,7 +13,6 @@ using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -210,7 +207,8 @@ public class Program
                 OnCreatingTicket = context =>
                 {
                     // Extract ORCID ID from token response
-                    if (context.TokenResponse.Response.RootElement.TryGetProperty("orcid", out var orcidProp))
+                    if (context.TokenResponse.Response?.RootElement.TryGetProperty("orcid",
+                        out JsonElement orcidProp) ?? false)
                     {
                         string? orcidId = orcidProp.GetString();
                         context.Identity?.AddClaim(new("sub", orcidId));
@@ -218,9 +216,10 @@ public class Program
                         context.HttpContext.Session.SetString("orcid", orcidId);
                     }
 
-                    string finalRedirectUri = context.Properties.Items.TryGetValue("finalRedirect", out var redirect)
-                        ? redirect as string ?? "/orcid/finalize"
-                        : "/orcid/finalize";
+                    string finalRedirectUri =
+                        context.Properties.Items.TryGetValue("finalRedirect", out string? redirect)
+                            ? redirect ?? "/orcid/finalize"
+                            : "/orcid/finalize";
                     context.Properties.Items["CustomRedirect"] =
                         $"/orcid/finalize?redirectUri={Uri.EscapeDataString(finalRedirectUri)}";
 
@@ -229,7 +228,7 @@ public class Program
                 OnTicketReceived = context =>
                 {
                     // Check if we have a custom redirect set in OnCreatingTicket
-                    if (context.Properties.Items.TryGetValue("CustomRedirect", out var customRedirect))
+                    if (context.Properties.Items.TryGetValue("CustomRedirect", out string? customRedirect))
                     {
                         context.Response.Redirect(customRedirect);
                         context.HandleResponse();
@@ -261,10 +260,7 @@ public class Program
 
     private static async Task ConfigureMiddleware(WebApplication app, IVariantFeatureManager featureManager)
     {
-        if (app.Environment.IsProduction())
-        {
-            app.UseForwardedHeaders();
-        }
+        if (app.Environment.IsProduction()) app.UseForwardedHeaders();
 
         if (await featureManager.IsEnabledAsync("Swagger"))
         {
@@ -315,17 +311,14 @@ public class Program
             });
         });
 
-        if (app.Environment.IsProduction())
-        {
-            app.UseHttpsRedirection();
-        }
+        if (app.Environment.IsProduction()) app.UseHttpsRedirection();
 
 
         app.UseCors("AllowLocalhost");
         app.UseSession();
 
         app.UseRouting();
-        
+
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -337,14 +330,14 @@ public class Program
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
 
-        if (services.GetService<ConfluxContext>() == null && !await featureManager.IsEnabledAsync("DatabaseConnection")) 
+        if (services.GetService<ConfluxContext>() == null && !await featureManager.IsEnabledAsync("DatabaseConnection"))
             return;
 
         ConfluxContext context = services.GetRequiredService<ConfluxContext>();
         if (context.Database.IsRelational())
             await context.Database.MigrateAsync();
 
-        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync()) 
+        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync())
             return;
 
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();

@@ -209,20 +209,20 @@ public class Program
             {
                 OnRedirectToAuthorizationEndpoint = context =>
                 {
-                    // Get the redirect URI from configuration
-                    string redirectUri = orcidConfig["RedirectUri"];
+                    // Get the *explicit* RedirectUri from configuration.
+                    // This MUST exactly match one of the Redirect URIs registered with ORCID for your application.
+                    string configuredRedirectUri = orcidConfig["RedirectUri"];
 
-                    // Build authorization URL with correct redirect URI
-                    string authorizationUrl = context.RedirectUri;
-
-                    // Update redirect_uri parameter
-                    UriBuilder uriBuilder = new UriBuilder(authorizationUrl);
-                    NameValueCollection query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
-                    query["redirect_uri"] = redirectUri;
-                    uriBuilder.Query = query.ToString();
-                    authorizationUrl = uriBuilder.ToString();
-
-                    context.Response.Redirect(authorizationUrl);
+                    if (!string.IsNullOrEmpty(configuredRedirectUri))
+                    {
+                        // Set the RedirectUri property on the outgoing protocol message.
+                        // The handler will use this value when communicating with ORCID.
+                        // This ensures the redirect_uri parameter sent to ORCID matches your registration,
+                        // especially important if the auto-generated one (based on request headers + CallbackPath)
+                        // might differ due to proxy setups or specific host configurations.
+                        context.RedirectUri = configuredRedirectUri;
+                    }
+                    // Allow the handler to complete the redirect. Do not manually redirect here.
                     return Task.CompletedTask;
                 },
                 OnCreatingTicket = context =>
@@ -279,6 +279,11 @@ public class Program
 
     private static async Task ConfigureMiddleware(WebApplication app, IVariantFeatureManager featureManager)
     {
+        if (app.Environment.IsProduction())
+        {
+            app.UseForwardedHeaders();
+        }
+
         if (await featureManager.IsEnabledAsync("Swagger"))
         {
             app.UseOpenApi();
@@ -328,13 +333,17 @@ public class Program
             });
         });
 
+        if (app.Environment.IsProduction())
+        {
+            app.UseHttpsRedirection();
+        }
+
+
         app.UseCors("AllowLocalhost");
-        app.UseHttpsRedirection();
         app.UseSession();
 
         app.UseRouting();
         
-
         app.UseAuthentication();
         app.UseAuthorization();
 

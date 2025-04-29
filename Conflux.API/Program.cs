@@ -311,10 +311,10 @@ public class Program
 
         app.UseCors("AllowLocalhost");
         app.UseHttpsRedirection();
-        app.MapControllers();
+        app.UseSession();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseSession();
+        app.MapControllers();
     }
 
     private static async Task InitializeDatabase(WebApplication app, IVariantFeatureManager featureManager)

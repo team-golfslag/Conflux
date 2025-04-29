@@ -80,6 +80,9 @@ public class Program
         builder.Services.AddHttpContextAccessor();
         await ConfigureSRAMServices(builder, featureManager);
 
+        if (!await featureManager.IsEnabledAsync("ReverseProxy"))
+            return;
+        
         // Configure Forwarded Headers options
         // This helps the application correctly determine the client's scheme (http/https) and host
         // when running behind a reverse proxy (like Docker, Nginx, etc.)
@@ -260,7 +263,8 @@ public class Program
 
     private static async Task ConfigureMiddleware(WebApplication app, IVariantFeatureManager featureManager)
     {
-        if (app.Environment.IsProduction()) app.UseForwardedHeaders();
+        if (await featureManager.IsEnabledAsync("ReverseProxy"))
+            app.UseForwardedHeaders();
 
         if (await featureManager.IsEnabledAsync("Swagger"))
         {
@@ -311,8 +315,8 @@ public class Program
             });
         });
 
-        if (app.Environment.IsProduction()) app.UseHttpsRedirection();
-
+        if (await featureManager.IsEnabledAsync("HttpsRedirection"))
+            app.UseHttpsRedirection();
 
         app.UseCors("AllowLocalhost");
         app.UseSession();

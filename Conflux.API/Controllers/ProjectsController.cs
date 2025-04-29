@@ -38,8 +38,10 @@ public class ProjectsController : ControllerBase
     /// Gets all projects whose title or description contains the query (case-insensitive)
     /// and optionally filters by start and/or end date.
     /// </summary>
-    /// <param name="projectQueryDto">The <see cref="ProjectQueryDTO"/> that contains the query term, filters and 'order by' method for
-    /// the query</param>
+    /// <param name="projectQueryDto">
+    /// The <see cref="ProjectQueryDTO" /> that contains the query term, filters and 'order by' method for
+    /// the query
+    /// </param>
     /// <returns>Filtered list of projects</returns>
     [Authorize]
     [HttpGet]

@@ -32,10 +32,16 @@ public enum ContributorRoleType
     WritingReviewEditing,
 }
 
-[PrimaryKey(nameof(ContributorId), nameof(RoleType))]
+[PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(RoleType))]
 public class ContributorRole
 {
-    [ForeignKey(nameof(Contributor))] public required Guid ContributorId { get; init; }
+    [ForeignKey(nameof(Contributor))]
+    [Column(Order = 0)]
+    public required Guid PersonId { get; init; }
+
+    [ForeignKey(nameof(Contributor))]
+    [Column(Order = 1)]
+    public required Guid ProjectId { get; init; }
 
     [Key] public required ContributorRoleType RoleType { get; init; }
 
@@ -59,7 +65,7 @@ public class ContributorRole
             ContributorRoleType.Visualization         => "visualization/",
             ContributorRoleType.WritingOriginalDraft  => "writing-original-draft/",
             ContributorRoleType.WritingReviewEditing  => "writing-review-editing/",
-            _                                => throw new ArgumentOutOfRangeException(),
+            _                                         => throw new ArgumentOutOfRangeException(),
         };
     }
 }

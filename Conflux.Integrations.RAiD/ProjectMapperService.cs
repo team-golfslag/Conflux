@@ -3,14 +3,22 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.Data;
 using Conflux.Domain;
 using RAiD.Net.Domain;
 
 namespace Conflux.Integrations.RAiD;
 
-public static class ProjectMapper
+public class ProjectMapperService : IProjectMapperService
 {
-    public static RAiDCreateRequest MapProjectCreation(Project project) =>
+    private readonly ConfluxContext _context;
+
+    public ProjectMapperService(ConfluxContext context)
+    {
+        _context = context;
+    }
+
+    public RAiDCreateRequest MapProjectCreationRequest(Project project) =>
         new()
         {
             Title = project.Titles.ConvertAll(MapProjectTitle),
@@ -93,17 +101,23 @@ public static class ProjectMapper
             EndDate = position.EndDate,
         };
 
-    private static RAiDContributor MapContributor(Contributor contributor) =>
-        new()
+    private RAiDContributor MapContributor(Contributor contributor)
+    {
+        Person person = _context.People
+                .FirstOrDefault(p => p.Id == contributor.PersonId)
+            ?? throw new ArgumentNullException(nameof(contributor));
+
+        return new()
         {
-            SchemaUri = contributor.SchemaUri,
-            Email = contributor.Email,
+            SchemaUri = person.SchemaUri,
+            Email = person.Email,
             Uuid = null,
             Position = contributor.Positions.Select(MapContributorPosition).ToList(),
             Role = contributor.Roles.Select(MapContributorRole).ToList(),
-            Leader = false,
-            Contact = false,
+            Leader = contributor.Leader,
+            Contact = contributor.Contact,
         };
+    }
 
     private static RAiDOrganisationRole MapOrganisationRole(OrganisationRole role) =>
         new()

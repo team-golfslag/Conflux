@@ -93,8 +93,8 @@ public class NwOpenMapperTests
         Project mappedProject = result.Projects[0];
         Assert.Equal("Test Project", mappedProject.Titles[0].Text);
         Assert.Equal("Summary", mappedProject.Description);
-        Assert.Equal(new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
-        Assert.Equal(new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);
+        Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
+        Assert.Equal(new(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);
 
         Assert.Single(result.Products);
         Product mappedProduct = result.Products[0];
@@ -103,7 +103,7 @@ public class NwOpenMapperTests
 
         Assert.Single(result.Contributors);
         Contributor mappedUser = result.Contributors[0];
-        Assert.Equal("John Doe", mappedUser.Name);
+        Assert.False(mappedUser.Contact);
 
         Assert.Single(result.Organisations);
         Organisation mappedOrganisation = result.Organisations[0];

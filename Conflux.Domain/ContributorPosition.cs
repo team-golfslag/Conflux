@@ -20,10 +20,17 @@ public enum ContributorPositionType
     Other = 311,
 }
 
-[PrimaryKey(nameof(ContributorId), nameof(Position))]
+[PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(Position))]
 public class ContributorPosition
 {
-    [ForeignKey(nameof(Contributor))] public required Guid ContributorId { get; init; }
+    [ForeignKey(nameof(Contributor))]
+    [Column(Order = 0)]
+    public required Guid PersonId { get; init; }
+
+    [ForeignKey(nameof(Contributor))]
+    [Column(Order = 1)]
+    public required Guid ProjectId { get; init; }
+
     public required ContributorPositionType Position { get; init; }
     public string SchemaUri => "https://vocabulary.raid.org/contributor.position.schema/305";
     public string GetUri => "https://vocabulary.raid.org/contributor.position.schema/" + (int)Position;

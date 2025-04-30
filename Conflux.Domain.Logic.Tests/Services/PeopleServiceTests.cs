@@ -41,17 +41,50 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorsService = new(_context);
 
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
+        {
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            Description = "Test Description",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
+
+        // Add person to the context
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "John Doe",
+        };
+        _context.People.Add(person);
+
         ContributorDTO dto = new()
         {
-            Name = "John Doe",
+            Leader = true,
+            Contact = true,
         };
 
         // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(dto);
+        Contributor contributor = await contributorsService.CreateContributorAsync(projectId, dto);
 
         // Assert
         Assert.NotNull(contributor);
-        Assert.Single(await _context.Contributors.Where(p => p.Id == contributor.Id).ToListAsync());
+        Assert.Single(await _context.Contributors
+            .Where(p => p.PersonId == contributor.PersonId && p.ProjectId == contributor.ProjectId).ToListAsync());
     }
 
     [Fact]
@@ -60,23 +93,54 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorsService = new(_context);
 
-        Guid contributorId = Guid.NewGuid();
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
+        {
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            Description = "Test Description",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
+
+        // Add person to the context
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "John Doe",
+        };
+        _context.People.Add(person);
 
         Contributor testContributor = new()
         {
-            Id = contributorId,
-            Name = "Test Contributor",
+            ProjectId = projectId,
+            PersonId = personId,
+            Leader = true,
+            Contact = true,
         };
 
         _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         // Act
-        Contributor contributor = await contributorsService.GetContributorByIdAsync(contributorId);
+        Contributor contributor = await contributorsService.GetContributorByIdAsync(projectId, personId);
 
         // Assert
         Assert.NotNull(contributor);
-        Assert.Equal(testContributor.Name, contributor.Name);
+        Assert.Equal(testContributor.PersonId, contributor.PersonId);
     }
 
     [Fact]
@@ -85,11 +149,12 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorService = new(_context);
 
-        Guid contributorId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
 
         // Act & Assert
         await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
-            contributorService.GetContributorByIdAsync(contributorId));
+            contributorService.GetContributorByIdAsync(projectId, personId));
     }
 
     [Fact]
@@ -97,21 +162,54 @@ public class ContributorsServiceTests : IAsyncLifetime
     {
         // Arrange
         ContributorsService contributorsService = new(_context);
-        ContributorDTO testContributor = new()
+
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
         {
-            Name = "Test Contributor",
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            Description = "Test Description",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
+
+        // Add person to the context
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "John Doe",
+        };
+        _context.People.Add(person);
+
+        ContributorDTO dto = new()
+        {
+            Leader = true,
+            Contact = true,
         };
 
         // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(testContributor);
+        Contributor contributor = await contributorsService.CreateContributorAsync(projectId, dto);
         await _context.SaveChangesAsync();
-        Contributor retrievedContributor = await _context.Contributors.SingleAsync(p => p.Id == contributor.Id);
+        Contributor retrievedContributor =
+            await _context.Contributors.SingleAsync(p => p.ProjectId == contributor.ProjectId);
 
         // Assert
         Assert.NotNull(contributor);
-        Assert.Equal(retrievedContributor.Name, contributor.Name);
-        Assert.Equal(retrievedContributor.Id, contributor.Id);
-        Assert.Equal(testContributor.Name, contributor.Name);
+        Assert.Equal(retrievedContributor.Leader, contributor.Leader);
+        Assert.Equal(retrievedContributor.Contact, contributor.Contact);
     }
 
     [Fact]
@@ -119,84 +217,97 @@ public class ContributorsServiceTests : IAsyncLifetime
     {
         // Arrange
         ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
+        {
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            Description = "Test Description",
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
+
+        // Add person to the context
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "John Doe",
+        };
+        _context.People.Add(person);
+
         Contributor testContributor = new()
         {
-            Id = contributorId,
-            Name = "Original Name",
+            PersonId = personId,
+            ProjectId = projectId,
+            Roles =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                    RoleType = ContributorRoleType.Conceptualization,
+                },
+            ],
+            Positions =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                    Position = ContributorPositionType.CoInvestigator,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                },
+            ],
+            Leader = true,
+            Contact = true,
         };
+
         _context.Contributors.Add(testContributor);
         await _context.SaveChangesAsync();
 
         ContributorDTO updateDto = new()
         {
-            Name = "Updated Name",
+            Roles =
+            [
+                ContributorRoleType.Conceptualization,
+                ContributorRoleType.Methodology,
+            ],
+            Positions =
+            [
+                new()
+                {
+                    StartDate = DateTime.UtcNow,
+                    Type = ContributorPositionType.Consultant,
+                },
+            ],
+            Leader = false,
+            Contact = false,
         };
 
         // Act
-        Contributor updatedContributor = await contributorsService.UpdateContributorAsync(contributorId, updateDto);
+        Contributor updatedContributor =
+            await contributorsService.UpdateContributorAsync(projectId, personId, updateDto);
 
         // Assert
         Assert.NotNull(updatedContributor);
-        Assert.Equal("Updated Name", updatedContributor.Name);
-        Assert.Equal(contributorId, updatedContributor.Id);
-    }
-
-    [Fact]
-    public async Task PatchContributorAsync_ShouldUpdateName_WhenNameProvided()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
-        Contributor contributor = new()
-        {
-            Id = contributorId,
-            Name = "Original Name",
-        };
-        _context.Contributors.Add(contributor);
-        await _context.SaveChangesAsync();
-
-        // Create a ContributorPatchDTO with a new name
-        ContributorPatchDTO patchDto = new()
-        {
-            Name = "Patched Name",
-        };
-
-        // Act
-        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedContributor);
-        Assert.Equal("Patched Name", patchedContributor.Name);
-        Assert.Equal(contributorId, patchedContributor.Id);
-    }
-
-    [Fact]
-    public async Task PatchContributorAsync_ShouldNotChangeName_WhenNameIsNull()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
-
-        Contributor testContributor = new()
-        {
-            Id = contributorId,
-            Name = "Original Name",
-        };
-        _context.Contributors.Add(testContributor);
-        await _context.SaveChangesAsync();
-
-        ContributorPatchDTO patchDto = new()
-        {
-            Name = null,
-        };
-
-        // Act
-        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedContributor);
-        Assert.Equal("Original Name", patchedContributor.Name);
-        Assert.Equal(contributorId, patchedContributor.Id);
+        Assert.Equal(2, updatedContributor.Roles.Count);
+        Assert.Single(updatedContributor.Positions);
+        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[0].Position);
+        Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Conceptualization);
+        Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Methodology);
     }
 }

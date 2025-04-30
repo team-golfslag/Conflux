@@ -3,24 +3,19 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain;
 
+[PrimaryKey(nameof(PersonId), nameof(ProjectId))]
 public record Contributor
 {
-    [Key] public Guid Id { get; init; } = Guid.NewGuid();
-    public string SchemaUri => "https://orcid.org/";
-
-    [JsonPropertyName("orcid_id")] public string? ORCiD { get; set; }
-
-    [Required] public required string Name { get; set; }
-
+    [ForeignKey(nameof(Person))] public Guid PersonId { get; init; }
+    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
     public List<ContributorRole> Roles { get; set; } = [];
     public List<ContributorPosition> Positions { get; set; } = [];
 
-    public string? GivenName { get; set; }
-    public string? FamilyName { get; set; }
-    public string? Email { get; set; }
+    public bool Leader { get; set; }
+    public bool Contact { get; set; }
 }

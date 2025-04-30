@@ -13,6 +13,7 @@ namespace Conflux.RepositoryConnections.NWOpen;
 public class SeedData
 {
     public List<Organisation> Organisations { get; init; } = [];
+    public List<Person> People { get; init; } = [];
     public List<Contributor> Contributors { get; init; } = [];
     public List<Product> Products { get; init; } = [];
     public List<Project> Projects { get; init; } = [];

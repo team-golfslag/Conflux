@@ -3,8 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
-
 namespace Conflux.Domain.Logic.DTOs;
 
 /// <summary>
@@ -14,21 +12,35 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ContributorDTO
 #pragma warning restore S101
 {
-    [Required] public required string Name { get; init; }
-    public string? GivenName { get; init; }
-    public string? FamilyName { get; init; }
-    public string? Email { get; init; }
     public List<ContributorRoleType> Roles { get; init; } = [];
-    public List<ContributorPositionType> Positions { get; init; } = [];
+    public List<ContributorPositionDTO> Positions { get; init; } = [];
+    public bool Leader { get; init; }
+    public bool Contact { get; init; }
 
     /// <summary>
     /// Converts a <see cref="ContributorDTO" /> to a <see cref="Contributor" />
     /// </summary>
     /// <returns>The converted <see cref="Contributor" /></returns>
-    public Contributor ToContributor() =>
+    public Contributor ToContributor(Guid projectId, Guid personId) =>
         new()
         {
-            Id = Guid.NewGuid(),
-            Name = Name,
+            PersonId = personId,
+            ProjectId = projectId,
+            Roles = Roles.ConvertAll(r => new ContributorRole
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                RoleType = r,
+            }),
+            Positions = Positions.ConvertAll(p => new ContributorPosition
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                Position = p.Type,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+            }),
+            Leader = Leader,
+            Contact = Contact,
         };
 }

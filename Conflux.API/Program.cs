@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Integrations.RAiD;
 using Conflux.RepositoryConnections.NWOpen;
 using Conflux.RepositoryConnections.SRAM;
 using Microsoft.AspNetCore.Authentication;
@@ -116,11 +117,13 @@ public class Program
             return scimClient;
         });
 
+        builder.Services.AddScoped<IContributorsService, ContributorsService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IRAiDService, RAiDService>();
+        builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
     }
 

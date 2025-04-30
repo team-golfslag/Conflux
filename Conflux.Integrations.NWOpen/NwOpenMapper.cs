@@ -16,6 +16,7 @@ public static class NwOpenMapper
 {
     private static List<Organisation> Organisations { get; } = [];
     private static List<Contributor> Contributors { get; } = [];
+    private static List<Person> People { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
 
@@ -35,6 +36,7 @@ public static class NwOpenMapper
         {
             Organisations = Organisations,
             Contributors = Contributors,
+            People = People,
             Products = Products,
             Projects = Projects,
         };
@@ -131,26 +133,36 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapContributor(Project project, NwOpenProjectMember projectMember)
     {
-        Guid contributorId = Guid.NewGuid();
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            GivenName = projectMember.FirstName,
+            FamilyName = projectMember.LastName,
+        };
         Contributor contributor = new()
         {
-            Id = contributorId,
-            Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            PersonId = personId,
+            ProjectId = project.Id,
             Roles =
             [
                 new()
                 {
-                    ContributorId = contributorId,
+                    PersonId = personId,
+                    ProjectId = project.Id,
                     RoleType = ContributorRoleType.Conceptualization,
                 },
                 new()
                 {
-                    ContributorId = contributorId,
+                    PersonId = personId,
+                    ProjectId = project.Id,
                     RoleType = ContributorRoleType.Methodology,
                 },
                 new()
                 {
-                    ContributorId = contributorId,
+                    PersonId = personId,
+                    ProjectId = project.Id,
                     RoleType = ContributorRoleType.Validation,
                 },
             ],
@@ -158,13 +170,15 @@ public static class NwOpenMapper
             [
                 new()
                 {
-                    ContributorId = contributorId,
+                    PersonId = personId,
+                    ProjectId = project.Id,
                     Position = ContributorPositionType.CoInvestigator,
                     StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
             ],
         };
+        People.Add(person);
         Contributors.Add(contributor);
         project.Contributors.Add(contributor);
     }

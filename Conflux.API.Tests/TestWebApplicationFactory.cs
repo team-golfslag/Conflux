@@ -107,6 +107,15 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 SCIMId = "SCIM",
             });
 
+            db.People.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000001"),
+                Name = "John Doe",
+                GivenName = "John",
+                FamilyName = "Doe",
+                Email = "john@doe.nl",
+            });
+
             db.SaveChanges();
         });
     }

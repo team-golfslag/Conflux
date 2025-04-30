@@ -14,7 +14,10 @@ namespace Conflux.Data;
 /// <param name="options">The database context options.</param>
 public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContext(options)
 {
+    public DbSet<Person> People { get; set; }
+
     public DbSet<User> Users { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Contributor> Contributors { get; set; }
     public DbSet<ContributorRole> ContributorRoles { get; set; }
     public DbSet<ContributorPosition> ContributorPositions { get; set; }
@@ -24,7 +27,6 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
     public DbSet<ProjectTitle> ProjectTitles { get; set; }
     public DbSet<Organisation> Organisations { get; set; }
     public DbSet<OrganisationRole> OrganisationRoles { get; set; }
-    public DbSet<UserRole> UserRoles { get; set; }
 
     public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 

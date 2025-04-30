@@ -5,7 +5,7 @@
 
 using Conflux.Domain;
 
-namespace Conflux.RepositoryConnections.NWOpen;
+namespace Conflux.Integrations.NWOpen;
 
 /// <summary>
 /// Represents seed data.

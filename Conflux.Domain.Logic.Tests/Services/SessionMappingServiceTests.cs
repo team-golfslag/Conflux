@@ -6,11 +6,11 @@
 using Conflux.Data;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM;
-using Conflux.RepositoryConnections.SRAM.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using Moq;
+using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Models;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -335,7 +335,7 @@ public class SessionMappingServiceTests
         Assert.Single(context.Users);
         Assert.Single(context.UserRoles);
 
-        UserRole userRole = context.UserRoles.First();
+        UserRole userRole = await context.UserRoles.FirstAsync();
         Assert.Equal("Role Group", userRole.Name);
         Assert.Equal("Role Description", userRole.Description);
         Assert.Equal("role:urn:1", userRole.Urn);

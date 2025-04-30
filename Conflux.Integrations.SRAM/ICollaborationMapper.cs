@@ -4,9 +4,9 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain.Session;
-using Conflux.RepositoryConnections.SRAM.DTOs;
+using Conflux.Integrations.SRAM.DTOs;
 
-namespace Conflux.RepositoryConnections.SRAM;
+namespace Conflux.Integrations.SRAM;
 
 public interface ICollaborationMapper
 {

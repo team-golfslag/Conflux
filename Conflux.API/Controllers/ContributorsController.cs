@@ -34,7 +34,7 @@ public class ContributorsController : ControllerBase
     /// <returns>Filtered list of contributors</returns>
     [HttpGet]
     [ProducesResponseType(typeof(List<Contributor>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Contributor>>> GetProjectByQuery(Guid projectId,
+    public async Task<ActionResult<List<Contributor>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
         await _contributorsService.GetContributorsByQueryAsync(projectId, query);
 

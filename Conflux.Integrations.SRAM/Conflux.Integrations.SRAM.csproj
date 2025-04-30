@@ -4,12 +4,15 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Conflux.RepositoryConnections.SRAM</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="SRAM.SCIM.Net" Version="1.0.0"/>
     </ItemGroup>
 
 </Project>

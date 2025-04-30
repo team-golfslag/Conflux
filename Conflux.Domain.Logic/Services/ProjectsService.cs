@@ -114,19 +114,21 @@ public class ProjectsService
         ?? throw new ProjectNotFoundException(id);
 
     /// <summary>
-    /// Gets all projects whose title or description contains the query (case-insensitive),
+    /// Gets all projects whose title or description contain the query (case-insensitive),
+    /// and optionally filters by start and/or end date.
     /// </summary>
-    /// <param name="query">The string to search in the title or description</param>
-    /// <param name="startDate">The start date of the project</param>
-    /// <param name="endDate">The end date of the project</param>
-    /// <returns>Filtered list of projects</returns>
-    public async Task<List<Project>> GetProjectsByQueryAsync(string? query, DateTime? startDate, DateTime? endDate)
+    /// <param name="dto">
+    /// The <see cref="ProjectQueryDTO" /> that contains the query term, filters and 'order by' method for
+    /// the query
+    /// </param>
+    /// <returns>Filtered and ordered list of projects</returns>
+    public async Task<List<Project>> GetProjectsByQueryAsync(ProjectQueryDTO dto)
     {
         IEnumerable<Project> projects = await GetAvailableProjects();
 
-        if (!string.IsNullOrWhiteSpace(query))
+        if (!string.IsNullOrWhiteSpace(dto.Query))
         {
-            string loweredQuery = query.ToLowerInvariant();
+            string loweredQuery = dto.Query.ToLowerInvariant();
 #pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
             projects = projects.Where(project =>
                 project.Titles.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)) ||
@@ -134,20 +136,35 @@ public class ProjectsService
 #pragma warning restore CA1862
         }
 
-        if (startDate.HasValue)
+        DateTime? startDate;
+        if (dto.StartDate.HasValue)
         {
-            startDate = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
+            startDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.StartDate >= startDate);
         }
 
-        if (endDate.HasValue)
+        DateTime? endDate;
+        if (dto.EndDate.HasValue)
         {
-            endDate = DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc);
+            endDate = DateTime.SpecifyKind(dto.EndDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.EndDate != null && project.EndDate <= endDate);
         }
 
-        if (startDate.HasValue && endDate.HasValue)
-            projects = projects.Where(project => project.StartDate <= endDate && project.EndDate >= startDate);
+        if (dto is { StartDate: not null, EndDate: not null })
+            projects = projects.Where(project => project.StartDate <= dto.EndDate && project.EndDate >= dto.StartDate);
+
+        projects = dto.OrderByType switch
+        {
+            OrderByType.TitleAsc => projects.OrderBy(project =>
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
+            OrderByType.TitleDesc => projects.OrderByDescending(project =>
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
+            OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
+            OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
+            OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
+            OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
+            _                         => projects,
+        };
 
         return projects.ToList();
     }

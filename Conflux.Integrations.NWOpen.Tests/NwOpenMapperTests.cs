@@ -5,14 +5,13 @@
 
 using System.Reflection;
 using Conflux.Domain;
-using Conflux.RepositoryConnections.NWOpen;
 using NWOpen.Net.Models;
 using Xunit;
 using Product = Conflux.Domain.Product;
 using Project = Conflux.Domain.Project;
 using NwOpenProject = NWOpen.Net.Models.Project;
 
-namespace Conflux.RepositoryConnections.Tests;
+namespace Conflux.Integrations.NWOpen.Tests;
 
 public class NwOpenMapperTests
 {

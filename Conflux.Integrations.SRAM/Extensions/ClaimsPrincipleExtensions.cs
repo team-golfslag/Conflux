@@ -5,9 +5,9 @@
 
 using System.Security.Claims;
 using System.Text.RegularExpressions;
-using Conflux.RepositoryConnections.SRAM.DTOs;
+using Conflux.Integrations.SRAM.DTOs;
 
-namespace Conflux.RepositoryConnections.SRAM.Extensions;
+namespace Conflux.Integrations.SRAM.Extensions;
 
 public static partial class ClaimsPrincipleExtensions
 {

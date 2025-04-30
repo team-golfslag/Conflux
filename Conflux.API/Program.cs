@@ -6,21 +6,25 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Conflux.Data;
+using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
+using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
-using Conflux.RepositoryConnections.NWOpen;
-using Conflux.RepositoryConnections.SRAM;
+using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
 using RAiD.Net;
+using SRAM.SCIM.Net;
 using SwaggerThemes;
 
 namespace Conflux.API;
@@ -79,6 +83,23 @@ public class Program
 
         builder.Services.AddHttpContextAccessor();
         await ConfigureSRAMServices(builder, featureManager);
+
+        if (!await featureManager.IsEnabledAsync("ReverseProxy"))
+            return;
+
+        // Configure Forwarded Headers options
+        // This helps the application correctly determine the client's scheme (http/https) and host
+        // when running behind a reverse proxy (like Docker, Nginx, etc.)
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            // Forward the X-Forwarded-For (client IP) and X-Forwarded-Proto (http/https) headers
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            // By default, only loopback proxies are trusted.
+            // Clear these restrictions if your proxy is not on the same machine.
+            // Be careful with this in production; ideally, configure KnownProxies/KnownNetworks.
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
     }
 
     private static async Task ConfigureDatabase(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
@@ -130,11 +151,103 @@ public class Program
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,
         IVariantFeatureManager featureManager)
     {
+        AuthenticationBuilder authBuilder = builder.Services.AddAuthentication();
         bool sramEnabled = await featureManager.IsEnabledAsync("SRAMAuthentication");
+        bool orcidEnabled = await featureManager.IsEnabledAsync("ORCIDAuthentication");
+
+        // both enabled and development env
+        if (sramEnabled && orcidEnabled && builder.Environment.IsDevelopment())
+            throw new InvalidOperationException(
+                "Both SRAM and ORCID authentication cannot be enabled at the same time in development.");
+
+        // Add ORCID authentication regardless of which primary auth is used
+        AddOrcidAuth(authBuilder, builder.Configuration);
+
         if (sramEnabled)
-            SetupAuth(builder);
+            SetupSRAMAuth(builder);
         else
             SetupDevelopmentAuth(builder);
+    }
+
+    private static void AddOrcidAuth(AuthenticationBuilder authBuilder, IConfiguration config)
+    {
+        IConfigurationSection orcidConfig = config.GetSection("Authentication:Orcid");
+
+        string? orcidSecret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(orcidSecret))
+        {
+            Console.WriteLine("Warning: ORCID_CLIENT_SECRET not set. ORCID integration disabled.");
+            return;
+        }
+
+        // Configure cookies without explicit domain
+        authBuilder.AddCookie("OrcidCookie", options =>
+        {
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        });
+
+        authBuilder.AddOAuth("orcid", options =>
+        {
+            options.ClientId = orcidConfig["ClientId"];
+            options.ClientSecret = orcidSecret;
+            options.CallbackPath = orcidConfig["CallbackPath"];
+            options.AuthorizationEndpoint = orcidConfig["AuthorizationEndpoint"];
+            options.TokenEndpoint = orcidConfig["TokenEndpoint"];
+            options.UserInformationEndpoint = orcidConfig["UserInformationEndpoint"];
+            options.SignInScheme = "OrcidCookie";
+            options.SaveTokens = true;
+
+            // Configure correlation cookie without domain
+            options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+            options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+            // Configure ORCID scope
+            options.Scope.Clear();
+            options.Scope.Add("/authenticate");
+
+            // Map claims
+            options.ClaimActions.Clear();
+            options.ClaimActions.MapJsonKey("sub", "orcid");
+
+            options.Events = new()
+            {
+                OnCreatingTicket = context =>
+                {
+                    // Extract ORCID ID from token response
+                    if (context.TokenResponse.Response?.RootElement.TryGetProperty("orcid",
+                        out JsonElement orcidProp) ?? false)
+                    {
+                        string? orcidId = orcidProp.GetString();
+                        context.Identity?.AddClaim(new("sub", orcidId));
+                        // set in session
+                        context.HttpContext.Session.SetString("orcid", orcidId);
+                    }
+
+                    string finalRedirectUri =
+                        context.Properties.Items.TryGetValue("finalRedirect", out string? redirect)
+                            ? redirect ?? "/orcid/finalize"
+                            : "/orcid/finalize";
+                    context.Properties.Items["CustomRedirect"] =
+                        $"/orcid/finalize?redirectUri={Uri.EscapeDataString(finalRedirectUri)}";
+
+                    return Task.CompletedTask;
+                },
+                OnTicketReceived = context =>
+                {
+                    // Check if we have a custom redirect set in OnCreatingTicket
+                    if (context.Properties.Items.TryGetValue("CustomRedirect", out string? customRedirect))
+                    {
+                        context.Response.Redirect(customRedirect);
+                        context.HandleResponse();
+                    }
+
+                    return Task.CompletedTask;
+                },
+            };
+        });
     }
 
     private static void ConfigureCors(WebApplicationBuilder builder)
@@ -157,6 +270,9 @@ public class Program
 
     private static async Task ConfigureMiddleware(WebApplication app, IVariantFeatureManager featureManager)
     {
+        if (await featureManager.IsEnabledAsync("ReverseProxy"))
+            app.UseForwardedHeaders();
+
         if (await featureManager.IsEnabledAsync("Swagger"))
         {
             app.UseOpenApi();
@@ -206,12 +322,18 @@ public class Program
             });
         });
 
+        if (await featureManager.IsEnabledAsync("HttpsRedirection"))
+            app.UseHttpsRedirection();
+
         app.UseCors("AllowLocalhost");
-        app.UseHttpsRedirection();
-        app.MapControllers();
+        app.UseSession();
+
+        app.UseRouting();
+
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseSession();
+
+        app.MapControllers();
     }
 
     private static async Task InitializeDatabase(WebApplication app, IVariantFeatureManager featureManager)
@@ -219,25 +341,28 @@ public class Program
         using IServiceScope scope = app.Services.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
 
-        if (services.GetService<ConfluxContext>() != null || await featureManager.IsEnabledAsync("DatabaseConnection"))
-        {
-            ConfluxContext context = services.GetRequiredService<ConfluxContext>();
-            if (context.Database.IsRelational())
-                await context.Database.MigrateAsync();
+        if (services.GetService<ConfluxContext>() == null && !await featureManager.IsEnabledAsync("DatabaseConnection"))
+            return;
 
-            if (await featureManager.IsEnabledAsync("SeedDatabase") && !await context.Projects.AnyAsync())
-            {
-                TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
-                SeedData seedData = retriever.MapProjectsAsync().Result;
+        ConfluxContext context = services.GetRequiredService<ConfluxContext>();
+        if (context.Database.IsRelational())
+            await context.Database.MigrateAsync();
 
-                await context.Contributors.AddRangeAsync(seedData.Contributors);
-                await context.Products.AddRangeAsync(seedData.Products);
-                await context.Organisations.AddRangeAsync(seedData.Organisations);
-                await context.Projects.AddRangeAsync(seedData.Projects);
+        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync())
+            return;
 
-                await context.SaveChangesAsync();
-            }
-        }
+        TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
+        SeedData seedData = retriever.MapProjectsAsync().Result;
+
+        User devUser = UserSession.Development().User!;
+        if (!await context.Users.AnyAsync(u => u.Id == devUser.Id))
+            context.Users.Add(devUser);
+        await context.Contributors.AddRangeAsync(seedData.Contributors);
+        await context.Products.AddRangeAsync(seedData.Products);
+        await context.Organisations.AddRangeAsync(seedData.Organisations);
+        await context.Projects.AddRangeAsync(seedData.Projects);
+
+        await context.SaveChangesAsync();
     }
 
     private static void SetupDevelopmentAuth(WebApplicationBuilder builder)
@@ -247,7 +372,7 @@ public class Program
             .AddCookie(ConfigureCookieAuth);
     }
 
-    private static void SetupAuth(WebApplicationBuilder builder)
+    private static void SetupSRAMAuth(WebApplicationBuilder builder)
     {
         string? sramSecret = Environment.GetEnvironmentVariable("SRAM_CLIENT_SECRET");
         if (string.IsNullOrEmpty(sramSecret))

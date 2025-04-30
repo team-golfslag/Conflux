@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.RepositoryConnections.SRAM.DTOs;
+namespace Conflux.Integrations.SRAM.DTOs;
 
 public record CollaborationDTO
 {

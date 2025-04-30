@@ -5,6 +5,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
@@ -40,7 +41,10 @@ public class ProjectTitle
     public required string Text { get; init; }
 
     [MaxLength(3)] public string? Language { get; init; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required TitleType Type { get; init; }
+
     public DateTime StartDate { get; init; }
     public DateTime? EndDate { get; init; }
 

@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain;
+using Conflux.Domain.Session;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Data;
@@ -43,4 +44,6 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
 
         base.OnModelCreating(modelBuilder);
     }
+    
+    public bool ShouldSeed() => Users.Find(UserSession.DevelopmentUserId) != null;
 }

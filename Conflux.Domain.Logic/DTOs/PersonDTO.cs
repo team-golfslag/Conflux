@@ -18,6 +18,7 @@ public class PersonDTO
     public string? GivenName { get; init; }
     public string? FamilyName { get; init; }
     public string? Email { get; init; }
+    public string? ORCiD { get; init; }
 
     /// <summary>
     /// Converts a <see cref="PersonDTO" /> to a <see cref="Person" />
@@ -31,5 +32,6 @@ public class PersonDTO
             GivenName = GivenName,
             FamilyName = FamilyName,
             Email = Email,
+            ORCiD = ORCiD,
         };
 }

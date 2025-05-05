@@ -13,9 +13,9 @@ namespace Conflux.Domain.Logic.Services;
 
 public class PeopleService : IPeopleService
 {
-    private readonly IConfluxContext _context;
+    private readonly ConfluxContext _context;
 
-    public PeopleService(IConfluxContext context)
+    public PeopleService(ConfluxContext context)
     {
         _context = context;
     }

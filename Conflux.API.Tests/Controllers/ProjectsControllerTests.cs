@@ -6,19 +6,32 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using IServiceScope = Microsoft.Extensions.DependencyInjection.IServiceScope;
+using ServiceProviderServiceExtensions = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions;
 
 namespace Conflux.API.Tests.Controllers;
 
 public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
+    private static readonly JsonSerializerOptions JsonOptions;
     private readonly HttpClient _client;
     private readonly TestWebApplicationFactory _factory;
+
+    static ProjectsControllerTests()
+    {
+        JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+        // allow "Primary", "Secondary", etc. to bind into TitleType/DescriptionType enum properties
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
 
     public ProjectsControllerTests(TestWebApplicationFactory factory)
     {
@@ -32,7 +45,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         HttpResponseMessage response = await _client.GetAsync("/projects/all");
         response.EnsureSuccessStatusCode();
 
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
     }
 
@@ -49,9 +62,10 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         // First, create a new project
         Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
         {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            ConfluxContext context =
+                ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);
             project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000002"));
         }
 
@@ -67,7 +81,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
@@ -80,7 +94,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
         putRes.EnsureSuccessStatusCode();
 
-        Project? updated = await putRes.Content.ReadFromJsonAsync<Project>();
+        Project? updated = await putRes.Content.ReadFromJsonAsync<Project>(JsonOptions);
         Assert.NotNull(updated);
         Assert.Single(updated.Titles);
         Assert.Equal("Updated Title", updated.Titles[0].Text);
@@ -90,15 +104,16 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task PatchProject_UpdatesDescriptionOnly()
     {
         Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
         {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            ConfluxContext context =
+                ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);
             project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000003"));
         }
 
         ProjectPatchDTO patchDto = new()
         {
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
@@ -111,7 +126,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         HttpResponseMessage patchRes = await _client.PatchAsJsonAsync($"/projects/{project!.Id}", patchDto);
         patchRes.EnsureSuccessStatusCode();
 
-        Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>();
+        Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>(JsonOptions);
         Assert.NotNull(updated);
         Assert.Single(updated.Descriptions);
         Assert.Equal("After patch", updated.Descriptions[0].Text);
@@ -126,7 +141,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Contains(projects, p => p.Titles[0].Text.Contains("Test Project"));
     }
@@ -141,7 +156,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Contains(projects, p => p.Titles[0].Text == "Test Project");
     }
@@ -161,7 +176,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
@@ -185,7 +200,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Empty(projects);
     }

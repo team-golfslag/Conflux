@@ -40,15 +40,14 @@ public class ProjectTitle
     // TODO: Should have a max length of 100
     public required string Text { get; init; }
 
-    [MaxLength(3)] public string? Language { get; init; }
+    public Language? Language { get; init; }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    // [JsonConverter(typeof(JsonStringEnumConverter))]
     public required TitleType Type { get; init; }
 
     public DateTime StartDate { get; init; }
     public DateTime? EndDate { get; init; }
 
     public string TypeSchemaUri => "https://vocabulary.raid.org/title.type.schema/376";
-    public string LanguageSchemaUri => "https://www.iso.org/standard/74575.html";
     public string TypeUri => $"https://vocabulary.raid.org/title.type.id/{(int)Type}";
 }

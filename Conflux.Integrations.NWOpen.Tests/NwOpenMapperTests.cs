@@ -91,7 +91,9 @@ public class NwOpenMapperTests
         Assert.Single(result.Projects);
         Project mappedProject = result.Projects[0];
         Assert.Equal("Test Project", mappedProject.Titles[0].Text);
-        Assert.Equal("Summary", mappedProject.Description);
+        List<ProjectDescription> dutchDescriptions = mappedProject.Descriptions.Where(d => d.Language!.Id == "nld").ToList();
+        Assert.Single(dutchDescriptions);
+        Assert.Equal("Summary", dutchDescriptions[0].Text);
         Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
         Assert.Equal(new(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);
 

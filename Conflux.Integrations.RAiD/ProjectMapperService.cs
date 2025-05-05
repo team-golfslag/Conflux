@@ -28,24 +28,7 @@ public class ProjectMapperService : IProjectMapperService
                 EndDate = project.EndDate,
             },
 
-            Description =
-
-            [
-                new()
-                {
-                    Text = project.Description ?? string.Empty,
-                    Type = new() // TODO make an enum for this and set SchemaUri default value
-                    {
-                        Id = "https://vocabulary.raid.org/description.type.id/326",
-                        SchemaUri = "https://vocabulary.raid.org/description.type.schema/320",
-                    },
-                    Language = new() // TODO make an enum for this and set SchemaUri default value
-                    {
-                        Id = "eng",
-                        SchemaUri = "https://www.iso.org/standard/74575.html",
-                    },
-                },
-            ],
+            Description = project.Descriptions.ConvertAll(MapProjectDescription),
             Access = new()
             {
                 Type = new() // TODO make an enum for this
@@ -78,11 +61,19 @@ public class ProjectMapperService : IProjectMapperService
             EndDate = title.EndDate,
             Language = title.Language == null
                 ? null
-                : new()
-                {
-                    SchemaUri = title.LanguageSchemaUri,
-                    Id = title.Language,
-                },
+                : MapLanguage(title.Language),
+        };
+
+    private static RAiDDescription MapProjectDescription(ProjectDescription desc) =>
+        new()
+        {
+            Text = desc.Text,
+            Type = new()
+            {
+                Id = desc.TypeUri,
+                SchemaUri = desc.TypeSchemaUri,
+            },
+            Language = desc.Language == null ? null : MapLanguage(desc.Language),
         };
 
     private static RAiDContributorRole MapContributorRole(ContributorRole role) =>
@@ -134,6 +125,13 @@ public class ProjectMapperService : IProjectMapperService
             Id = organisation.RORId ?? throw new ArgumentNullException(nameof(organisation)),
             SchemaUri = organisation.SchemaUri,
             Role = organisation.Roles.Select(MapOrganisationRole).ToList(),
+        };
+
+    private static RAiDLanguage MapLanguage(Language lang) =>
+        new()
+        {
+            Id = lang.Id,
+            SchemaUri = lang.SchemaUri,
         };
 
     private static RAiDRelatedObject MapProduct(Product product) => throw new NotImplementedException();

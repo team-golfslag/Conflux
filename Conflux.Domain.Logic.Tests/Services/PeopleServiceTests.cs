@@ -50,14 +50,22 @@ public class ContributorsServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = projectId,
                     ProjectId = projectId,
                     Text = "Test Project",
                     Type = TitleType.Primary,
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -102,14 +110,22 @@ public class ContributorsServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = projectId,
                     ProjectId = projectId,
                     Text = "Test Project",
                     Type = TitleType.Primary,
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -172,14 +188,22 @@ public class ContributorsServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = projectId,
                     ProjectId = projectId,
                     Text = "Test Project",
                     Type = TitleType.Primary,
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -226,14 +250,22 @@ public class ContributorsServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = projectId,
                     ProjectId = projectId,
                     Text = "Test Project",
                     Type = TitleType.Primary,
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };

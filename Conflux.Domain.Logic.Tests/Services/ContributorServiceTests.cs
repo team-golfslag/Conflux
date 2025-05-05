@@ -16,7 +16,7 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ContributorsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context;
+    private ConfluxContext _context = null!;
 
     public async Task InitializeAsync()
     {
@@ -57,7 +57,6 @@ public class ContributorsServiceTests : IAsyncLifetime
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -109,7 +108,6 @@ public class ContributorsServiceTests : IAsyncLifetime
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -179,7 +177,6 @@ public class ContributorsServiceTests : IAsyncLifetime
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
@@ -233,7 +230,6 @@ public class ContributorsServiceTests : IAsyncLifetime
                     StartDate = DateTime.UtcNow,
                 },
             ],
-            Description = "Test Description",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };

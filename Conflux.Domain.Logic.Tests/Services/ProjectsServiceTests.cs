@@ -62,7 +62,15 @@ public class ProjectsServiceTests : IAsyncLifetime
                         StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     },
                 ],
-                Description = "Will not update",
+                Descriptions = 
+                [
+                    new()
+                    {
+                        Text = "Will not update",
+                        Language = Language.ENGLISH,
+                        Type = DescriptionType.Primary,
+                    },
+                ],
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
             }));
@@ -79,20 +87,32 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Arrange
         ProjectsService service = new(_context, _userSessionService);
 
+        Guid projectid = Guid.NewGuid();
+        
         // Insert a test project
         Project originalProject = new()
         {
-            Id = Guid.NewGuid(),
+            Id = projectid,
             Titles =
             [
                 new()
                 {
+                    ProjectId = projectid,
                     Text = "Original Title",
                     Type = TitleType.Primary,
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Original Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectid,
+                    Text = "Original Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
@@ -112,7 +132,15 @@ public class ProjectsServiceTests : IAsyncLifetime
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Updated Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    Text = "Updated Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
         };
@@ -124,17 +152,20 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(updatedProject);
         Assert.Single(updatedProject.Titles);
         Assert.Equal("Updated Title", updatedProject.Titles[0].Text);
-        Assert.Equal("Updated Description", updatedProject.Description);
+        Assert.Single(updatedProject.Descriptions);
+        Assert.Equal("Updated Description", updatedProject.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
         // Double-check by re-querying from the database
         Project? reloaded = await _context.Projects.Include(p => p.Titles)
+            .Include(p => p.Descriptions)
             .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
         Assert.Single(reloaded.Titles);
         Assert.Equal("Updated Title", reloaded.Titles[0].Text);
-        Assert.Equal("Updated Description", reloaded.Description);
+        Assert.Single(reloaded.Descriptions);
+        Assert.Equal("Updated Description", reloaded.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }
@@ -150,20 +181,32 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Arrange
         ProjectsService service = new(_context, _userSessionService);
 
+        Guid projectid = Guid.NewGuid();
+        
         // Insert a test project
         Project originalProject = new()
         {
-            Id = Guid.NewGuid(),
+            Id = projectid,
             Titles =
             [
                 new()
                 {
+                    ProjectId = projectid,
                     Text = "Original Title",
                     Type = TitleType.Primary,
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Original Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    ProjectId = projectid,
+                    Text = "Original Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
@@ -184,7 +227,15 @@ public class ProjectsServiceTests : IAsyncLifetime
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Patched Description",
+            Descriptions = 
+            [
+                new()
+                {
+                    Text = "Patched Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                }
+            ],
             StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
         };
@@ -194,18 +245,23 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         // Assert
         Assert.NotNull(patchedProject);
+        Assert.Single(patchedProject.Titles);
         Assert.Equal("Patched Title", patchedProject.Titles[0].Text);
-        Assert.Equal("Patched Description", patchedProject.Description);
+        Assert.Single(patchedProject.Descriptions);
+        Assert.Equal("Patched Description", patchedProject.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
 
         // Double-check by re-querying from the database
         Project? reloaded = await _context.Projects
             .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
             .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
+        Assert.Single(reloaded.Titles);
         Assert.Equal("Patched Title", reloaded.Titles[0].Text);
-        Assert.Equal("Patched Description", reloaded.Description);
+        Assert.Single(reloaded.Descriptions);
+        Assert.Equal("Patched Description", reloaded.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }

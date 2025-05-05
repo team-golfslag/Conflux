@@ -136,9 +136,14 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        Assert.Equal("Test Group",
-            (await context.Projects.Include(project => project.Titles).FirstAsync()).Titles[0].Text);
-        Assert.Equal("Test Description", (await context.Projects.FirstAsync()).Description);
+        Project project = await context.Projects
+            .Include(project => project.Titles)
+            .Include(project => project.Descriptions)
+            .FirstAsync();
+        Assert.Single(project.Titles);
+        Assert.Equal("Test Group", project.Titles[0].Text);
+        Assert.Single(project.Descriptions);
+        Assert.Equal("Test Description", project.Descriptions[0].Text);
         Assert.Empty(context.Users);
         Assert.Empty(context.UserRoles);
     }
@@ -358,21 +363,33 @@ public class SessionMappingServiceTests
         ConfluxContext context = new(options);
 
         DateTime startDate = DateTime.UtcNow.AddDays(-10);
+        Guid projectId = Guid.NewGuid();
         // Add existing project
         context.Projects.Add(new()
         {
+            Id = projectId,
             SCIMId = "group-id-1",
             Titles =
             [
                 new()
                 {
+                    ProjectId = projectId,
                     Text = "Old Title",
                     Type = TitleType.Primary,
                     StartDate = startDate,
                     EndDate = null,
                 },
             ],
-            Description = "Old Description",
+            Descriptions =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Old Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = startDate,
         });
         await context.SaveChangesAsync();
@@ -411,10 +428,14 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        Project project = await context.Projects.Include(project => project.Titles).FirstAsync();
+        Project project = await context.Projects
+            .Include(project => project.Titles)
+            .Include(project => project.Descriptions)
+            .FirstAsync();
         Assert.Single(project.Titles);
         Assert.Equal("New Title", project.Titles[0].Text);
-        Assert.Equal("New Description", project.Description);
+        Assert.Single(project.Descriptions);
+        Assert.Equal("New Description", project.Descriptions[0].Text);
     }
 
     [Fact]

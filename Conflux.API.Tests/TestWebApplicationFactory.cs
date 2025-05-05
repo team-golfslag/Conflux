@@ -61,7 +61,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     },
                 ],
-                Description = "This is a test project.",
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000001"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
                 StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",
@@ -82,7 +91,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     },
                 ],
-                Description = "This is a test project.",
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000002"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
                 StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",
@@ -101,7 +119,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     },
                 ],
-                Description = "This is a test project.",
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000003"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
                 StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",

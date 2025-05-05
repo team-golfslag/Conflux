@@ -67,7 +67,15 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Updated description",
+            Descriptions = 
+            [
+                new()
+                {
+                    Text = "Updated description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
         };
         HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
         putRes.EnsureSuccessStatusCode();
@@ -90,13 +98,23 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         ProjectPatchDTO patchDto = new()
         {
-            Description = "After patch",
+            Descriptions = 
+            [
+                new()
+                {
+                    Text = "After patch",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
         };
         HttpResponseMessage patchRes = await _client.PatchAsJsonAsync($"/projects/{project!.Id}", patchDto);
         patchRes.EnsureSuccessStatusCode();
 
         Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>();
-        Assert.Equal("After patch", updated?.Description);
+        Assert.NotNull(updated);
+        Assert.Single(updated.Descriptions);
+        Assert.Equal("After patch", updated.Descriptions[0].Text);
     }
 
     [Fact]
@@ -143,7 +161,15 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Description = "Old project",
+            Descriptions = 
+            [
+                new()
+                {
+                    Text = "Old project",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
             StartDate = new(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };

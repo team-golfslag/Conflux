@@ -133,7 +133,7 @@ public class ProjectsService
 #pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
             projects = projects.Where(project =>
                 project.Titles.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)) ||
-                (project.Description ?? "").ToLower().Contains(loweredQuery));
+                project.Descriptions.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)));
 #pragma warning restore CA1862
         }
 
@@ -210,7 +210,7 @@ public class ProjectsService
             ?? throw new ProjectNotFoundException(id);
 
         project.Titles = dto.Titles.ConvertAll(title => title.ToProjectTitle(id));
-        project.Description = dto.Description;
+        project.Descriptions = dto.Descriptions.ConvertAll(desc => desc.ToProjectDescription(id));
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
 
@@ -227,11 +227,13 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> PatchProjectAsync(Guid id, ProjectPatchDTO dto)
     {
-        Project project = await _context.Projects.Include(p => p.Titles).SingleOrDefaultAsync(p => p.Id == id)
+        Project project = await _context.Projects.Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         project.Titles = dto.Titles?.ConvertAll(t => t.ToProjectTitle(id)) ?? project.Titles;
-        project.Description = dto.Description ?? project.Description;
+        project.Descriptions = dto.Descriptions?.ConvertAll(d => d.ToProjectDescription(id)) ?? project.Descriptions;
         project.StartDate = dto.StartDate ?? project.StartDate;
         project.EndDate = dto.EndDate ?? project.EndDate;
 

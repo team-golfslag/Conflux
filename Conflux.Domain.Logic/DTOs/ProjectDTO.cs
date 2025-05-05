@@ -15,7 +15,7 @@ public class ProjectDTO
     public Guid? Id { get; init; }
 
     public List<ProjectTitleDTO> Titles { get; init; } = [];
-    public string? Description { get; init; }
+    public List<ProjectDescriptionDTO> Descriptions { get; init; } = [];
 
     public DateTime StartDate { get; init; }
 
@@ -43,7 +43,7 @@ public class ProjectDTO
         {
             Id = projectId,
             Titles = Titles.ConvertAll(t => t.ToProjectTitle(projectId)),
-            Description = Description,
+            Descriptions = Descriptions.ConvertAll(t => t.ToProjectDescription(projectId)),
             StartDate = DateTime.SpecifyKind(StartDate, DateTimeKind.Utc),
             EndDate = EndDate.HasValue ? DateTime.SpecifyKind(EndDate.Value, DateTimeKind.Utc) : null,
         };

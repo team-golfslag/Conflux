@@ -58,6 +58,24 @@ public static class NwOpenMapper
 
         Guid projectId = Guid.NewGuid();
 
+        List<ProjectDescription> descriptions = new();
+        if (project.SummaryNl != null)
+            descriptions.Add(new()
+            {
+                ProjectId = projectId,
+                Text = project.SummaryNl,
+                Type = DescriptionType.Primary,
+                Language = Language.DUTCH,
+            });
+        if (project.SummaryEn != null)
+            descriptions.Add(new()
+            {
+                ProjectId = projectId,
+                Text = project.SummaryEn,
+                Language = Language.ENGLISH,
+                Type = DescriptionType.Primary
+            });
+
         Project mappedProject = new()
         {
             Id = projectId,
@@ -68,12 +86,12 @@ public static class NwOpenMapper
                     ProjectId = projectId,
                     Text = project.Title ?? "No Title",
                     Type = TitleType.Primary,
-                    Language = "nld",
+                    Language = Language.DUTCH,
                     StartDate = startDate,
                     EndDate = endDate,
                 },
             ],
-            Description = project.SummaryNl,
+            Descriptions = descriptions,
             StartDate = startDate,
             EndDate = endDate,
             SCIMId = "SCIM",

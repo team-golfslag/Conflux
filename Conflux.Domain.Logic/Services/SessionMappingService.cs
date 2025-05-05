@@ -87,7 +87,14 @@ public class SessionMappingService : ISessionMappingService
                             EndDate = null,
                         },
                     ],
-                    Description = group.Description,
+                    Descriptions = group.Description == null ? [] : [
+                        new()
+                        {
+                            ProjectId = projectId,
+                            Text = group.Description,
+                            Type = DescriptionType.Primary,
+                        },
+                    ],
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
@@ -104,7 +111,15 @@ public class SessionMappingService : ISessionMappingService
                         EndDate = null,
                     },
                 ];
-                existingCollaboration.Description = group.Description;
+                existingCollaboration.Descriptions = group.Description == null ? [] : [
+                new()
+                {
+                    ProjectId = existingCollaboration.Id,
+                    Text = group.Description,
+                    Type = DescriptionType.Primary,
+                    Language = null,
+                }
+                ];
             }
         }
     }

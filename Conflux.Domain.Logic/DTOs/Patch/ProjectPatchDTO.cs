@@ -12,10 +12,13 @@ namespace Conflux.Domain.Logic.DTOs.Patch;
 public class ProjectPatchDTO
 #pragma warning restore S101
 {
+    public string? SCIMId { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+    public List<UserDTO>? Users { get; init; }
+    public List<ProductDTO>? Products { get; init; }
+    public List<OrganisationDTO>? Organisations { get; init; }
     public List<ProjectTitleDTO>? Titles { get; init; }
     public List<ProjectDescriptionDTO>? Descriptions { get; init; }
-
-    public DateTime? StartDate { get; init; }
-
-    public DateTime? EndDate { get; init; }
+    public List<ContributorDTO>? Contributors { get; init; }
 }

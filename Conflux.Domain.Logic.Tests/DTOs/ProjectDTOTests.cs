@@ -21,7 +21,6 @@ public class ProjectDTOTests
         // Arrange
         ProjectDTO dto = new()
         {
-            Id = Guid.NewGuid(),
             Titles =
             [
                 new()
@@ -31,7 +30,7 @@ public class ProjectDTOTests
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
@@ -39,7 +38,7 @@ public class ProjectDTOTests
                     Type = DescriptionType.Primary,
                     Language = Language.ENGLISH,
                 },
-            ] ,
+            ],
             StartDate = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
         };
@@ -49,7 +48,6 @@ public class ProjectDTOTests
 
         // Assert
         Assert.NotNull(project);
-        Assert.NotEqual(dto.Id, project.Id);
         Assert.Single(project.Titles);
         Assert.Equal(dto.Titles[0].Text, project.Titles[0].Text);
         Assert.Equal(dto.Titles[0].Type, project.Titles[0].Type);

@@ -12,8 +12,6 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectDTO
 #pragma warning restore S101
 {
-    public Guid? Id { get; init; }
-
     public List<ProjectTitleDTO> Titles { get; init; } = [];
     public List<ProjectDescriptionDTO> Descriptions { get; init; } = [];
 
@@ -21,21 +19,14 @@ public class ProjectDTO
 
     public DateTime? EndDate { get; init; }
 
-    // TODO: Make this DTO
-    // public List<UserDTO> Users { get; init; } = [];
+    public List<UserDTO> Users { get; init; } = [];
 
     public List<ContributorDTO> Contributors { get; init; } = [];
 
-    // TODO: Make this DTO
-    // public List<ProductDTO> Products { get; init; } = [];
+    public List<ProductDTO> Products { get; init; } = [];
 
-    // TODO: Make this DTO
-    // public List<OrganisationDTO> Organisations { get; init; } = [];
+    public List<OrganisationDTO> Organisations { get; init; } = [];
 
-    /// <summary>
-    /// Converts a <see cref="ProjectDTO" /> to a <see cref="Project" />
-    /// </summary>
-    /// <returns>The converted <see cref="Project" /></returns>
     public Project ToProject()
     {
         Guid projectId = Guid.NewGuid();
@@ -46,6 +37,10 @@ public class ProjectDTO
             Descriptions = Descriptions.ConvertAll(t => t.ToProjectDescription(projectId)),
             StartDate = DateTime.SpecifyKind(StartDate, DateTimeKind.Utc),
             EndDate = EndDate.HasValue ? DateTime.SpecifyKind(EndDate.Value, DateTimeKind.Utc) : null,
+            Users = Users.ConvertAll(u => u.ToUser(projectId)),
+            Products = Products.ConvertAll(p => p.ToProduct()),
+            Organisations = Organisations.ConvertAll(o => o.ToOrganisation()),
+            Contributors = Contributors.ConvertAll(c => c.ToContributor(projectId)),
         };
     }
 }

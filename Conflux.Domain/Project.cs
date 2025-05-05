@@ -15,7 +15,7 @@ public class Project
 {
     [Key] public Guid Id { get; init; }
 
-    [JsonPropertyName("scim_id")] public string? SCIMId { get; init; }
+    [JsonPropertyName("scim_id")] public string? SCIMId { get; set; }
 
     public RAiDInfo? RAiDInfo { get; init; }
 

@@ -229,13 +229,23 @@ public class ProjectsService
     {
         Project project = await _context.Projects.Include(p => p.Titles)
                 .Include(p => p.Descriptions)
+                .Include(project => project.Users)
+                .Include(project => project.Products)
+                .Include(project => project.Organisations)
+                .Include(project => project.Contributors)
                 .SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
+        project.SCIMId = dto.SCIMId ?? project.SCIMId;
         project.Titles = dto.Titles?.ConvertAll(t => t.ToProjectTitle(id)) ?? project.Titles;
         project.Descriptions = dto.Descriptions?.ConvertAll(d => d.ToProjectDescription(id)) ?? project.Descriptions;
         project.StartDate = dto.StartDate ?? project.StartDate;
         project.EndDate = dto.EndDate ?? project.EndDate;
+        project.Users = dto.Users?.ConvertAll(u => u.ToUser(id)) ?? project.Users;
+        project.Products = dto.Products?.ConvertAll(p => p.ToProduct()) ?? project.Products;
+        project.Organisations = dto.Organisations?.ConvertAll(o => o.ToOrganisation()) ?? project.Organisations;
+        project.Contributors = dto.Contributors?.ConvertAll(c => c.ToContributor(id)) ?? project.Contributors;
+        project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return project;

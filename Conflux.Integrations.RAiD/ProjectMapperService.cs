@@ -134,5 +134,16 @@ public class ProjectMapperService : IProjectMapperService
             SchemaUri = lang.SchemaUri,
         };
 
-    private static RAiDRelatedObject MapProduct(Product product) => throw new NotImplementedException();
+    private static RAiDRelatedObject MapProduct(Product product) => 
+        new()
+        {
+            Id = product.Url,
+            SchemaUri = product.SchemaUri,
+            Type = new()
+            {
+                Id = product.GetTypeUri,
+                SchemaUri = product.TypeSchemaUri,
+            },
+            Category = null,
+        };
 }

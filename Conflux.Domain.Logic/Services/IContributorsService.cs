@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 
 namespace Conflux.Domain.Logic.Services;
 

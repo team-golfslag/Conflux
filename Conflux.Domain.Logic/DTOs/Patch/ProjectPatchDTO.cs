@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs;
+namespace Conflux.Domain.Logic.DTOs.Patch;
 
 /// <summary>
 /// The Data Transfer Object for updating a <see cref="Project" /> with PATCH.

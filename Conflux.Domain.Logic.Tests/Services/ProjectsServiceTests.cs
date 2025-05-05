@@ -5,6 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;

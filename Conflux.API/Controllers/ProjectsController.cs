@@ -5,6 +5,7 @@
 
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authorization;

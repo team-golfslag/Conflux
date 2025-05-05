@@ -5,6 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
@@ -305,5 +306,259 @@ public class ContributorsServiceTests : IAsyncLifetime
         Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[0].Position);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Conceptualization);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Methodology);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_UpdatesRolesOnly_WhenRolesProvided()
+    {
+        // Arrange
+        Contributor contributor = await SeedContributor();
+        ContributorsService contributorService = new(_context);
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Roles = [ContributorRoleType.Software, ContributorRoleType.Validation],
+        };
+
+        // Act
+        Contributor result =
+            await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
+
+        // Assert
+        Assert.Equal(2, result.Roles.Count);
+        Assert.Contains(result.Roles, r => r.RoleType == ContributorRoleType.Software);
+        Assert.Contains(result.Roles, r => r.RoleType == ContributorRoleType.Validation);
+
+        // Ensure other properties weren't changed
+        Assert.Equal(contributor.Leader, result.Leader);
+        Assert.Equal(contributor.Contact, result.Contact);
+        Assert.Equal(contributor.Positions.Count, result.Positions.Count);
+
+        // Verify changes persisted to database
+        Contributor dbContributor = await _context.Contributors
+            .Include(c => c.Roles)
+            .SingleAsync(c => c.ProjectId == contributor.ProjectId && c.PersonId == contributor.PersonId);
+        Assert.Equal(2, dbContributor.Roles.Count);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_UpdatesPositionsOnly_WhenPositionsProvided()
+    {
+        // Arrange
+        Contributor contributor = await SeedContributor();
+        ContributorsService contributorService = new(_context);
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Positions =
+            [
+                new ContributorPositionDTO
+                {
+                    Type = ContributorPositionType.Partner,
+                    StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+        };
+
+        // Act
+        Contributor result =
+            await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
+
+        // Assert
+        Assert.Single(result.Positions);
+        Assert.Equal(ContributorPositionType.Partner, result.Positions[0].Position);
+        Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.Positions[0].StartDate);
+
+        // Ensure other properties weren't changed
+        Assert.Equal(contributor.Leader, result.Leader);
+        Assert.Equal(contributor.Contact, result.Contact);
+        Assert.Equal(contributor.Roles.Count, result.Roles.Count);
+
+        // Verify changes persisted to database
+        Contributor dbContributor = await _context.Contributors
+            .Include(c => c.Positions)
+            .SingleAsync(c => c.ProjectId == contributor.ProjectId && c.PersonId == contributor.PersonId);
+        Assert.Single(dbContributor.Positions);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_UpdatesLeaderOnly_WhenLeaderProvided()
+    {
+        // Arrange
+        Contributor contributor = await SeedContributor();
+        bool originalLeader = contributor.Leader;
+        ContributorsService contributorService = new(_context);
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Leader = !originalLeader,
+        };
+
+        // Act
+        Contributor result =
+            await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
+
+        // Assert
+        Assert.NotEqual(originalLeader, result.Leader);
+
+        // Ensure other properties weren't changed
+        Assert.Equal(contributor.Contact, result.Contact);
+        Assert.Equal(contributor.Roles.Count, result.Roles.Count);
+        Assert.Equal(contributor.Positions.Count, result.Positions.Count);
+
+        // Verify changes persisted to database
+        Contributor dbContributor = await _context.Contributors
+            .SingleAsync(c => c.ProjectId == contributor.ProjectId && c.PersonId == contributor.PersonId);
+        Assert.NotEqual(originalLeader, dbContributor.Leader);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_UpdatesContactOnly_WhenContactProvided()
+    {
+        // Arrange
+        Contributor contributor = await SeedContributor();
+        bool originalContact = contributor.Contact;
+        ContributorsService contributorService = new(_context);
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Contact = !originalContact,
+        };
+
+        // Act
+        Contributor result =
+            await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
+
+        // Assert
+        Assert.NotEqual(originalContact, result.Contact);
+
+        // Ensure other properties weren't changed
+        Assert.Equal(contributor.Leader, result.Leader);
+        Assert.Equal(contributor.Roles.Count, result.Roles.Count);
+        Assert.Equal(contributor.Positions.Count, result.Positions.Count);
+
+        // Verify changes persisted to database
+        Contributor dbContributor = await _context.Contributors
+            .SingleAsync(c => c.ProjectId == contributor.ProjectId && c.PersonId == contributor.PersonId);
+        Assert.NotEqual(originalContact, dbContributor.Contact);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_UpdatesAllProperties_WhenAllPropertiesProvided()
+    {
+        // Arrange
+        Contributor contributor = await SeedContributor();
+        ContributorsService contributorService = new(_context);
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Roles = [ContributorRoleType.ProjectAdministration],
+            Positions =
+            [
+                new ContributorPositionDTO
+                {
+                    Type = ContributorPositionType.PrincipalInvestigator,
+                    StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+            Leader = true,
+            Contact = true,
+        };
+
+        // Act
+        Contributor result =
+            await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
+
+        // Assert
+        Assert.Single(result.Roles);
+        Assert.Equal(ContributorRoleType.ProjectAdministration, result.Roles[0].RoleType);
+
+        Assert.Single(result.Positions);
+        Assert.Equal(ContributorPositionType.PrincipalInvestigator, result.Positions[0].Position);
+
+        Assert.True(result.Leader);
+        Assert.True(result.Contact);
+
+        // Verify changes persisted to database
+        Contributor dbContributor = await _context.Contributors
+            .Include(c => c.Roles)
+            .Include(c => c.Positions)
+            .SingleAsync(c => c.ProjectId == contributor.ProjectId && c.PersonId == contributor.PersonId);
+
+        Assert.Single(dbContributor.Roles);
+        Assert.Single(dbContributor.Positions);
+        Assert.True(dbContributor.Leader);
+        Assert.True(dbContributor.Contact);
+    }
+
+    [Fact]
+    public async Task PatchContributorAsync_ThrowsException_WhenContributorNotFound()
+    {
+        // Arrange
+        ContributorsService contributorService = new(_context);
+        Guid nonExistentProjectId = Guid.NewGuid();
+        Guid nonExistentPersonId = Guid.NewGuid();
+
+        ContributorPatchDTO patchDto = new()
+        {
+            Leader = true,
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
+            contributorService.PatchContributorAsync(nonExistentProjectId, nonExistentPersonId, patchDto));
+    }
+
+    // Helper method to seed a contributor for testing
+    private async Task<Contributor> SeedContributor()
+    {
+        // Create project
+        Project project = new()
+        {
+            Id = Guid.NewGuid(),
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(30),
+        };
+        await _context.Projects.AddAsync(project);
+
+        // Create person
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Person",
+        };
+        await _context.People.AddAsync(person);
+
+        // Create contributor
+        Contributor contributor = new()
+        {
+            ProjectId = project.Id,
+            PersonId = person.Id,
+            Leader = false,
+            Contact = false,
+            Roles =
+            [
+                new ContributorRole
+                {
+                    ProjectId = project.Id,
+                    PersonId = person.Id,
+                    RoleType = ContributorRoleType.Investigation,
+                },
+            ],
+            Positions =
+            [
+                new ContributorPosition
+                {
+                    ProjectId = project.Id,
+                    PersonId = person.Id,
+                    Position = ContributorPositionType.Consultant,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+        };
+        await _context.Contributors.AddAsync(contributor);
+        await _context.SaveChangesAsync();
+
+        return contributor;
     }
 }

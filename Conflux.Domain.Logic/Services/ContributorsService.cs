@@ -60,12 +60,34 @@ public class ContributorsService : IContributorsService
     /// </summary>
     /// <param name="projectId">The GUID of the project</param>
     /// <param name="personId">The GUID of the person</param>
-    /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
+    /// <param name="contributorDTO">The DTO which to partially update a <see cref="Contributor" /></param>
     public async Task<Contributor> PatchContributorAsync(Guid projectId, Guid personId,
         ContributorPatchDTO contributorDTO)
     {
         Contributor contributor = await GetContributorByIdAsync(projectId, personId);
-        // contributor.Roles = contributorDTO.Roles; TODO make this work
+
+        if (contributorDTO.Roles != null)
+            contributor.Roles = contributorDTO.Roles.ConvertAll(r => new ContributorRole
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                RoleType = r,
+            });
+
+        if (contributorDTO.Positions != null)
+            contributor.Positions = contributorDTO.Positions.ConvertAll(p => new ContributorPosition
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                Position = p.Type,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+            });
+
+        if (contributorDTO.Leader.HasValue) contributor.Leader = contributorDTO.Leader.Value;
+
+        if (contributorDTO.Contact.HasValue) contributor.Contact = contributorDTO.Contact.Value;
+
         await _context.SaveChangesAsync();
         return contributor;
     }

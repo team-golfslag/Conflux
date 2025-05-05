@@ -6,11 +6,14 @@
 namespace Conflux.Domain.Logic.DTOs.Patch;
 
 /// <summary>
-/// The Data Transfer Object for patching a <see cref="Contributor" />
+/// The Data Transfer Object for patching a <see cref="Contributor" /> with PATCH.
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
 public class ContributorPatchDTO
 #pragma warning restore S101
 {
-    public string? Name { get; init; }
+    public List<ContributorRoleType>? Roles { get; init; }
+    public List<ContributorPositionDTO>? Positions { get; init; }
+    public bool? Leader { get; init; }
+    public bool? Contact { get; init; }
 }

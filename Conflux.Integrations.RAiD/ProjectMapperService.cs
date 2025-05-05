@@ -146,4 +146,80 @@ public class ProjectMapperService : IProjectMapperService
             },
             Category = null,
         };
+
+    public List<RAiDIncompatibility> CheckProjectCompatibility(Project project)
+    {
+        List<RAiDIncompatibility> incompatibilities = [];
+        
+        List<ProjectTitle> activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
+            && (t.EndDate == null || t.EndDate >= DateTime.Now)
+            && t.Type == TitleType.Primary).ToList();
+        
+        // Note: One (and only one) current (as per start-end dates)
+        // Primary Title is mandatory for each Title specified;
+        // additional titles are optional; any previous titles are managed
+        // by start-end dates (title type does not change).
+        //
+        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-type-id
+        if (activeTitles.Count == 0)
+            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoActivePrimaryTitle});
+        
+        if (activeTitles.Count > 1)
+            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.MultipleActivePrimaryTitle});
+        
+        // Constraint: Titles have maximum 100 characters
+        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-text
+        incompatibilities.AddRange(project.Titles
+            .Where(t => t.Text.Length  > 100)
+            .Select(t => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ProjectTitleTooLong,
+                ObjectId = t.Id,
+            }).ToList());
+        
+        // Constraint: Descriptions have maximum 1000 characters
+        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-text
+        incompatibilities.AddRange(project.Descriptions
+            .Where(t => t.Text.Length  > 1000)
+            .Select(d => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ProjectDescriptionTooLong,
+                ObjectId = d.Id,
+            }).ToList()); 
+        
+        // Constraints: if a description is provided, one (and only one) primary description is mandatory
+        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-type-id
+        if (project.Descriptions.Count > 0)
+        {
+            List<ProjectDescription> primaryDescriptions =
+                project.Descriptions.Where(d => d.Type == DescriptionType.Primary).ToList();
+            if (primaryDescriptions.Count == 0)
+                incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoPrimaryDescription});
+            if (primaryDescriptions.Count > 1)
+                incompatibilities.Add(new() {Type = RAiDIncompatibilityType.MultiplePrimaryDescriptions});
+        }
+        
+        // Requirement: at least one contributor is mandatory
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor
+        if (project.Contributors.Count == 0)
+            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoContributors});
+        
+        // Requirement: at least one contributor must be flagged as a project leader
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-leader
+        if (!project.Contributors.Any(c => c.Leader))
+            incompatibilities.Add(new() { Type = RAiDIncompatibilityType.NoProjectLeader });
+        
+        // Requirement: at least one contributor must be flagged as a project contact
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-contact
+        if (!project.Contributors.Any(c => c.Contact))
+            incompatibilities.Add(new() { Type = RAiDIncompatibilityType.NoProjectContact });
+        
+        // project.Organisations.Any(o => o.Roles.)
+        
+        
+        
+        
+
+        return incompatibilities;
+    }
 }

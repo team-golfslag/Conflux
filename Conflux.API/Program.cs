@@ -139,6 +139,7 @@ public class Program
         });
 
         builder.Services.AddScoped<IContributorsService, ContributorsService>();
+        builder.Services.AddScoped<IPeopleService, PeopleService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
@@ -290,14 +291,17 @@ public class Program
                 Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
                 switch (exception)
                 {
-                    case ProjectNotFoundException or ContributorNotFoundException:
+                    case ProjectNotFoundException
+                        or ContributorNotFoundException
+                        or PersonNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
                             Error = exception.Message,
                         });
                         break;
-                    case ContributorAlreadyAddedToProjectException:
+                    case PersonHasContributorsException
+                        or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -361,6 +365,7 @@ public class Program
         await context.Products.AddRangeAsync(seedData.Products);
         await context.Organisations.AddRangeAsync(seedData.Organisations);
         await context.Projects.AddRangeAsync(seedData.Projects);
+        await context.People.AddRangeAsync(seedData.People);
 
         await context.SaveChangesAsync();
     }

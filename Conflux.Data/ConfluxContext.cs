@@ -11,9 +11,16 @@ namespace Conflux.Data;
 /// <summary>
 /// The database context for Conflux.
 /// </summary>
-/// <param name="options">The database context options.</param>
-public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContext(options)
+public class ConfluxContext : DbContext, IConfluxContext
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConfluxContext" /> class.
+    /// </summary>
+    /// <param name="options">The options for the context.</param>
+    public ConfluxContext(DbContextOptions<ConfluxContext> options) : base(options)
+    {
+    }
+
     public DbSet<Person> People { get; set; }
 
     public DbSet<User> Users { get; set; }

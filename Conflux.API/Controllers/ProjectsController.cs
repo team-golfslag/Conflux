@@ -110,14 +110,4 @@ public class ProjectsController : ControllerBase
         await _iSRAMProjectSyncService.SyncProjectAsync(id);
         return Ok();
     }
-
-    [HttpPost]
-    [Route("{id:guid}/mint")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> MintProjectInRaid([FromRoute] Guid id)
-    {
-        await _projectsService.MintProjectInRaidAsync(id);
-        return Ok();
-    }
 }

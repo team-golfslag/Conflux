@@ -12,7 +12,8 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ContributorDTO
 #pragma warning restore S101
 {
-    public Guid? PersonId { get; init; }
+    public required Person Person { get; init; }
+    public required Guid ProjectId { get; init; }
     public List<ContributorRoleType> Roles { get; init; } = [];
     public List<ContributorPositionDTO> Positions { get; init; } = [];
     public bool Leader { get; init; }
@@ -22,23 +23,22 @@ public class ContributorDTO
     /// Converts a <see cref="ContributorDTO" /> to a <see cref="Contributor" />
     /// </summary>
     /// <returns>The converted <see cref="Contributor" /></returns>
-    public Contributor ToContributor(Guid projectId, Guid? perId = null)
+    public Contributor ToContributor()
     {
-        Guid personId = perId ?? PersonId ?? throw new ArgumentNullException(nameof(perId));
         return new()
         {
-            PersonId = personId,
-            ProjectId = projectId,
+            PersonId = Person.Id,
+            ProjectId = ProjectId,
             Roles = Roles.ConvertAll(r => new ContributorRole
             {
-                PersonId = personId,
-                ProjectId = projectId,
+                PersonId = Person.Id,
+                ProjectId = ProjectId,
                 RoleType = r,
             }),
             Positions = Positions.ConvertAll(p => new ContributorPosition
             {
-                PersonId = personId,
-                ProjectId = projectId,
+                PersonId = Person.Id,
+                ProjectId = ProjectId,
                 Position = p.Type,
                 StartDate = p.StartDate,
                 EndDate = p.EndDate,

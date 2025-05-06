@@ -10,9 +10,9 @@ namespace Conflux.Domain.Logic.Services;
 
 public interface IContributorsService
 {
-    public Task<List<Contributor>> GetContributorsByQueryAsync(Guid projectId, string? query);
-    public Task<Contributor> GetContributorByIdAsync(Guid projectId, Guid personId);
-    public Task<Contributor> CreateContributorAsync(Guid projectId, ContributorDTO contributorDTO);
-    public Task<Contributor> UpdateContributorAsync(Guid projectId, Guid personId, ContributorDTO contributorDTO);
-    public Task<Contributor> PatchContributorAsync(Guid projectId, Guid personId, ContributorPatchDTO contributorDTO);
+    public Task<List<ContributorDTO>> GetContributorsByQueryAsync(Guid projectId, string? query);
+    public Task<ContributorDTO> GetContributorByIdAsync(Guid projectId, Guid personId);
+    public Task<ContributorDTO> CreateContributorAsync(ContributorDTO contributorDTO);
+    public Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorDTO contributorDTO);
+    public Task<ContributorDTO> PatchContributorAsync(Guid projectId, Guid personId, ContributorPatchDTO contributorDTO);
 }

@@ -27,7 +27,13 @@ public class ProjectDTOTests
                 {
                     Text = "Title",
                     Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    StartDate = new(2021,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc),
                 },
             ],
             Descriptions =
@@ -39,8 +45,21 @@ public class ProjectDTOTests
                     Language = Language.ENGLISH,
                 },
             ],
-            StartDate = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+            StartDate = new(2025,
+                1,
+                1,
+                0,
+                0,
+                0,
+                DateTimeKind.Utc),
+            EndDate = new DateTime(2025,
+                12,
+                31,
+                23,
+                59,
+                59,
+                DateTimeKind.Utc),
+            Id = Guid.NewGuid(),
         };
 
         // Act

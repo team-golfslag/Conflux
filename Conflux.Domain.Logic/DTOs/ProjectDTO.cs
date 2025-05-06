@@ -12,7 +12,10 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectDTO
 #pragma warning restore S101
 {
+    public required Guid Id { get; init; }
+    public ProjectTitleDTO? PrimaryTitle { get; init; }
     public List<ProjectTitleDTO> Titles { get; init; } = [];
+    public ProjectDescriptionDTO? PrimaryDescription { get; init; }
     public List<ProjectDescriptionDTO> Descriptions { get; init; } = [];
 
     public DateTime StartDate { get; init; }
@@ -40,7 +43,7 @@ public class ProjectDTO
             Users = Users.ConvertAll(u => u.ToUser(projectId)),
             Products = Products.ConvertAll(p => p.ToProduct()),
             Organisations = Organisations.ConvertAll(o => o.ToOrganisation()),
-            Contributors = Contributors.ConvertAll(c => c.ToContributor(projectId)),
+            Contributors = Contributors.ConvertAll(c => c.ToContributor()),
         };
     }
 }

@@ -74,17 +74,19 @@ public class ContributorsServiceTests : IAsyncLifetime
 
         ContributorDTO dto = new()
         {
+            Person = person,
+            ProjectId = projectId,
             Leader = true,
             Contact = true,
         };
 
         // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(projectId, dto);
+        ContributorDTO contributor = await contributorsService.CreateContributorAsync(dto);
 
         // Assert
         Assert.NotNull(contributor);
         Assert.Single(await _context.Contributors
-            .Where(p => p.PersonId == contributor.PersonId && p.ProjectId == contributor.ProjectId).ToListAsync());
+            .Where(p => p.PersonId == contributor.Person.Id && p.ProjectId == contributor.ProjectId).ToListAsync());
     }
 
     [Fact]
@@ -135,11 +137,11 @@ public class ContributorsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act
-        Contributor contributor = await contributorsService.GetContributorByIdAsync(projectId, personId);
+        ContributorDTO contributor = await contributorsService.GetContributorByIdAsync(projectId, personId);
 
         // Assert
         Assert.NotNull(contributor);
-        Assert.Equal(testContributor.PersonId, contributor.PersonId);
+        Assert.Equal(testContributor.PersonId, contributor.Person?.Id);
     }
 
     [Fact]
@@ -194,12 +196,14 @@ public class ContributorsServiceTests : IAsyncLifetime
 
         ContributorDTO dto = new()
         {
+            Person = person,
+            ProjectId = projectId,
             Leader = true,
             Contact = true,
         };
 
         // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(projectId, dto);
+        ContributorDTO contributor = await contributorsService.CreateContributorAsync(dto);
         await _context.SaveChangesAsync();
         Contributor retrievedContributor =
             await _context.Contributors.SingleAsync(p => p.ProjectId == contributor.ProjectId);
@@ -278,6 +282,12 @@ public class ContributorsServiceTests : IAsyncLifetime
 
         ContributorDTO updateDto = new()
         {
+            Person = new()
+            {
+                Id = personId,
+                Name = "Jane Doe",
+            },
+            ProjectId = projectId,
             Roles =
             [
                 ContributorRoleType.Conceptualization,
@@ -296,16 +306,16 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor updatedContributor =
+        ContributorDTO updatedContributor =
             await contributorsService.UpdateContributorAsync(projectId, personId, updateDto);
 
         // Assert
         Assert.NotNull(updatedContributor);
         Assert.Equal(2, updatedContributor.Roles.Count);
         Assert.Single(updatedContributor.Positions);
-        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[0].Position);
-        Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Conceptualization);
-        Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Methodology);
+        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[0].Type);
+        Assert.Contains(updatedContributor.Roles, r => r == ContributorRoleType.Conceptualization);
+        Assert.Contains(updatedContributor.Roles, r => r == ContributorRoleType.Methodology);
     }
 
     [Fact]
@@ -321,13 +331,13 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor result =
+        ContributorDTO result =
             await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
 
         // Assert
         Assert.Equal(2, result.Roles.Count);
-        Assert.Contains(result.Roles, r => r.RoleType == ContributorRoleType.Software);
-        Assert.Contains(result.Roles, r => r.RoleType == ContributorRoleType.Validation);
+        Assert.Contains(result.Roles, r => r == ContributorRoleType.Software);
+        Assert.Contains(result.Roles, r => r == ContributorRoleType.Validation);
 
         // Ensure other properties weren't changed
         Assert.Equal(contributor.Leader, result.Leader);
@@ -361,12 +371,12 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor result =
+        ContributorDTO result =
             await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
 
         // Assert
         Assert.Single(result.Positions);
-        Assert.Equal(ContributorPositionType.Partner, result.Positions[0].Position);
+        Assert.Equal(ContributorPositionType.Partner, result.Positions[0].Type);
         Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.Positions[0].StartDate);
 
         // Ensure other properties weren't changed
@@ -395,7 +405,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor result =
+        ContributorDTO result =
             await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
 
         // Assert
@@ -426,7 +436,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor result =
+        ContributorDTO result =
             await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
 
         // Assert
@@ -466,15 +476,15 @@ public class ContributorsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Contributor result =
+        ContributorDTO result =
             await contributorService.PatchContributorAsync(contributor.ProjectId, contributor.PersonId, patchDto);
 
         // Assert
         Assert.Single(result.Roles);
-        Assert.Equal(ContributorRoleType.ProjectAdministration, result.Roles[0].RoleType);
+        Assert.Equal(ContributorRoleType.ProjectAdministration, result.Roles[0]);
 
         Assert.Single(result.Positions);
-        Assert.Equal(ContributorPositionType.PrincipalInvestigator, result.Positions[0].Position);
+        Assert.Equal(ContributorPositionType.PrincipalInvestigator, result.Positions[0].Type);
 
         Assert.True(result.Leader);
         Assert.True(result.Contact);

@@ -63,7 +63,13 @@ public class ProjectsServiceTests : IAsyncLifetime
                     {
                         Text = "non-existent project",
                         Type = TitleType.Primary,
-                        StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        StartDate = new(2021,
+                            1,
+                            1,
+                            0,
+                            0,
+                            0,
+                            DateTimeKind.Utc),
                     },
                 ],
                 Descriptions =
@@ -77,6 +83,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                 ],
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
+                Id = Guid.NewGuid(),
             }));
     }
 
@@ -133,7 +140,13 @@ public class ProjectsServiceTests : IAsyncLifetime
                 {
                     Text = "Updated Title",
                     Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    StartDate = new(2021,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc),
                 },
             ],
             Descriptions =
@@ -145,12 +158,25 @@ public class ProjectsServiceTests : IAsyncLifetime
                     Language = Language.ENGLISH,
                 },
             ],
-            StartDate = new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
+            StartDate = new(2024,
+                2,
+                1,
+                0,
+                0,
+                0,
+                DateTimeKind.Utc),
+            EndDate = new(2024,
+                3,
+                1,
+                23,
+                59,
+                59,
+                DateTimeKind.Utc),
+            Id = projectId,
         };
 
         // Act
-        Project updatedProject = await service.PutProjectAsync(originalProject.Id, putDto);
+        ProjectDTO updatedProject = await service.PutProjectAsync(originalProject.Id, putDto);
 
         // Assert
         Assert.NotNull(updatedProject);
@@ -245,7 +271,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         };
 
         // Act
-        Project patchedProject = await service.PatchProjectAsync(originalProject.Id, patchDto);
+        ProjectDTO patchedProject = await service.PatchProjectAsync(originalProject.Id, patchDto);
 
         // Assert
         Assert.NotNull(patchedProject);

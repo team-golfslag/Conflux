@@ -8,7 +8,9 @@ using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
+using RAiD.Net;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -18,6 +20,8 @@ public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private ConfluxContext _context = null!;
+    private readonly IProjectMapperService _projectMapperService = null!;
+    private readonly IRAiDService _raidService = null!;
     private UserSessionService _userSessionService = null!;
 
     public async Task InitializeAsync()
@@ -47,7 +51,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
         // Arrange
-        ProjectsService service = new(_context, _userSessionService);
+        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
@@ -62,7 +66,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                         StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     },
                 ],
-                Descriptions = 
+                Descriptions =
                 [
                     new()
                     {
@@ -85,29 +89,29 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context, _userSessionService);
+        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
 
-        Guid projectid = Guid.NewGuid();
-        
+        Guid projectId = Guid.NewGuid();
+
         // Insert a test project
         Project originalProject = new()
         {
-            Id = projectid,
+            Id = projectId,
             Titles =
             [
                 new()
                 {
-                    ProjectId = projectid,
+                    ProjectId = projectId,
                     Text = "Original Title",
                     Type = TitleType.Primary,
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
-                    ProjectId = projectid,
+                    ProjectId = projectId,
                     Text = "Original Description",
                     Type = DescriptionType.Primary,
                     Language = Language.ENGLISH,
@@ -132,7 +136,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
@@ -179,29 +183,29 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PatchProjectAsync_ShouldPatchExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context, _userSessionService);
+        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
 
-        Guid projectid = Guid.NewGuid();
-        
+        Guid projectId = Guid.NewGuid();
+
         // Insert a test project
         Project originalProject = new()
         {
-            Id = projectid,
+            Id = projectId,
             Titles =
             [
                 new()
                 {
-                    ProjectId = projectid,
+                    ProjectId = projectId,
                     Text = "Original Title",
                     Type = TitleType.Primary,
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
-                    ProjectId = projectid,
+                    ProjectId = projectId,
                     Text = "Original Description",
                     Type = DescriptionType.Primary,
                     Language = Language.ENGLISH,
@@ -227,14 +231,14 @@ public class ProjectsServiceTests : IAsyncLifetime
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            Descriptions = 
+            Descriptions =
             [
                 new()
                 {
                     Text = "Patched Description",
                     Type = DescriptionType.Primary,
                     Language = Language.ENGLISH,
-                }
+                },
             ],
             StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),

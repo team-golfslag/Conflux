@@ -72,6 +72,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         // Then, update it
         ProjectDTO updatedProject = new()
         {
+            Id = project!.Id,
             Titles =
             [
                 new()
@@ -167,6 +168,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         // Arrange
         ProjectDTO project = new()
         {
+            Id = Guid.NewGuid(),
             Titles =
             [
                 new()

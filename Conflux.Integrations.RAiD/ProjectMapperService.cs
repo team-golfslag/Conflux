@@ -48,6 +48,43 @@ public class ProjectMapperService : IProjectMapperService
             SpatialCoverage = null,     // Not implemented for now
         };
 
+    public RAiDUpdateRequest MapProjectUpdateRequest(Project project) =>
+        new()
+        {
+            Metadata = null,
+            Identifier = new()
+            {
+                IdValue = null,
+                SchemaUri = null,
+                RegistrationAgency = new()
+                {
+                    Id = null,
+                    SchemaUri = null,
+                },
+                Owner = new()
+                {
+                    Id = null,
+                    SchemaUri = null,
+                    ServicePoint = null,
+                },
+                RaidAgencyUrl = null,
+                License = null,
+                Version = 1,
+            },
+            Title = null,
+            Date = null,
+            Description = null,
+            Access = null,
+            AlternateUrl = null,
+            Contributor = null,
+            Organisation = null,
+            Subject = null,
+            RelatedRaid = null,
+            RelatedObject = null,
+            AlternateIdentifier = null,
+            SpatialCoverage = null,
+        };
+
     private static RAiDTitle MapProjectTitle(ProjectTitle title) =>
         new()
         {
@@ -103,6 +140,7 @@ public class ProjectMapperService : IProjectMapperService
             SchemaUri = person.SchemaUri,
             Email = person.Email,
             Uuid = null,
+            Id = person.ORCiD,
             Position = contributor.Positions.Select(MapContributorPosition).ToList(),
             Role = contributor.Roles.Select(MapContributorRole).ToList(),
             Leader = contributor.Leader,
@@ -122,7 +160,7 @@ public class ProjectMapperService : IProjectMapperService
     private static RAiDOrganisation MapOrganisation(Organisation organisation) =>
         new()
         {
-            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(organisation)),
+            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(organisation.RORId)),
             SchemaUri = organisation.SchemaUri,
             Role = organisation.Roles.Select(MapOrganisationRole).ToList(),
         };
@@ -134,7 +172,7 @@ public class ProjectMapperService : IProjectMapperService
             SchemaUri = lang.SchemaUri,
         };
 
-    private static RAiDRelatedObject MapProduct(Product product) => 
+    private static RAiDRelatedObject MapProduct(Product product) =>
         new()
         {
             Id = product.Url,
@@ -144,17 +182,21 @@ public class ProjectMapperService : IProjectMapperService
                 Id = product.GetTypeUri,
                 SchemaUri = product.TypeSchemaUri,
             },
-            Category = null,
+            Category = product.Categories.ToList().ConvertAll(p => new RAiDRelatedObjectCategory
+            {
+                Id = p.GetUri,
+                SchemaUri = p.SchemaUri,
+            }),
         };
 
     public List<RAiDIncompatibility> CheckProjectCompatibility(Project project)
     {
         List<RAiDIncompatibility> incompatibilities = [];
-        
-        List<ProjectTitle> activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
+
+        var activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
             && (t.EndDate == null || t.EndDate >= DateTime.Now)
             && t.Type == TitleType.Primary).ToList();
-        
+
         // Note: One (and only one) current (as per start-end dates)
         // Primary Title is mandatory for each Title specified;
         // additional titles are optional; any previous titles are managed
@@ -162,63 +204,81 @@ public class ProjectMapperService : IProjectMapperService
         //
         // Source: https://metadata.raid.org/en/latest/core/titles.html#title-type-id
         if (activeTitles.Count == 0)
-            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoActivePrimaryTitle});
-        
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoActivePrimaryTitle,
+            });
+
         if (activeTitles.Count > 1)
-            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.MultipleActivePrimaryTitle});
-        
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.MultipleActivePrimaryTitle,
+            });
+
         // Constraint: Titles have maximum 100 characters
         // Source: https://metadata.raid.org/en/latest/core/titles.html#title-text
         incompatibilities.AddRange(project.Titles
-            .Where(t => t.Text.Length  > 100)
+            .Where(t => t.Text.Length > 100)
             .Select(t => new RAiDIncompatibility
             {
                 Type = RAiDIncompatibilityType.ProjectTitleTooLong,
                 ObjectId = t.Id,
             }).ToList());
-        
+
         // Constraint: Descriptions have maximum 1000 characters
         // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-text
         incompatibilities.AddRange(project.Descriptions
-            .Where(t => t.Text.Length  > 1000)
+            .Where(t => t.Text.Length > 1000)
             .Select(d => new RAiDIncompatibility
             {
                 Type = RAiDIncompatibilityType.ProjectDescriptionTooLong,
                 ObjectId = d.Id,
-            }).ToList()); 
-        
+            }).ToList());
+
         // Constraints: if a description is provided, one (and only one) primary description is mandatory
         // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-type-id
         if (project.Descriptions.Count > 0)
         {
-            List<ProjectDescription> primaryDescriptions =
+            var primaryDescriptions =
                 project.Descriptions.Where(d => d.Type == DescriptionType.Primary).ToList();
             if (primaryDescriptions.Count == 0)
-                incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoPrimaryDescription});
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.NoPrimaryDescription,
+                });
             if (primaryDescriptions.Count > 1)
-                incompatibilities.Add(new() {Type = RAiDIncompatibilityType.MultiplePrimaryDescriptions});
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.MultiplePrimaryDescriptions,
+                });
         }
-        
+
         // Requirement: at least one contributor is mandatory
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor
         if (project.Contributors.Count == 0)
-            incompatibilities.Add(new() {Type = RAiDIncompatibilityType.NoContributors});
-        
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoContributors,
+            });
+
         // Requirement: at least one contributor must be flagged as a project leader
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-leader
         if (!project.Contributors.Any(c => c.Leader))
-            incompatibilities.Add(new() { Type = RAiDIncompatibilityType.NoProjectLeader });
-        
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoProjectLeader,
+            });
+
         // Requirement: at least one contributor must be flagged as a project contact
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-contact
         if (!project.Contributors.Any(c => c.Contact))
-            incompatibilities.Add(new() { Type = RAiDIncompatibilityType.NoProjectContact });
-        
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoProjectContact,
+            });
+
         // project.Organisations.Any(o => o.Roles.)
-        
-        
-        
-        
+
 
         return incompatibilities;
     }

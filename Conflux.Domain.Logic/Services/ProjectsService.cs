@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
@@ -265,14 +264,22 @@ public class ProjectsService
         // First map the project to the RAiDCreateProjectDTO
         Project project = await _context.Projects
             .Include(p => p.Titles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.Categories)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
             .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
             .SingleOrDefaultAsync(p => p.Id == id) ?? throw new ProjectNotFoundException(id);
 
         RAiDCreateRequest request = _projectMapperService.MapProjectCreationRequest(project);
-        string json = JsonSerializer.Serialize(request); // Used for Testing TODO remove
+        RAiDDto dto = await _raidService.MintRaidAsync(request) ??
+            throw new RAiDException("Failed to mint project in RAiD");
 
-        await _raidService.MintRaidAsync(request);
+        // TODO: Finish this
     }
 }

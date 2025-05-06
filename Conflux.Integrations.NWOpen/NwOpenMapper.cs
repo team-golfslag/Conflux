@@ -73,7 +73,7 @@ public static class NwOpenMapper
                 ProjectId = projectId,
                 Text = project.SummaryEn,
                 Language = Language.ENGLISH,
-                Type = DescriptionType.Primary
+                Type = DescriptionType.Alternative,
             });
 
         Project mappedProject = new()
@@ -128,6 +128,7 @@ public static class NwOpenMapper
         {
             Id = productId,
             Title = product.Title ?? "No title",
+            Schema = ProductSchema.Doi,
             Url = product.UrlOpenAccess,
             Type = ProductType.DataPaper,
             Categories =
@@ -158,6 +159,7 @@ public static class NwOpenMapper
             Name = $"{projectMember.FirstName} {projectMember.LastName}",
             GivenName = projectMember.FirstName,
             FamilyName = projectMember.LastName,
+            ORCiD = "https://orcid.org/0009-0003-2462-3499",
         };
         Contributor contributor = new()
         {
@@ -195,6 +197,8 @@ public static class NwOpenMapper
                     EndDate = project.EndDate,
                 },
             ],
+            Leader = true,
+            Contact = true,
         };
         People.Add(person);
         Contributors.Add(contributor);
@@ -220,6 +224,7 @@ public static class NwOpenMapper
         Organisation mappedOrganisation = new()
         {
             Id = organisationId,
+            RORId = "https://ror.org/04pp8hn57",
             Name = projectMember.Organisation!,
             Roles =
             [

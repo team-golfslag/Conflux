@@ -5,7 +5,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
@@ -14,22 +13,22 @@ public enum TitleType
     /// <summary>
     /// Primary, i.e., a preferred full or long title
     /// </summary>
-    Primary = 380,
+    Primary = 5,
 
     /// <summary>
     /// Short
     /// </summary>
-    Short = 381,
+    Short = 157,
 
     /// <summary>
     /// Acronym
     /// </summary>
-    Acronym = 378,
+    Acronym = 156,
 
     /// <summary>
     /// Alternative, including subtitle or other supplemental title
     /// </summary>
-    Alternative = 379,
+    Alternative = 4,
 }
 
 public class ProjectTitle
@@ -49,5 +48,5 @@ public class ProjectTitle
     public DateTime? EndDate { get; init; }
 
     public string TypeSchemaUri => "https://vocabulary.raid.org/title.type.schema/376";
-    public string TypeUri => $"https://vocabulary.raid.org/title.type.id/{(int)Type}";
+    public string TypeUri => $"https://vocabulary.raid.org/title.type.schema/{(int)Type}";
 }

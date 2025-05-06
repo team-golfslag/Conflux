@@ -47,9 +47,15 @@ public class ContributorRole
 
     public string SchemaUri => "https://credit.niso.org/";
 
+    /// <summary>
+    /// Get the URI for the Contributor Role.
+    /// contributor-roles/ MUST be contributor-role/
+    /// </summary>
+    /// <returns>The URI for the Contributor Role.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the RoleType is not a valid ContributorRoleType.</exception>
     public string GetUri()
     {
-        return SchemaUri + "contributor-role/" + RoleType switch
+        return SchemaUri + "contributor-roles/" + RoleType switch
         {
             ContributorRoleType.Conceptualization     => "conceptualization/",
             ContributorRoleType.DataCuration          => "data-curation/",

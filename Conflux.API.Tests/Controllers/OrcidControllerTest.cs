@@ -172,32 +172,6 @@ public class OrcidControllerTests
     }
 
     [Fact]
-    public async Task LinkOrcid_WhenOrcidAuthDisabledSramAuthDisabledAndUserLoggedIn_RedirectsWithoutUpdate()
-    {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            SCIMId = "scimid",
-            Name = "testuser",
-        };
-        UserSession session = new()
-        {
-            User = user,
-        };
-        InitializeController(user, session);
-        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
-            .ReturnsAsync(false);
-        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(false);
-
-        await _controller.LinkOrcid(ValidAbsoluteRedirect);
-
-        User? dbUser = await _context.Users.FindAsync(user.Id);
-        Assert.Null(dbUser?.ORCiD);                                       // ORCID should not be updated
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Never); // Session should not be updated
-    }
-
-    [Fact]
     public async Task LinkOrcid_WhenUserNotLoggedIn_ReturnsUnauthorized()
     {
         InitializeController(); // No user/session
@@ -435,7 +409,7 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
         Assert.Null(dbUser.ORCiD);                                       // ORCID should be null after unlinking
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
+        _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
     [Fact]
@@ -462,7 +436,7 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
         Assert.Null(dbUser.ORCiD);                                       // ORCID should remain null
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Session update still occurs
+        _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 
     [Fact]

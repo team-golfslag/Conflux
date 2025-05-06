@@ -3,12 +3,16 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Text.Json;
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Session;
+using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
+using RAiD.Net;
+using RAiD.Net.Domain;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -18,12 +22,17 @@ namespace Conflux.Domain.Logic.Services;
 public class ProjectsService
 {
     private readonly ConfluxContext _context;
+    private readonly IProjectMapperService _projectMapperService;
+    private readonly IRAiDService _raidService;
     private readonly IUserSessionService _userSessionService;
 
-    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
+    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService,
+        IProjectMapperService projectMapperService, IRAiDService raidService)
     {
         _context = context;
         _userSessionService = userSessionService;
+        _projectMapperService = projectMapperService;
+        _raidService = raidService;
     }
 
     /// <summary>
@@ -249,5 +258,21 @@ public class ProjectsService
 
         await _context.SaveChangesAsync();
         return project;
+    }
+
+    public async Task MintProjectInRaidAsync(Guid id)
+    {
+        // First map the project to the RAiDCreateProjectDTO
+        Project project = await _context.Projects
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .Include(p => p.Contributors)
+            .SingleOrDefaultAsync(p => p.Id == id) ?? throw new ProjectNotFoundException(id);
+
+        RAiDCreateRequest request = _projectMapperService.MapProjectCreationRequest(project);
+        string json = JsonSerializer.Serialize(request); // Used for Testing TODO remove
+
+        await _raidService.MintRaidAsync(request);
     }
 }

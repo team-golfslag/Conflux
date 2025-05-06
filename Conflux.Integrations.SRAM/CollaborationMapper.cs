@@ -7,8 +7,8 @@ using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM.DTOs;
-using Conflux.Integrations.SRAM.Exceptions;
 using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Exceptions;
 using SRAM.SCIM.Net.Models;
 
 namespace Conflux.Integrations.SRAM;

@@ -6,18 +6,32 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
-using Microsoft.Extensions.DependencyInjection;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Xunit;
+using IServiceScope = Microsoft.Extensions.DependencyInjection.IServiceScope;
+using ServiceProviderServiceExtensions = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions;
 
 namespace Conflux.API.Tests.Controllers;
 
 public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
+    private static readonly JsonSerializerOptions JsonOptions;
     private readonly HttpClient _client;
     private readonly TestWebApplicationFactory _factory;
+
+    static ProjectsControllerTests()
+    {
+        JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+        // allow "Primary", "Secondary", etc. to bind into TitleType/DescriptionType enum properties
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
 
     public ProjectsControllerTests(TestWebApplicationFactory factory)
     {
@@ -31,7 +45,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         HttpResponseMessage response = await _client.GetAsync("/projects/all");
         response.EnsureSuccessStatusCode();
 
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
     }
 
@@ -48,44 +62,74 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         // First, create a new project
         Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
         {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            ConfluxContext context =
+                ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);
             project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000002"));
         }
 
         // Then, update it
-        ProjectPutDTO updatedProject = new()
+        ProjectDTO updatedProject = new()
         {
-            Title = "Updated Title",
-            Description = "Updated description",
+            Titles =
+            [
+                new()
+                {
+                    Text = "Updated Title",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+            Descriptions =
+            [
+                new()
+                {
+                    Text = "Updated description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
         };
         HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
         putRes.EnsureSuccessStatusCode();
 
-        Project? updated = await putRes.Content.ReadFromJsonAsync<Project>();
-        Assert.Equal("Updated Title", updated?.Title);
+        Project? updated = await putRes.Content.ReadFromJsonAsync<Project>(JsonOptions);
+        Assert.NotNull(updated);
+        Assert.Single(updated.Titles);
+        Assert.Equal("Updated Title", updated.Titles[0].Text);
     }
 
     [Fact]
     public async Task PatchProject_UpdatesDescriptionOnly()
     {
         Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
         {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
+            ConfluxContext context =
+                ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);
             project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000003"));
         }
 
         ProjectPatchDTO patchDto = new()
         {
-            Description = "After patch",
+            Descriptions =
+            [
+                new()
+                {
+                    Text = "After patch",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
         };
         HttpResponseMessage patchRes = await _client.PatchAsJsonAsync($"/projects/{project!.Id}", patchDto);
         patchRes.EnsureSuccessStatusCode();
 
-        Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>();
-        Assert.Equal("After patch", updated?.Description);
+        Project? updated = await patchRes.Content.ReadFromJsonAsync<Project>(JsonOptions);
+        Assert.NotNull(updated);
+        Assert.Single(updated.Descriptions);
+        Assert.Equal("After patch", updated.Descriptions[0].Text);
     }
 
     [Fact]
@@ -97,9 +141,9 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title.Contains("Test Project"));
+        Assert.Contains(projects, p => p.Titles[0].Text.Contains("Test Project"));
     }
 
     [Fact]
@@ -112,20 +156,36 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
-        Assert.Contains(projects, p => p.Title == "Test Project");
+        Assert.Contains(projects, p => p.Titles[0].Text == "Test Project");
     }
 
     [Fact]
     public async Task GetProjects_ByNonMatchingDateRange_ReturnsEmpty()
     {
         // Arrange
-        ProjectPostDTO project = new()
+        ProjectDTO project = new()
         {
-            Title = "Outdated Project",
-            Description = "Old project",
-            StartDate = new DateTime(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Titles =
+            [
+                new()
+                {
+                    Text = "Outdated Project",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+            Descriptions =
+            [
+                new()
+                {
+                    Text = "Old project",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
+            StartDate = new(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };
         JsonContent content = JsonContent.Create(project, options: new()
@@ -140,85 +200,8 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
+        var projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Empty(projects);
-    }
-
-    [Fact]
-    public async Task GetProjects_ByTitleOrder_ReturnsOrderedProjects()
-    {
-        // Arrange: not needed, already seeded
-        // Act
-        HttpResponseMessage response = await _client.GetAsync("/projects?order_by=titleAsc");
-
-        // Assert
-        response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
-        Assert.NotNull(projects);
-        Assert.True(projects.Length <= 1 ||
-            string.Compare(projects[0].Title, projects[1].Title, StringComparison.Ordinal) < 0);
-    }
-
-    [Fact]
-    public async Task GetProjects_ByStartDateOrder_ReturnsOrderedProjects()
-    {
-        // Arrange: not needed, already seeded
-        // Act
-        HttpResponseMessage response = await _client.GetAsync("/projects?order_by=startDateAsc");
-
-        // Assert
-        response.EnsureSuccessStatusCode();
-        var projects = await response.Content.ReadFromJsonAsync<Project[]>();
-        Assert.NotNull(projects);
-        Assert.True(projects.Length <= 1 || projects[0].StartDate == null ||
-            projects[1].StartDate == null || projects[0].StartDate <= projects[1].StartDate);
-    }
-
-    [Fact]
-    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenProjectDoesNotExist()
-    {
-        // Arrange: Create a contributor in the database
-        Guid contributorId = Guid.NewGuid();
-        using (IServiceScope scope = _factory.Services.CreateScope())
-        {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            User user = new()
-            {
-                Id = contributorId,
-                Name = "Test User",
-                SCIMId = "test-scim-id",
-            };
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
-        }
-
-        // Act: Use a non-existent project ID
-        Guid nonExistentProjectId = Guid.NewGuid();
-        HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{nonExistentProjectId}/contributors/{contributorId}", null);
-
-        // Assert: The response should be NotFound
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AddContributorToProjectAsync_ReturnsNotFound_WhenContributorDoesNotExist()
-    {
-        // Arrange: Query the database for an existing project
-        Project? project;
-        using (IServiceScope scope = _factory.Services.CreateScope())
-        {
-            ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
-            project = await context.Projects.FindAsync(new Guid("00000000-0000-0000-0000-000000000001"));
-        }
-
-        // Act: Use a non-existent contributor ID
-        Guid nonExistentContributorId = Guid.NewGuid();
-        HttpResponseMessage response =
-            await _client.PostAsync($"/projects/{project!.Id}/addContributor/{nonExistentContributorId}", null);
-
-        // Assert: The response should be NotFound
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

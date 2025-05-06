@@ -3,22 +3,26 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain;
 
+[PrimaryKey(nameof(PersonId), nameof(ProjectId))]
 public record Contributor
 {
-    [Key] public Guid Id { get; init; } = Guid.NewGuid();
+    [ForeignKey(nameof(Person))] public Guid PersonId { get; init; }
+    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
+    public List<ContributorRole> Roles { get; set; } = [];
+    public List<ContributorPosition> Positions { get; set; } = [];
 
-    [JsonPropertyName("orcid_id")] public string? ORCiD { get; set; }
-
-    [Required] public required string Name { get; set; }
-
-    public List<Role> Roles { get; set; } = [];
-
-    public string? GivenName { get; set; }
-    public string? FamilyName { get; set; }
-    public string? Email { get; set; }
+    /// <summary>
+    /// True if this contributor is a leader. Multiple leaders are allowed but 1 is required in RAiD
+    /// </summary>
+    public bool Leader { get; set; }
+    
+    /// <summary>
+    /// True if this contributor is a contact. Multiple contacts are allowed but 1 is required in RAiD
+    /// </summary>
+    public bool Contact { get; set; }
 }

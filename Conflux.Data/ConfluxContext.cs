@@ -11,15 +11,31 @@ namespace Conflux.Data;
 /// <summary>
 /// The database context for Conflux.
 /// </summary>
-/// <param name="options">The database context options.</param>
-public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContext(options)
+public class ConfluxContext : DbContext, IConfluxContext
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConfluxContext" /> class.
+    /// </summary>
+    /// <param name="options">The options for the context.</param>
+    public ConfluxContext(DbContextOptions<ConfluxContext> options) : base(options)
+    {
+    }
+
+    public DbSet<Person> People { get; set; }
+
     public DbSet<User> Users { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Contributor> Contributors { get; set; }
+    public DbSet<ContributorRole> ContributorRoles { get; set; }
+    public DbSet<ContributorPosition> ContributorPositions { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<Project> Projects { get; set; }
-    public DbSet<Party> Parties { get; set; }
-    public DbSet<Role> Roles { get; set; }
+    public DbSet<ProjectTitle> ProjectTitles { get; set; }
+    public DbSet<ProjectDescription> ProjectDescriptions { get; set; }
+    public DbSet<Organisation> Organisations { get; set; }
+    public DbSet<OrganisationRole> OrganisationRoles { get; set; }
+
     public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 
     /// <summary>
@@ -34,10 +50,13 @@ public class ConfluxContext(DbContextOptions<ConfluxContext> options) : DbContex
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Products)
             .WithMany();
-        modelBuilder.Entity<User>()
-            .HasMany(p => p.Roles)
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Titles)
             .WithMany();
-        modelBuilder.Entity<Contributor>()
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Descriptions)
+            .WithMany();
+        modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();
 

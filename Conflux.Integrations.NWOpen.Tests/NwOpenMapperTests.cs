@@ -36,7 +36,7 @@ public class NwOpenMapperTests
         SeedData seedData = NwOpenMapper.MapProjects(emptyProjects);
 
         // Assert
-        Assert.Empty(seedData.Parties);
+        Assert.Empty(seedData.Organisations);
         Assert.Empty(seedData.Contributors);
         Assert.Empty(seedData.Products);
         Assert.Empty(seedData.Projects);
@@ -90,10 +90,12 @@ public class NwOpenMapperTests
         // Assert
         Assert.Single(result.Projects);
         Project mappedProject = result.Projects[0];
-        Assert.Equal("Test Project", mappedProject.Title);
-        Assert.Equal("Summary", mappedProject.Description);
-        Assert.Equal(new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
-        Assert.Equal(new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);
+        Assert.Equal("Test Project", mappedProject.Titles[0].Text);
+        var dutchDescriptions = mappedProject.Descriptions.Where(d => d.Language!.Id == "nld").ToList();
+        Assert.Single(dutchDescriptions);
+        Assert.Equal("Summary", dutchDescriptions[0].Text);
+        Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
+        Assert.Equal(new(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc), mappedProject.EndDate);
 
         Assert.Single(result.Products);
         Product mappedProduct = result.Products[0];
@@ -102,11 +104,11 @@ public class NwOpenMapperTests
 
         Assert.Single(result.Contributors);
         Contributor mappedUser = result.Contributors[0];
-        Assert.Equal("John Doe", mappedUser.Name);
+        Assert.True(mappedUser.Contact);
 
-        Assert.Single(result.Parties);
-        Party mappedParty = result.Parties[0];
-        Assert.Equal("TestOrg", mappedParty.Name);
+        Assert.Single(result.Organisations);
+        Organisation mappedOrganisation = result.Organisations[0];
+        Assert.Equal("TestOrg", mappedOrganisation.Name);
     }
 
     /// <summary>
@@ -174,7 +176,7 @@ public class NwOpenMapperTests
         // Use reflection because the properties are static + private getters
         Type mapperType = typeof(NwOpenMapper);
 
-        ClearListProperty<Party>(mapperType, "Parties");
+        ClearListProperty<Organisation>(mapperType, "Organisations");
         ClearListProperty<Contributor>(mapperType, "Contributors");
         ClearListProperty<Product>(mapperType, "Products");
         ClearListProperty<Project>(mapperType, "Projects");

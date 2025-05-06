@@ -5,12 +5,9 @@
 
 namespace Conflux.Domain.Logic.DTOs;
 
-/// <summary>
-/// The Data Transfer Object for patching a <see cref="Contributor" />
-/// </summary>
-#pragma warning disable S101 // Types should be named in camel case
-public class ContributorPatchDTO
-#pragma warning restore S101
+public class ContributorPositionDTO
 {
-    public string? Name { get; init; }
+    public DateTime? EndDate { get; init; }
+    public DateTime StartDate { get; init; }
+    public ContributorPositionType Type { get; init; }
 }

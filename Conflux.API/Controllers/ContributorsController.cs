@@ -3,9 +3,9 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,18 +14,18 @@ namespace Conflux.API.Controllers;
 /// <summary>
 /// Represents the controller for managing contributors
 /// </summary>
-[Route("contributors")]
 [ApiController]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+[Route("projects/{projectId:guid}/contributors")]
 public class ContributorsController : ControllerBase
 {
     private readonly ContributorsService _contributorsService;
 
-    public ContributorsController(ConfluxContext context)
+    public ContributorsController(ContributorsService contributorsService)
     {
-        _contributorsService = new(context);
+        _contributorsService = contributorsService;
     }
 
     /// <summary>
@@ -35,48 +35,55 @@ public class ContributorsController : ControllerBase
     /// <returns>Filtered list of contributors</returns>
     [HttpGet]
     [ProducesResponseType(typeof(List<Contributor>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Contributor>>> GetContributorsByQuery(
+    public async Task<ActionResult<List<Contributor>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
-        await _contributorsService.GetContributorsByQueryAsync(query);
+        await _contributorsService.GetContributorsByQueryAsync(projectId, query);
 
     /// <summary>
     /// Gets the contributor by his GUID
     /// </summary>
-    /// <param name="id">The GUID of the contributor</param>
+    /// <param name="projectId">The GUID of the project</param>
+    /// <param name="personId">The GUID of the person</param>
     /// <returns>The request response</returns>
     [HttpGet]
-    [Route("{id:guid}")]
+    [Route("{personId:guid}")]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Contributor>> GetContributorByIdAsync([FromRoute] Guid id) =>
-        await _contributorsService.GetContributorByIdAsync(id);
+    public async Task<ActionResult<Contributor>> GetContributorByIdAsync([FromRoute] Guid projectId,
+        [FromRoute] Guid personId) =>
+        await _contributorsService.GetContributorByIdAsync(projectId, personId);
 
     /// <summary>
     /// Creates a new contributor via POST
     /// </summary>
+    /// <param name="projectId">The GUID of the project</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status201Created)]
-    public async Task<ActionResult<Contributor>> CreateContributor([FromBody] ContributorPostDTO contributorDTO) =>
-        await _contributorsService.CreateContributorAsync(contributorDTO);
+    public async Task<ActionResult<Contributor>> CreateContributor([FromRoute] Guid projectId,
+        [FromBody] ContributorDTO contributorDTO) =>
+        await _contributorsService.CreateContributorAsync(projectId, contributorDTO);
 
     /// <summary>
     /// Updates a contributor via PUT
     /// </summary>
-    /// <param name="id">The GUID of the contributor</param>
+    /// <param name="projectId">The GUID of the project</param>
+    /// <param name="personId">The GUID of the person</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPut]
-    [Route("{id:guid}")]
+    [Route("{personId:guid}")]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Contributor>> UpdateContributor([FromRoute] Guid id,
-        [FromBody] ContributorPutDTO contributorDTO) =>
-        await _contributorsService.UpdateContributorAsync(id, contributorDTO);
+    public async Task<ActionResult<Contributor>> UpdateContributor([FromRoute] Guid projectId,
+        [FromRoute] Guid personId,
+        [FromBody] ContributorDTO contributorDTO) =>
+        await _contributorsService.UpdateContributorAsync(projectId, personId, contributorDTO);
 
     [HttpPatch]
-    [Route("{id:guid}")]
+    [Route("{personId:guid}")]
     [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
     public async Task<ActionResult<Contributor>>
-        PatchContributor([FromRoute] Guid id, [FromBody] ContributorPatchDTO contributorDTO) =>
-        await _contributorsService.PatchContributorAsync(id, contributorDTO);
+        PatchContributor([FromRoute] Guid projectId, [FromRoute] Guid personId,
+            [FromBody] ContributorPatchDTO contributorDTO) =>
+        await _contributorsService.PatchContributorAsync(projectId, personId, contributorDTO);
 }

@@ -5,9 +5,13 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Session;
+using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
+using RAiD.Net;
+using RAiD.Net.Domain;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -17,12 +21,17 @@ namespace Conflux.Domain.Logic.Services;
 public class ProjectsService
 {
     private readonly ConfluxContext _context;
+    private readonly IProjectMapperService _projectMapperService;
+    private readonly IRAiDService _raidService;
     private readonly IUserSessionService _userSessionService;
 
-    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
+    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService,
+        IProjectMapperService projectMapperService, IRAiDService raidService)
     {
         _context = context;
         _userSessionService = userSessionService;
+        _projectMapperService = projectMapperService;
+        _raidService = raidService;
     }
 
     /// <summary>
@@ -46,17 +55,14 @@ public class ProjectsService
             {
                 Project = p,
                 p.Products,
-                Contributors = p.Contributors.Select(contributor => new
-                {
-                    Contributor = contributor,
-                    Roles = contributor.Roles.Where(role => role.ProjectId == p.Id).ToList(),
-                }),
+                p.Contributors,
+                p.Titles,
                 Users = p.Users.Select(person => new
                 {
                     Person = person,
                     Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
                 }),
-                p.Parties,
+                Parties = p.Organisations,
             })
             .ToListAsync();
 
@@ -67,11 +73,13 @@ public class ProjectsService
         {
             Project newProject = project.Project;
             newProject.Products = project.Products;
+            newProject.Contributors = project.Contributors;
+            newProject.Titles = project.Titles;
             newProject.Users = project.Users.Select(p => p.Person with
             {
                 Roles = p.Roles.ToList(),
             }).ToList();
-            newProject.Parties = project.Parties;
+            newProject.Organisations = project.Parties;
             projects.Add(newProject);
         }
 
@@ -87,7 +95,7 @@ public class ProjectsService
     /// or null if the user doesn't have access to the project
     /// </returns>
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    public async Task<List<Role>?> GetRolesFromProject(Project project)
+    public async Task<List<UserRole>?> GetRolesFromProject(Project project)
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -96,7 +104,7 @@ public class ProjectsService
             userSession.Collaborations.FirstOrDefault(c => c.CollaborationGroup.SCIMId == project.SCIMId);
         if (collaboration is null)
             return null;
-        var roles = await _context.Roles
+        var roles = await _context.UserRoles
             .Where(r => r.ProjectId == project.Id)
             .ToListAsync();
 
@@ -132,8 +140,8 @@ public class ProjectsService
             string loweredQuery = dto.Query.ToLowerInvariant();
 #pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
             projects = projects.Where(project =>
-                project.Title.ToLower().Contains(loweredQuery) ||
-                (project.Description ?? "").ToLower().Contains(loweredQuery));
+                project.Titles.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)) ||
+                project.Descriptions.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)));
 #pragma warning restore CA1862
         }
 
@@ -141,7 +149,7 @@ public class ProjectsService
         if (dto.StartDate.HasValue)
         {
             startDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
-            projects = projects.Where(project => project.StartDate != null && project.StartDate >= startDate);
+            projects = projects.Where(project => project.StartDate >= startDate);
         }
 
         DateTime? endDate;
@@ -156,8 +164,10 @@ public class ProjectsService
 
         projects = dto.OrderByType switch
         {
-            OrderByType.TitleAsc      => projects.OrderBy(project => project.Title),
-            OrderByType.TitleDesc     => projects.OrderByDescending(project => project.Title),
+            OrderByType.TitleAsc => projects.OrderBy(project =>
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
+            OrderByType.TitleDesc => projects.OrderByDescending(project =>
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
             OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
             OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
@@ -173,7 +183,7 @@ public class ProjectsService
     /// </summary>
     /// <param name="dto">The DTO which to convert to a <see cref="Project" /></param>
     /// <returns>The created project</returns>
-    public async Task<Project> CreateProjectAsync(ProjectPostDTO dto)
+    public async Task<Project> CreateProjectAsync(ProjectDTO dto)
     {
         Project project = dto.ToProject();
         _context.Projects.Add(project);
@@ -202,13 +212,13 @@ public class ProjectsService
     /// <param name="dto">The Data Transfer Object for the project</param>
     /// <returns>The added project</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<Project> PutProjectAsync(Guid id, ProjectPutDTO dto)
+    public async Task<Project> PutProjectAsync(Guid id, ProjectDTO dto)
     {
         Project project = await _context.Projects.FindAsync(id)
             ?? throw new ProjectNotFoundException(id);
 
-        project.Title = dto.Title;
-        project.Description = dto.Description;
+        project.Titles = dto.Titles.ConvertAll(title => title.ToProjectTitle(id));
+        project.Descriptions = dto.Descriptions.ConvertAll(desc => desc.ToProjectDescription(id));
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
 
@@ -225,38 +235,51 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> PatchProjectAsync(Guid id, ProjectPatchDTO dto)
     {
-        Project project = await _context.Projects.FindAsync(id)
+        Project project = await _context.Projects.Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .Include(project => project.Users)
+                .Include(project => project.Products)
+                .Include(project => project.Organisations)
+                .Include(project => project.Contributors)
+                .SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
-        project.Title = dto.Title ?? project.Title;
-        project.Description = dto.Description ?? project.Description;
+        project.SCIMId = dto.SCIMId ?? project.SCIMId;
+        project.Titles = dto.Titles?.ConvertAll(t => t.ToProjectTitle(id)) ?? project.Titles;
+        project.Descriptions = dto.Descriptions?.ConvertAll(d => d.ToProjectDescription(id)) ?? project.Descriptions;
         project.StartDate = dto.StartDate ?? project.StartDate;
         project.EndDate = dto.EndDate ?? project.EndDate;
+        project.Users = dto.Users?.ConvertAll(u => u.ToUser(id)) ?? project.Users;
+        project.Products = dto.Products?.ConvertAll(p => p.ToProduct()) ?? project.Products;
+        project.Organisations = dto.Organisations?.ConvertAll(o => o.ToOrganisation()) ?? project.Organisations;
+        project.Contributors = dto.Contributors?.ConvertAll(c => c.ToContributor(id)) ?? project.Contributors;
+        project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return project;
     }
 
-    /// <summary>
-    /// Updates a project by adding the person with the provided personId.
-    /// </summary>
-    /// <param name="projectId">The GUID of the project to update</param>
-    /// <param name="contributorId">The GUID of the person to add to the project</param>
-    /// <returns>The request response</returns>
-    public async Task<Project> AddContributorToProjectAsync(Guid projectId, Guid contributorId)
+    public async Task MintProjectInRaidAsync(Guid id)
     {
-        Project project =
-            await _context.Projects.Include(p => p.Contributors).SingleOrDefaultAsync(p => p.Id == projectId)
-            ?? throw new ProjectNotFoundException(projectId);
+        // First map the project to the RAiDCreateProjectDTO
+        Project project = await _context.Projects
+            .Include(p => p.Titles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.Categories)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .SingleOrDefaultAsync(p => p.Id == id) ?? throw new ProjectNotFoundException(id);
 
-        Contributor contributor = await _context.Contributors.FindAsync(contributorId)
-            ?? throw new ContributorNotFoundException(contributorId);
+        RAiDCreateRequest request = _projectMapperService.MapProjectCreationRequest(project);
+        RAiDDto dto = await _raidService.MintRaidAsync(request) ??
+            throw new RAiDException("Failed to mint project in RAiD");
 
-        if (project.Contributors.Any(p => p.Id == contributor.Id))
-            throw new ContributorAlreadyAddedToProjectException(projectId, contributorId);
-
-        project.Contributors.Add(contributor);
-        await _context.SaveChangesAsync();
-        return project;
+        // TODO: Finish this
     }
 }

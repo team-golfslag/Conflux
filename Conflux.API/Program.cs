@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -82,7 +83,18 @@ public class Program
         });
 
         builder.Services.AddHttpContextAccessor();
+        
+        builder.Services.AddScoped<IContributorsService, ContributorsService>();
+        builder.Services.AddScoped<IPeopleService, PeopleService>();
+        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
+        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
+        builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
+        builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
+        builder.Services.AddScoped<ProjectsService>();
+        
         await ConfigureSRAMServices(builder, featureManager);
+        await ConfigureRAiDServices(builder, featureManager);
 
         if (!await featureManager.IsEnabledAsync("ReverseProxy"))
             return;
@@ -137,16 +149,35 @@ public class Program
             scimClient.SetBearerToken(secret!);
             return scimClient;
         });
+    }
 
-        builder.Services.AddScoped<IContributorsService, ContributorsService>();
-        builder.Services.AddScoped<IPeopleService, PeopleService>();
-        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
-        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
-        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
-        builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
-        builder.Services.AddScoped<IRAiDService, RAiDService>();
-        builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
-        builder.Services.AddScoped<ProjectsService>();
+    private static async Task ConfigureRAiDServices(WebApplicationBuilder builder,
+        IVariantFeatureManager featureManager)
+    {
+        builder.Services.Configure<RAiDServiceOptions>(
+            builder.Configuration.GetSection("RAiD"));
+
+        builder.Services.AddHttpClient("RAiD");
+
+        bool raidEnabled = await featureManager.IsEnabledAsync("RAiDAuthentication");
+
+        builder.Services.AddScoped<IRAiDService>(provider =>
+        {
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>()
+                .CreateClient("RAiD");
+            var optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
+            var logger = provider.GetRequiredService<ILogger<RAiDService>>();
+
+            RAiDService raidSvc = new(httpClient, optionsAccessor, logger);
+
+            string? token = Environment.GetEnvironmentVariable("RAID_BEARER_TOKEN");
+            if (string.IsNullOrWhiteSpace(token) && raidEnabled)
+                throw new InvalidOperationException(
+                    "RAID_BEARER_TOKEN environment variable is not set");
+
+            raidSvc.SetBearerToken(token!);
+            return raidSvc;
+        });
     }
 
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,

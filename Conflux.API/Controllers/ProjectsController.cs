@@ -58,7 +58,7 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    [ProducesResponseType(typeof(List<Project>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectDTO>>> GetAllProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();

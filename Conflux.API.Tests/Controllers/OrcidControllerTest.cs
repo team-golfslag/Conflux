@@ -113,9 +113,6 @@ public class OrcidControllerTests
             byte[]? nullBytes = null;
             mockSession.Setup(s => s.TryGetValue("orcid", out nullBytes)).Returns(false);
         }
-
-        // Helper to simulate GetString extension method
-        // mockSession.Setup(s => s.GetString("orcid")).Returns(orcidSession);
     }
 
     // --- LinkOrcid Tests ---

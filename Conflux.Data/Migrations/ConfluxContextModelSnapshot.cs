@@ -24,6 +24,111 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("Conflux.Domain.Contributor", b =>
                 {
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Contact")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Leader")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("PersonId", "ProjectId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Contributors");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ContributorPosition", b =>
+                {
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(0);
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(1);
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PersonId", "ProjectId", "Position");
+
+                    b.ToTable("ContributorPositions");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ContributorRole", b =>
+                {
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(0);
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(1);
+
+                    b.Property<int>("RoleType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("PersonId", "ProjectId", "RoleType");
+
+                    b.ToTable("ContributorRoles");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RORId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Organisations");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
+                {
+                    b.Property<Guid>("OrganisationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("OrganisationId", "Role");
+
+                    b.ToTable("OrganisationRoles");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Person", b =>
+                {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
@@ -45,34 +150,9 @@ namespace Conflux.Data.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "orcid_id");
 
-                    b.Property<Guid?>("ProjectId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("Contributors");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.Party", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("ProjectId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("Parties");
+                    b.ToTable("People");
                 });
 
             modelBuilder.Entity("Conflux.Domain.Product", b =>
@@ -81,9 +161,15 @@ namespace Conflux.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Schema")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Url")
                         .HasColumnType("text");
@@ -93,66 +179,89 @@ namespace Conflux.Data.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("Conflux.Domain.ProductCategory", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProductId", "Type");
+
+                    b.ToTable("ProductCategories");
+                });
+
             modelBuilder.Entity("Conflux.Domain.Project", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("RAiDId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "raid_id");
+                    b.Property<DateTime>("LastestEdit")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SCIMId")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "scim_id");
 
-                    b.Property<DateTime?>("StartDate")
+                    b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("Conflux.Domain.Role", b =>
+            modelBuilder.Entity("Conflux.Domain.ProjectDescription", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProjectDescriptions");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ProjectTitle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("SCIMId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "scim_id");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Urn")
+                    b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.ToTable("ProjectTitles");
                 });
 
             modelBuilder.Entity("Conflux.Domain.SRAMGroupIdConnection", b =>
@@ -205,19 +314,34 @@ namespace Conflux.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("ContributorRole", b =>
+            modelBuilder.Entity("Conflux.Domain.UserRole", b =>
                 {
-                    b.Property<Guid>("ContributorId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("RolesId")
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("ContributorId", "RolesId");
+                    b.Property<string>("SCIMId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scim_id");
 
-                    b.HasIndex("RolesId");
+                    b.Property<string>("Urn")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.ToTable("ContributorRole");
+                    b.HasKey("Id");
+
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -235,6 +359,36 @@ namespace Conflux.Data.Migrations
                     b.ToTable("ProductProject");
                 });
 
+            modelBuilder.Entity("ProjectProjectDescription", b =>
+                {
+                    b.Property<Guid>("DescriptionsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("DescriptionsId", "ProjectId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectProjectDescription");
+                });
+
+            modelBuilder.Entity("ProjectProjectTitle", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TitlesId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProjectId", "TitlesId");
+
+                    b.HasIndex("TitlesId");
+
+                    b.ToTable("ProjectProjectTitle");
+                });
+
             modelBuilder.Entity("ProjectUser", b =>
                 {
                     b.Property<Guid>("ProjectId")
@@ -250,7 +404,7 @@ namespace Conflux.Data.Migrations
                     b.ToTable("ProjectUser");
                 });
 
-            modelBuilder.Entity("RoleUser", b =>
+            modelBuilder.Entity("UserUserRole", b =>
                 {
                     b.Property<Guid>("RolesId")
                         .HasColumnType("uuid");
@@ -262,36 +416,133 @@ namespace Conflux.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RoleUser");
+                    b.ToTable("UserUserRole");
                 });
 
             modelBuilder.Entity("Conflux.Domain.Contributor", b =>
                 {
                     b.HasOne("Conflux.Domain.Project", null)
                         .WithMany("Contributors")
-                        .HasForeignKey("ProjectId");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
-            modelBuilder.Entity("Conflux.Domain.Party", b =>
-                {
-                    b.HasOne("Conflux.Domain.Project", null)
-                        .WithMany("Parties")
-                        .HasForeignKey("ProjectId");
-                });
-
-            modelBuilder.Entity("ContributorRole", b =>
+            modelBuilder.Entity("Conflux.Domain.ContributorPosition", b =>
                 {
                     b.HasOne("Conflux.Domain.Contributor", null)
-                        .WithMany()
-                        .HasForeignKey("ContributorId")
+                        .WithMany("Positions")
+                        .HasForeignKey("PersonId", "ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
 
-                    b.HasOne("Conflux.Domain.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RolesId")
+            modelBuilder.Entity("Conflux.Domain.ContributorRole", b =>
+                {
+                    b.HasOne("Conflux.Domain.Contributor", null)
+                        .WithMany("Roles")
+                        .HasForeignKey("PersonId", "ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+                {
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithMany("Organisations")
+                        .HasForeignKey("ProjectId");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
+                {
+                    b.HasOne("Conflux.Domain.Organisation", null)
+                        .WithMany("Roles")
+                        .HasForeignKey("OrganisationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ProductCategory", b =>
+                {
+                    b.HasOne("Conflux.Domain.Product", null)
+                        .WithMany("Categories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Project", b =>
+                {
+                    b.OwnsOne("Conflux.Domain.RAiDInfo", "RAiDInfo", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<bool>("Dirty")
+                                .HasColumnType("boolean");
+
+                            b1.Property<DateTime?>("LatestSync")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("RAiDId")
+                                .HasColumnType("text")
+                                .HasAnnotation("Relational:JsonPropertyName", "raid_id");
+
+                            b1.HasKey("ProjectId");
+
+                            b1.ToTable("Projects");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId");
+                        });
+
+                    b.Navigation("RAiDInfo");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ProjectDescription", b =>
+                {
+                    b.OwnsOne("Conflux.Domain.Language", "Language", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectDescriptionId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Id")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+
+                            b1.HasKey("ProjectDescriptionId");
+
+                            b1.ToTable("ProjectDescriptions");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectDescriptionId");
+                        });
+
+                    b.Navigation("Language");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.ProjectTitle", b =>
+                {
+                    b.OwnsOne("Conflux.Domain.Language", "Language", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectTitleId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Id")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+
+                            b1.HasKey("ProjectTitleId");
+
+                            b1.ToTable("ProjectTitles");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectTitleId");
+                        });
+
+                    b.Navigation("Language");
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -305,6 +556,36 @@ namespace Conflux.Data.Migrations
                     b.HasOne("Conflux.Domain.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectProjectDescription", b =>
+                {
+                    b.HasOne("Conflux.Domain.ProjectDescription", null)
+                        .WithMany()
+                        .HasForeignKey("DescriptionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectProjectTitle", b =>
+                {
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Conflux.Domain.ProjectTitle", null)
+                        .WithMany()
+                        .HasForeignKey("TitlesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -324,9 +605,9 @@ namespace Conflux.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("RoleUser", b =>
+            modelBuilder.Entity("UserUserRole", b =>
                 {
-                    b.HasOne("Conflux.Domain.Role", null)
+                    b.HasOne("Conflux.Domain.UserRole", null)
                         .WithMany()
                         .HasForeignKey("RolesId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -339,11 +620,28 @@ namespace Conflux.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Conflux.Domain.Contributor", b =>
+                {
+                    b.Navigation("Positions");
+
+                    b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+                {
+                    b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.Product", b =>
+                {
+                    b.Navigation("Categories");
+                });
+
             modelBuilder.Entity("Conflux.Domain.Project", b =>
                 {
                     b.Navigation("Contributors");
 
-                    b.Navigation("Parties");
+                    b.Navigation("Organisations");
                 });
 #pragma warning restore 612, 618
         }

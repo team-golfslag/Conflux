@@ -3,16 +3,12 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations;
+using Conflux.Domain;
+using RAiD.Net.Domain;
 
-namespace Conflux.Domain;
+namespace Conflux.Integrations.RAiD;
 
-/// <summary>
-/// Represents a party.
-/// </summary>
-public class Party
+public interface IProjectMapperService
 {
-    [Key] public Guid Id { get; set; }
-
-    [Required] public required string Name { get; set; }
+    public RAiDCreateRequest MapProjectCreationRequest(Project project);
 }

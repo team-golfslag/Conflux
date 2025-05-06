@@ -20,6 +20,7 @@
         <PackageReference Include="NSwag.AspNetCore" Version="14.3.0"/>
         <PackageReference Include="NSwag.CodeGeneration.TypeScript" Version="14.3.0"/>
         <PackageReference Include="oqo0.SwaggerThemes" Version="1.4.3"/>
+        <PackageReference Include="RAiD.Net" Version="1.2.2"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -32,6 +33,7 @@
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
         <ProjectReference Include="..\Conflux.Domain.Logic\Conflux.Domain.Logic.csproj"/>
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj"/>
+        <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

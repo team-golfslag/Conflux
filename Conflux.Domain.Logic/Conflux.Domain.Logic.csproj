@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
+        <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj"/>
         <ProjectReference Include="..\Conflux.Integrations.SRAM\Conflux.Integrations.SRAM.csproj"/>
     </ItemGroup>
 

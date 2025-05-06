@@ -3,20 +3,17 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs;
+namespace Conflux.Domain.Logic.DTOs.Patch;
 
 /// <summary>
-/// The Data Transfer Object for updating a <see cref="Project" /> with PATCH.
+/// The Data Transfer Object for patching a <see cref="Contributor" /> with PATCH.
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
-public class ProjectPatchDTO
+public class ContributorPatchDTO
 #pragma warning restore S101
 {
-    public string? Title { get; init; }
-
-    public string? Description { get; init; }
-
-    public DateTime? StartDate { get; init; }
-
-    public DateTime? EndDate { get; init; }
+    public List<ContributorRoleType>? Roles { get; init; }
+    public List<ContributorPositionDTO>? Positions { get; init; }
+    public bool? Leader { get; init; }
+    public bool? Contact { get; init; }
 }

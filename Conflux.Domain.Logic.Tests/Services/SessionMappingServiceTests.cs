@@ -49,7 +49,7 @@ public class SessionMappingServiceTests
         mockSCIMApiClient.Verify(c => c.GetSCIMMemberByExternalId(It.IsAny<string>()), Times.Never);
         Assert.Empty(context.Projects);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class SessionMappingServiceTests
         // Assert
         Assert.Empty(context.Projects);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -113,22 +113,22 @@ public class SessionMappingServiceTests
             Created = DateTime.UtcNow,
             Urn = "urn:test:group",
             ExternalId = "ext-id-1",
-            Members = new(),
+            Members = [],
         };
 
         UserSession userSession = new()
         {
             Email = "test@example.com",
             SRAMId = "sram-id-1",
-            Collaborations = new()
-            {
+            Collaborations =
+            [
                 new()
                 {
                     Organization = "test-org",
                     CollaborationGroup = collaborationGroup,
-                    Groups = new(),
+                    Groups = [],
                 },
-            },
+            ],
         };
 
         // Act
@@ -136,10 +136,16 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        Assert.Equal("Test Group", context.Projects.First().Title);
-        Assert.Equal("Test Description", context.Projects.First().Description);
+        Project project = await context.Projects
+            .Include(project => project.Titles)
+            .Include(project => project.Descriptions)
+            .FirstAsync();
+        Assert.Single(project.Titles);
+        Assert.Equal("Test Group", project.Titles[0].Text);
+        Assert.Single(project.Descriptions);
+        Assert.Equal("Test Description", project.Descriptions[0].Text);
         Assert.Empty(context.Users);
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -220,17 +226,19 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        Assert.Equal("Test Group", context.Projects.First().Title);
+        Project project = await context.Projects.Include(project => project.Titles).FirstAsync();
+        Assert.Single(project.Titles);
+        Assert.Equal("Test Group", project.Titles[0].Text);
 
         Assert.Single(context.Users);
-        User user = context.Users.First();
+        User user = await context.Users.FirstAsync();
         Assert.Equal("Test User", user.Name);
         Assert.Equal("Test", user.GivenName);
         Assert.Equal("User", user.FamilyName);
         Assert.Equal("test@example.com", user.Email);
         Assert.Equal("sram-id-1", user.SRAMId);
 
-        Assert.Empty(context.Roles);
+        Assert.Empty(context.UserRoles);
     }
 
     [Fact]
@@ -330,12 +338,12 @@ public class SessionMappingServiceTests
         // Assert
         Assert.Single(context.Projects);
         Assert.Single(context.Users);
-        Assert.Single(context.Roles);
+        Assert.Single(context.UserRoles);
 
-        Role role = context.Roles.First();
-        Assert.Equal("Role Group", role.Name);
-        Assert.Equal("Role Description", role.Description);
-        Assert.Equal("role:urn:1", role.Urn);
+        UserRole userRole = await context.UserRoles.FirstAsync();
+        Assert.Equal("Role Group", userRole.Name);
+        Assert.Equal("Role Description", userRole.Description);
+        Assert.Equal("role:urn:1", userRole.Urn);
     }
 
     [Fact]
@@ -354,13 +362,35 @@ public class SessionMappingServiceTests
 
         ConfluxContext context = new(options);
 
+        DateTime startDate = DateTime.UtcNow.AddDays(-10);
+        Guid projectId = Guid.NewGuid();
         // Add existing project
         context.Projects.Add(new()
         {
+            Id = projectId,
             SCIMId = "group-id-1",
-            Title = "Old Title",
-            Description = "Old Description",
-            StartDate = DateTime.UtcNow.AddDays(-10),
+            Titles =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Old Title",
+                    Type = TitleType.Primary,
+                    StartDate = startDate,
+                    EndDate = null,
+                },
+            ],
+            Descriptions =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Old Description",
+                    Type = DescriptionType.Primary,
+                    Language = Language.ENGLISH,
+                },
+            ],
+            StartDate = startDate,
         });
         await context.SaveChangesAsync();
 
@@ -398,9 +428,14 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Projects);
-        Project project = context.Projects.First();
-        Assert.Equal("New Title", project.Title);
-        Assert.Equal("New Description", project.Description);
+        Project project = await context.Projects
+            .Include(project => project.Titles)
+            .Include(project => project.Descriptions)
+            .FirstAsync();
+        Assert.Single(project.Titles);
+        Assert.Equal("New Title", project.Titles[0].Text);
+        Assert.Single(project.Descriptions);
+        Assert.Equal("New Description", project.Descriptions[0].Text);
     }
 
     [Fact]
@@ -577,7 +612,7 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Users);
-        User user = context.Users.First();
+        User user = await context.Users.FirstAsync();
         Assert.Equal("sram-id-1", user.SRAMId);
     }
 
@@ -668,7 +703,7 @@ public class SessionMappingServiceTests
 
         // Assert
         Assert.Single(context.Users);
-        User user = context.Users.First();
+        User user = await context.Users.FirstAsync();
         Assert.Null(user.SRAMId);
     }
 }

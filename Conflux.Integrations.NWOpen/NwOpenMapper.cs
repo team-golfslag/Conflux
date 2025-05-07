@@ -14,8 +14,9 @@ namespace Conflux.Integrations.NWOpen;
 
 public static class NwOpenMapper
 {
-    private static List<Party> Parties { get; } = [];
+    private static List<Organisation> Organisations { get; } = [];
     private static List<Contributor> Contributors { get; } = [];
+    private static List<Person> People { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
 
@@ -23,15 +24,19 @@ public static class NwOpenMapper
     /// Maps a list of NWOpen projects to domain projects
     /// </summary>
     /// <param name="projects">The list of NWOpen projects to be mapped</param>
-    /// <returns>A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and parties</returns>
+    /// <returns>
+    /// A <see cref="SeedData" /> object with the mapped projects and their connected people, products, and
+    /// organisations
+    /// </returns>
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
         foreach (NwOpenProject project in projects) MapProject(project);
 
         return new()
         {
-            Parties = Parties,
+            Organisations = Organisations,
             Contributors = Contributors,
+            People = People,
             Products = Products,
             Projects = Projects,
         };
@@ -43,19 +48,50 @@ public static class NwOpenMapper
     /// <param name="project">The NWOpen project to map</param>
     private static void MapProject(NwOpenProject project)
     {
-        DateTime? startDate = project.StartDate.HasValue
+        DateTime startDate = project.StartDate.HasValue
             ? DateTime.SpecifyKind(project.StartDate.Value, DateTimeKind.Utc)
-            : null;
+            : DateTime.UtcNow;
 
         DateTime? endDate = project.EndDate.HasValue
             ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
             : null;
 
+        Guid projectId = Guid.NewGuid();
+
+        List<ProjectDescription> descriptions = new();
+        if (project.SummaryNl != null)
+            descriptions.Add(new()
+            {
+                ProjectId = projectId,
+                Text = project.SummaryNl,
+                Type = DescriptionType.Primary,
+                Language = Language.DUTCH,
+            });
+        if (project.SummaryEn != null)
+            descriptions.Add(new()
+            {
+                ProjectId = projectId,
+                Text = project.SummaryEn,
+                Language = Language.ENGLISH,
+                Type = DescriptionType.Alternative,
+            });
 
         Project mappedProject = new()
         {
-            Title = project.Title!,
-            Description = project.SummaryNl,
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = project.Title ?? "No Title",
+                    Type = TitleType.Primary,
+                    Language = Language.DUTCH,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                },
+            ],
+            Descriptions = descriptions,
             StartDate = startDate,
             EndDate = endDate,
             SCIMId = "SCIM",
@@ -66,7 +102,7 @@ public static class NwOpenMapper
         foreach (NwOpenProjectMember projectMember in project.ProjectMembers ?? [])
         {
             MapContributor(mappedProject, projectMember);
-            MapParty(mappedProject, projectMember);
+            MapOrganisation(mappedProject, projectMember);
         }
 
         Projects.Add(mappedProject);
@@ -86,11 +122,23 @@ public static class NwOpenMapper
             return;
         }
 
+        Guid productId = Guid.NewGuid();
+
         Product mappedProduct = new()
         {
-            Id = Guid.NewGuid(),
+            Id = productId,
             Title = product.Title ?? "No title",
+            Schema = ProductSchema.Doi,
             Url = product.UrlOpenAccess,
+            Type = ProductType.DataPaper,
+            Categories =
+            [
+                new()
+                {
+                    ProductId = productId,
+                    Type = ProductCategoryType.Input,
+                },
+            ],
         };
 
         project.Products.Add(mappedProduct);
@@ -104,36 +152,107 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapContributor(Project project, NwOpenProjectMember projectMember)
     {
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            GivenName = projectMember.FirstName,
+            FamilyName = projectMember.LastName,
+            ORCiD = "https://orcid.org/0009-0003-2462-3499",
+        };
         Contributor contributor = new()
         {
-            Id = Guid.NewGuid(),
-            Name = $"{projectMember.FirstName} {projectMember.LastName}",
+            PersonId = personId,
+            ProjectId = project.Id,
+            Roles =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = project.Id,
+                    RoleType = ContributorRoleType.Conceptualization,
+                },
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = project.Id,
+                    RoleType = ContributorRoleType.Methodology,
+                },
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = project.Id,
+                    RoleType = ContributorRoleType.Validation,
+                },
+            ],
+            Positions =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = project.Id,
+                    Position = ContributorPositionType.CoInvestigator,
+                    StartDate = project.StartDate,
+                    EndDate = project.EndDate,
+                },
+            ],
+            Leader = true,
+            Contact = true,
         };
+        People.Add(person);
         Contributors.Add(contributor);
         project.Contributors.Add(contributor);
     }
 
     /// <summary>
-    /// Maps a project member's organisation to a party.
+    /// Maps a project member's organisation to a organisation.
     /// </summary>
-    /// <param name="project">The project to which the party is added</param>
-    /// <param name="projectMember">The member from which the party is retrieved</param>
-    private static void MapParty(Project project, NwOpenProjectMember projectMember)
+    /// <param name="project">The project to which the organisation is added</param>
+    /// <param name="projectMember">The member from which the organisation is retrieved</param>
+    private static void MapOrganisation(Project project, NwOpenProjectMember projectMember)
     {
-        var parties = Parties.Where(p => p.Name == projectMember.Organisation).ToList();
-        if (parties.Count != 0)
+        var organisations = Organisations.Where(p => p.Name == projectMember.Organisation).ToList();
+        if (organisations.Count != 0)
         {
-            project.Parties.Add(parties[0]);
+            project.Organisations.Add(organisations[0]);
             return;
         }
 
-        Party mappedParty = new()
+        Guid organisationId = Guid.NewGuid();
+
+        Organisation mappedOrganisation = new()
         {
-            Id = Guid.NewGuid(),
+            Id = organisationId,
+            RORId = "https://ror.org/04pp8hn57",
             Name = projectMember.Organisation!,
+            Roles =
+            [
+                new()
+                {
+                    OrganisationId = organisationId,
+                    Role = OrganisationRoleType.Contractor,
+                    StartDate = project.StartDate,
+                    EndDate = project.EndDate,
+                },
+                new()
+                {
+                    OrganisationId = Guid.NewGuid(),
+                    Role = OrganisationRoleType.Funder,
+                    StartDate = project.StartDate,
+                    EndDate = project.EndDate,
+                },
+                new()
+                {
+                    OrganisationId = Guid.NewGuid(),
+                    Role = OrganisationRoleType.Facility,
+                    StartDate = project.StartDate,
+                    EndDate = project.EndDate,
+                },
+            ],
         };
 
-        project.Parties.Add(mappedParty);
-        Parties.Add(mappedParty);
+        project.Organisations.Add(mappedOrganisation);
+        Organisations.Add(mappedOrganisation);
     }
 }

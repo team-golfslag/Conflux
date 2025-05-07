@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
+using Conflux.Domain;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -23,8 +24,8 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             // Remove the existing ConfluxContext registration
-            ServiceDescriptor? descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ConfluxContext>));
+            ServiceDescriptor? descriptor =
+                services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ConfluxContext>));
             if (descriptor != null)
                 services.Remove(descriptor);
 
@@ -49,9 +50,28 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             db.Projects.Add(new()
             {
                 Id = new("00000000-0000-0000-0000-000000000001"),
-                Title = "Test Project",
-                Description = "This is a test project.",
-                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Titles =
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000001"),
+                        Id = Guid.NewGuid(),
+                        Text = "Test Project",
+                        Type = TitleType.Primary,
+                        StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    },
+                ],
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000001"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
+                StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",
             });
@@ -60,20 +80,67 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             db.Projects.Add(new()
             {
                 Id = new("00000000-0000-0000-0000-000000000002"),
-                Title = "Test Project 2",
-                Description = "This is a test project.",
-                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Titles =
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000002"),
+                        Id = Guid.NewGuid(),
+                        Text = "Test Project 2",
+                        Type = TitleType.Primary,
+                        StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    },
+                ],
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000002"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
+                StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",
             });
             db.Projects.Add(new()
             {
                 Id = new("00000000-0000-0000-0000-000000000003"),
-                Title = "Test Project 3",
-                Description = "This is a test project.",
-                StartDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Titles =
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000003"),
+                        Id = Guid.NewGuid(),
+                        Text = "Test Project 3",
+                        Type = TitleType.Primary,
+                        StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    },
+                ],
+                Descriptions = 
+                [
+                    new()
+                    {
+                        ProjectId = new("00000000-0000-0000-0000-000000000003"),
+                        Text = "This is a test project.",
+                        Type = DescriptionType.Primary,
+                        Language = Language.ENGLISH,
+                    },
+                ],
+                StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                 SCIMId = "SCIM",
+            });
+
+            db.People.Add(new()
+            {
+                Id = new("00000000-0000-0000-0000-000000000001"),
+                Name = "John Doe",
+                GivenName = "John",
+                FamilyName = "Doe",
+                Email = "john@doe.nl",
             });
 
             db.SaveChanges();

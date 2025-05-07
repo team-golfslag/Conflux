@@ -4,12 +4,14 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Conflux.Integrations.NWOpen;
+using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -17,10 +19,12 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using RAiD.Net;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
 
@@ -62,6 +66,7 @@ public class Program
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
             options.JsonSerializerOptions.WriteIndented = true;
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
         builder.Services.AddEndpointsApiExplorer();
@@ -78,11 +83,22 @@ public class Program
         });
 
         builder.Services.AddHttpContextAccessor();
+        
+        builder.Services.AddScoped<IContributorsService, ContributorsService>();
+        builder.Services.AddScoped<IPeopleService, PeopleService>();
+        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
+        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
+        builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
+        builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
+        builder.Services.AddScoped<ProjectsService>();
+        
         await ConfigureSRAMServices(builder, featureManager);
+        await ConfigureRAiDServices(builder, featureManager);
 
         if (!await featureManager.IsEnabledAsync("ReverseProxy"))
             return;
-        
+
         // Configure Forwarded Headers options
         // This helps the application correctly determine the client's scheme (http/https) and host
         // when running behind a reverse proxy (like Docker, Nginx, etc.)
@@ -133,12 +149,35 @@ public class Program
             scimClient.SetBearerToken(secret!);
             return scimClient;
         });
+    }
 
-        builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
-        builder.Services.AddScoped<IUserSessionService, UserSessionService>();
-        builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
-        builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
-        builder.Services.AddScoped<ProjectsService>();
+    private static async Task ConfigureRAiDServices(WebApplicationBuilder builder,
+        IVariantFeatureManager featureManager)
+    {
+        builder.Services.Configure<RAiDServiceOptions>(
+            builder.Configuration.GetSection("RAiD"));
+
+        builder.Services.AddHttpClient("RAiD");
+
+        bool raidEnabled = await featureManager.IsEnabledAsync("RAiDAuthentication");
+
+        builder.Services.AddScoped<IRAiDService>(provider =>
+        {
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>()
+                .CreateClient("RAiD");
+            var optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
+            var logger = provider.GetRequiredService<ILogger<RAiDService>>();
+
+            RAiDService raidSvc = new(httpClient, optionsAccessor, logger);
+
+            string? token = Environment.GetEnvironmentVariable("RAID_BEARER_TOKEN");
+            if (string.IsNullOrWhiteSpace(token) && raidEnabled)
+                throw new InvalidOperationException(
+                    "RAID_BEARER_TOKEN environment variable is not set");
+
+            raidSvc.SetBearerToken(token!);
+            return raidSvc;
+        });
     }
 
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,
@@ -272,7 +311,7 @@ public class Program
             app.UseSwaggerUi(c =>
             {
                 c.DocumentTitle = "Conflux API";
-                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.UniversalDark);
+                c.CustomInlineStyles = SwaggerTheme.GetSwaggerThemeCss(Theme.Monokai);
             });
         }
 
@@ -283,14 +322,17 @@ public class Program
                 Exception? exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
                 switch (exception)
                 {
-                    case ProjectNotFoundException or ContributorNotFoundException:
+                    case ProjectNotFoundException
+                        or ContributorNotFoundException
+                        or PersonNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
                             Error = exception.Message,
                         });
                         break;
-                    case ContributorAlreadyAddedToProjectException:
+                    case PersonHasContributorsException
+                        or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -341,9 +383,12 @@ public class Program
         if (context.Database.IsRelational())
             await context.Database.MigrateAsync();
 
-        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync())
+        if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
 
+        // Remove existing data
+        await context.Database.EnsureDeletedAsync();
+        
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 
@@ -352,8 +397,9 @@ public class Program
             context.Users.Add(devUser);
         await context.Contributors.AddRangeAsync(seedData.Contributors);
         await context.Products.AddRangeAsync(seedData.Products);
-        await context.Parties.AddRangeAsync(seedData.Parties);
+        await context.Organisations.AddRangeAsync(seedData.Organisations);
         await context.Projects.AddRangeAsync(seedData.Projects);
+        await context.People.AddRangeAsync(seedData.People);
 
         await context.SaveChangesAsync();
     }

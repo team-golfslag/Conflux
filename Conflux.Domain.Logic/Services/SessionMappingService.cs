@@ -26,6 +26,7 @@ public class SessionMappingService : ISessionMappingService
     /// </summary>
     /// <param name="context">The Conflux context.</param>
     /// <param name="sramApiClient">The API client which is used to retrieve all user information.</param>
+    /// <param name="featureManager">The feature manager.</param>
     public SessionMappingService(ConfluxContext context, ISCIMApiClient sramApiClient,
         IVariantFeatureManager featureManager)
     {
@@ -69,19 +70,56 @@ public class SessionMappingService : ISessionMappingService
                 await _context.Projects.SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
             if (existingCollaboration is null)
             {
+                Guid projectId = Guid.NewGuid();
                 // We only add the project, the members are added in the next step
                 _context.Projects.Add(new()
                 {
+                    Id = projectId,
                     SCIMId = group.SCIMId,
-                    Title = group.DisplayName,
-                    Description = group.Description,
+                    Titles =
+                    [
+                        new()
+                        {
+                            ProjectId = projectId,
+                            Text = group.DisplayName,
+                            Type = TitleType.Primary,
+                            StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
+                            EndDate = null,
+                        },
+                    ],
+                    Descriptions = group.Description == null ? [] : [
+                        new()
+                        {
+                            ProjectId = projectId,
+                            Text = group.Description,
+                            Type = DescriptionType.Primary,
+                        },
+                    ],
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
             else
             {
-                existingCollaboration.Title = group.DisplayName;
-                existingCollaboration.Description = group.Description;
+                existingCollaboration.Titles =
+                [
+                    new()
+                    {
+                        ProjectId = existingCollaboration.Id,
+                        Text = group.DisplayName,
+                        Type = TitleType.Primary,
+                        StartDate = existingCollaboration.StartDate,
+                        EndDate = null,
+                    },
+                ];
+                existingCollaboration.Descriptions = group.Description == null ? [] : [
+                new()
+                {
+                    ProjectId = existingCollaboration.Id,
+                    Text = group.Description,
+                    Type = DescriptionType.Primary,
+                    Language = null,
+                }
+                ];
             }
         }
     }
@@ -127,7 +165,7 @@ public class SessionMappingService : ISessionMappingService
     }
 
     /// <summary>
-    /// Collects the <see cref="Role" />s which are present in the Projects in the user session,
+    /// Collects the <see cref="UserRole" />s which are present in the Projects in the user session,
     /// and adds the to the <see cref="ConfluxContext" />.
     /// </summary>
     /// <param name="userSession">The user session to collect the roles from.</param>
@@ -138,7 +176,7 @@ public class SessionMappingService : ISessionMappingService
             Project? projects = await _context.Projects
                 .SingleOrDefaultAsync(p => p.SCIMId == collaboration.CollaborationGroup.SCIMId);
             if (projects is null) continue;
-            foreach (Role newRole in collaboration.Groups.Select(group => new Role
+            foreach (UserRole newRole in collaboration.Groups.Select(group => new UserRole
                 {
                     Id = Guid.NewGuid(),
                     ProjectId = projects.Id,
@@ -148,10 +186,10 @@ public class SessionMappingService : ISessionMappingService
                     Urn = group.Urn,
                 }))
             {
-                Role? existingRole = await _context.Roles
+                UserRole? existingRole = await _context.UserRoles
                     .SingleOrDefaultAsync(r => r.Urn == newRole.Urn);
                 if (existingRole is not null) continue;
-                _context.Roles.Add(newRole);
+                _context.UserRoles.Add(newRole);
             }
 
             await _context.SaveChangesAsync();
@@ -203,7 +241,7 @@ public class SessionMappingService : ISessionMappingService
 
                 foreach (var roles in users.Select(role => role.Roles))
                 {
-                    Role? role = await _context.Roles
+                    UserRole? role = await _context.UserRoles
                         .SingleOrDefaultAsync(r => r.Urn == group.Urn);
                     if (role is null) continue;
                     if (roles.Contains(role)) continue;

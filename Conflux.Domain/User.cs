@@ -23,7 +23,7 @@ public record User
 
     [Required] public required string Name { get; set; }
 
-    public List<Role> Roles { get; set; } = [];
+    public List<UserRole> Roles { get; set; } = [];
 
     public string? GivenName { get; set; }
     public string? FamilyName { get; set; }

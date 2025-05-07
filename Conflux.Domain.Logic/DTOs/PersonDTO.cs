@@ -11,19 +11,27 @@ namespace Conflux.Domain.Logic.DTOs;
 /// The Data Transfer Object for <see cref="Contributor" />
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
-public class ContributorPostDTO
+public class PersonDTO
 #pragma warning restore S101
 {
     [Required] public required string Name { get; init; }
+    public string? GivenName { get; init; }
+    public string? FamilyName { get; init; }
+    public string? Email { get; init; }
+    public string? ORCiD { get; init; }
 
     /// <summary>
-    /// Converts a <see cref="ContributorPostDTO" /> to a <see cref="Contributor" />
+    /// Converts a <see cref="PersonDTO" /> to a <see cref="Person" />
     /// </summary>
-    /// <returns>The converted <see cref="Contributor" /></returns>
-    public Contributor ToContributor() =>
+    /// <returns>The converted <see cref="Person" /></returns>
+    public Person ToPerson() =>
         new()
         {
             Id = Guid.NewGuid(),
             Name = Name,
+            GivenName = GivenName,
+            FamilyName = FamilyName,
+            Email = Email,
+            ORCiD = ORCiD,
         };
 }

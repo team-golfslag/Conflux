@@ -5,198 +5,217 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class ContributorsServiceTests : IAsyncLifetime
+public class PeopleServiceTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context;
+    private ConfluxContext _context = null!;
+    private PeopleService _service = null!;
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
+        // Use a new in-memory database for each test run
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
-        _context = context;
+        _context = new(options);
+        await _context.Database.EnsureCreatedAsync();
+
+        // seed some persons
+        _context.People.AddRange(
+            new Person
+            {
+                Id = Guid.NewGuid(),
+                Name = "John Doe",
+                GivenName = "John",
+                FamilyName = "Doe",
+                Email = "john@example.com",
+            },
+            new Person
+            {
+                Id = Guid.NewGuid(),
+                Name = "Jane Smith",
+                GivenName = "Jane",
+                FamilyName = "Smith",
+                Email = "jane@example.com",
+            },
+            new Person
+            {
+                Id = Guid.NewGuid(),
+                Name = "Bob Johnson",
+                GivenName = "Bob",
+                FamilyName = "Johnson",
+                Email = "bob@example.com",
+            }
+        );
+        await _context.SaveChangesAsync();
+
+        _service = new(_context);
     }
 
     public async Task DisposeAsync()
     {
-        await _postgres.DisposeAsync();
+        // clean up
+        await _context.Database.EnsureDeletedAsync();
+        await _context.DisposeAsync();
     }
 
     [Fact]
-    public async Task CreateContributorAsync_ShouldCreateContributor()
+    public async Task GetPersonsByQueryAsync_WithNullQuery_ReturnsAllPeople()
     {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
+        var result = await _service.GetPersonsByQueryAsync(null);
 
-        ContributorPostDTO dto = new()
-        {
-            Name = "John Doe",
-        };
-
-        // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(dto);
-
-        // Assert
-        Assert.NotNull(contributor);
-        Assert.Single(await _context.Contributors.Where(p => p.Id == contributor.Id).ToListAsync());
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, p => p.Name == "John Doe");
+        Assert.Contains(result, p => p.Name == "Jane Smith");
+        Assert.Contains(result, p => p.Name == "Bob Johnson");
     }
 
     [Fact]
-    public async Task GetContributorById_ShouldReturnContributor_WhenContributorExists()
+    public async Task GetPersonsByQueryAsync_WithEmptyQuery_ReturnsAllPeople()
     {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
+        var result = await _service.GetPersonsByQueryAsync(string.Empty);
+        Assert.Equal(3, result.Count);
+    }
 
-        Guid contributorId = Guid.NewGuid();
+    [Fact]
+    public async Task GetPersonsByQueryAsync_WithValidQuery_ReturnsFilteredPeople()
+    {
+        var result = await _service.GetPersonsByQueryAsync("John");
 
-        Contributor testContributor = new()
+        // should match both "John Doe" and "Bob Johnson"
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.Name == "John Doe");
+        Assert.Contains(result, p => p.Name == "Bob Johnson");
+    }
+
+    [Fact]
+    public async Task GetPersonByIdAsync_WithValidId_ReturnsPerson()
+    {
+        Person target = await _context.People.FirstAsync(p => p.Name == "Jane Smith");
+
+        Person result = await _service.GetPersonByIdAsync(target.Id);
+
+        Assert.Equal(target.Id, result.Id);
+        Assert.Equal("Jane Smith", result.Name);
+    }
+
+    [Fact]
+    public async Task GetPersonByIdAsync_WithInvalidId_ThrowsPersonNotFoundException()
+    {
+        await Assert.ThrowsAsync<PersonNotFoundException>(() => _service.GetPersonByIdAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task CreatePersonAsync_AddsPersonToDatabase()
+    {
+        PersonDTO dto = new()
         {
-            Id = contributorId,
-            Name = "Test Contributor",
+            Name = "Alice Wonderland",
+            GivenName = "Alice",
+            FamilyName = "Wonderland",
+            Email = "alice@example.com",
         };
 
-        _context.Contributors.Add(testContributor);
+        Person created = await _service.CreatePersonAsync(dto);
+
+        Assert.NotEqual(Guid.Empty, created.Id);
+        Assert.Equal(dto.Name, created.Name);
+
+        // Verify it persisted
+        Person? fetched = await _context.People.FindAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal("Alice Wonderland", fetched!.Name);
+    }
+
+    [Fact]
+    public async Task UpdatePersonAsync_WithValidId_UpdatesPerson()
+    {
+        Person target = await _context.People.FirstAsync();
+        PersonDTO dto = new()
+        {
+            Name = "Updated",
+            GivenName = "Up",
+            FamilyName = "Date",
+            Email = "updated@example.com",
+        };
+
+        Person updated = await _service.UpdatePersonAsync(target.Id, dto);
+
+        Assert.Equal(dto.Name, updated.Name);
+        Assert.Equal(dto.Email, updated.Email);
+
+        // persisted?
+        Person? persisted = await _context.People.FindAsync(target.Id);
+        Assert.Equal("Updated", persisted!.Name);
+    }
+
+    [Fact]
+    public async Task PatchPersonAsync_WithValidId_PatchesEmailOnly()
+    {
+        Person target = await _context.People.FirstAsync();
+        string originalName = target.Name;
+
+        PersonPatchDTO patch = new()
+        {
+            Email = "patched@example.com",
+        };
+
+        Person patched = await _service.PatchPersonAsync(target.Id, patch);
+
+        Assert.Equal(originalName, patched.Name);
+        Assert.Equal("patched@example.com", patched.Email);
+
+        Person? persisted = await _context.People.FindAsync(target.Id);
+        Assert.Equal("patched@example.com", persisted!.Email);
+    }
+
+    [Fact]
+    public async Task DeletePersonAsync_WithNoContributors_DeletesPerson()
+    {
+        // pick a seeded person
+        Person target = await _context.People.FirstAsync();
+
+        await _service.DeletePersonAsync(target.Id);
+
+        bool exists = await _context.People.AnyAsync(p => p.Id == target.Id);
+        Assert.False(exists);
+    }
+
+    [Fact]
+    public async Task DeletePersonAsync_WithContributors_ThrowsPersonHasContributorsException()
+    {
+        // seed a new person + a contributor for them
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "X Y",
+        };
+        await _context.People.AddAsync(person);
+
+        Project project = new()
+        {
+            Id = Guid.NewGuid(),
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(1),
+        };
+        await _context.Projects.AddAsync(project);
+
+        Contributor contrib = new()
+        {
+            PersonId = person.Id,
+            ProjectId = project.Id,
+        };
+        await _context.Contributors.AddAsync(contrib);
         await _context.SaveChangesAsync();
 
-        // Act
-        Contributor contributor = await contributorsService.GetContributorByIdAsync(contributorId);
-
-        // Assert
-        Assert.NotNull(contributor);
-        Assert.Equal(testContributor.Name, contributor.Name);
-    }
-
-    [Fact]
-    public async Task GetContributorById_ShouldReturnNotFound_WhenContributorDoesNotExist()
-    {
-        // Arrange
-        ContributorsService contributorService = new(_context);
-
-        Guid contributorId = Guid.NewGuid();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
-            contributorService.GetContributorByIdAsync(contributorId));
-    }
-
-    [Fact]
-    public async Task CreateContributor_ShouldCreateContributor()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        ContributorPostDTO testContributor = new()
-        {
-            Name = "Test Contributor",
-        };
-
-        // Act
-        Contributor contributor = await contributorsService.CreateContributorAsync(testContributor);
-        await _context.SaveChangesAsync();
-        Contributor retrievedContributor = await _context.Contributors.SingleAsync(p => p.Id == contributor.Id);
-
-        // Assert
-        Assert.NotNull(contributor);
-        Assert.Equal(retrievedContributor.Name, contributor.Name);
-        Assert.Equal(retrievedContributor.Id, contributor.Id);
-        Assert.Equal(testContributor.Name, contributor.Name);
-    }
-
-    [Fact]
-    public async Task UpdateContributorAsync_ShouldUpdateName()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
-        Contributor testContributor = new()
-        {
-            Id = contributorId,
-            Name = "Original Name",
-        };
-        _context.Contributors.Add(testContributor);
-        await _context.SaveChangesAsync();
-
-        ContributorPutDTO updateDto = new()
-        {
-            Name = "Updated Name",
-        };
-
-        // Act
-        Contributor updatedContributor = await contributorsService.UpdateContributorAsync(contributorId, updateDto);
-
-        // Assert
-        Assert.NotNull(updatedContributor);
-        Assert.Equal("Updated Name", updatedContributor.Name);
-        Assert.Equal(contributorId, updatedContributor.Id);
-    }
-
-    [Fact]
-    public async Task PatchContributorAsync_ShouldUpdateName_WhenNameProvided()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
-        Contributor contributor = new()
-        {
-            Id = contributorId,
-            Name = "Original Name",
-        };
-        _context.Contributors.Add(contributor);
-        await _context.SaveChangesAsync();
-
-        // Create a ContributorPatchDTO with a new name
-        ContributorPatchDTO patchDto = new()
-        {
-            Name = "Patched Name",
-        };
-
-        // Act
-        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedContributor);
-        Assert.Equal("Patched Name", patchedContributor.Name);
-        Assert.Equal(contributorId, patchedContributor.Id);
-    }
-
-    [Fact]
-    public async Task PatchContributorAsync_ShouldNotChangeName_WhenNameIsNull()
-    {
-        // Arrange
-        ContributorsService contributorsService = new(_context);
-        Guid contributorId = Guid.NewGuid();
-
-        Contributor testContributor = new()
-        {
-            Id = contributorId,
-            Name = "Original Name",
-        };
-        _context.Contributors.Add(testContributor);
-        await _context.SaveChangesAsync();
-
-        ContributorPatchDTO patchDto = new()
-        {
-            Name = null,
-        };
-
-        // Act
-        Contributor patchedContributor = await contributorsService.PatchContributorAsync(contributorId, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedContributor);
-        Assert.Equal("Original Name", patchedContributor.Name);
-        Assert.Equal(contributorId, patchedContributor.Id);
+        await Assert.ThrowsAsync<PersonHasContributorsException>(() => _service.DeletePersonAsync(person.Id));
     }
 }

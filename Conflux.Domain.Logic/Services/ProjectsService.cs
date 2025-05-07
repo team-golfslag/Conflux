@@ -1,6 +1,6 @@
 // This program has been developed by students from the bachelor Computer Science at Utrecht
 // University within the Software Project course.
-// 
+//
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
@@ -39,7 +39,7 @@ public class ProjectsService
     /// </summary>
     /// <returns>A list of projects that the current user has access to</returns>
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    private async Task<List<Project>> GetAvailableProjects()
+    private async Task<List<ProjectDTO>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -57,6 +57,7 @@ public class ProjectsService
                 p.Products,
                 p.Contributors,
                 p.Titles,
+                p.Descriptions,
                 Users = p.Users.Select(person => new
                 {
                     Person = person,
@@ -75,6 +76,7 @@ public class ProjectsService
             newProject.Products = project.Products;
             newProject.Contributors = project.Contributors;
             newProject.Titles = project.Titles;
+            newProject.Descriptions = project.Descriptions;
             newProject.Users = project.Users.Select(p => p.Person with
             {
                 Roles = p.Roles.ToList(),
@@ -83,7 +85,7 @@ public class ProjectsService
             projects.Add(newProject);
         }
 
-        return projects;
+        return projects.Select(MapToProjectDTO).ToList();
     }
 
     /// <summary>
@@ -115,12 +117,16 @@ public class ProjectsService
     /// Gets a project by its GUID.
     /// </summary>
     /// <param name="id">The GUID of the project</param>
-    /// <returns>The project</returns>
+    /// <returns>The project DTO</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<Project> GetProjectByIdAsync(Guid id) =>
-        (await GetAvailableProjects())
-        .FirstOrDefault(p => p.Id == id)
-        ?? throw new ProjectNotFoundException(id);
+    public async Task<ProjectDTO> GetProjectByIdAsync(Guid id)
+    {
+        var project = (await GetAvailableProjects())
+            .FirstOrDefault(p => p.Id == id)
+            ?? throw new ProjectNotFoundException(id);
+        
+        return project;
+    }
 
     /// <summary>
     /// Gets all projects whose title or description contain the query (case-insensitive),
@@ -130,10 +136,10 @@ public class ProjectsService
     /// The <see cref="ProjectQueryDTO" /> that contains the query term, filters and 'order by' method for
     /// the query
     /// </param>
-    /// <returns>Filtered and ordered list of projects</returns>
-    public async Task<List<Project>> GetProjectsByQueryAsync(ProjectQueryDTO dto)
+    /// <returns>Filtered and ordered list of project DTOs</returns>
+    public async Task<List<ProjectDTO>> GetProjectsByQueryAsync(ProjectQueryDTO dto)
     {
-        IEnumerable<Project> projects = await GetAvailableProjects();
+        IEnumerable<ProjectDTO> projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(dto.Query))
         {
@@ -174,7 +180,7 @@ public class ProjectsService
             OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
             _                         => projects,
         };
-
+        
         return projects.ToList();
     }
 
@@ -182,27 +188,41 @@ public class ProjectsService
     /// Creates a new project.
     /// </summary>
     /// <param name="dto">The DTO which to convert to a <see cref="Project" /></param>
-    /// <returns>The created project</returns>
-    public async Task<Project> CreateProjectAsync(ProjectDTO dto)
+    /// <returns>The created project DTO</returns>
+    public async Task<ProjectDTO> CreateProjectAsync(ProjectDTO dto)
     {
         Project project = dto.ToProject();
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
-        return project;
+        
+        // Reload the project with all relationships
+        var loadedProject = await _context.Projects
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .SingleAsync(p => p.Id == project.Id);
+            
+        return MapToProjectDTO(loadedProject);
     }
 
     /// <summary>
     /// Gets all projects.
     /// </summary>
-    /// <returns>All projects</returns>
-    public async Task<List<Project>> GetAllProjectsAsync()
+    /// <returns>All projects as DTOs</returns>
+    public async Task<List<ProjectDTO>> GetAllProjectsAsync()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
+            
         var projects = await GetAvailableProjects();
-        return projects
-            .ToList();
+        return projects.ToList();
     }
 
     /// <summary>
@@ -210,20 +230,37 @@ public class ProjectsService
     /// </summary>
     /// <param name="id">The GUID of the project</param>
     /// <param name="dto">The Data Transfer Object for the project</param>
-    /// <returns>The added project</returns>
+    /// <returns>The updated project DTO</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<Project> PutProjectAsync(Guid id, ProjectDTO dto)
+    public async Task<ProjectDTO> PutProjectAsync(Guid id, ProjectDTO dto)
     {
-        Project project = await _context.Projects.FindAsync(id)
+        Project project = await _context.Projects
+                .Include(p => p.Titles)
+                .SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         project.Titles = dto.Titles.ConvertAll(title => title.ToProjectTitle(id));
         project.Descriptions = dto.Descriptions.ConvertAll(desc => desc.ToProjectDescription(id));
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
+        project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return project;
+        
+        // Reload the project with all relationships
+        var loadedProject = await _context.Projects
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .SingleAsync(p => p.Id == id);
+            
+        return MapToProjectDTO(loadedProject);
     }
 
     /// <summary>
@@ -231,16 +268,20 @@ public class ProjectsService
     /// </summary>
     /// <param name="id">The GUID of the project</param>
     /// <param name="dto">The Data Transfer Object for the project</param>
-    /// <returns>The patched project</returns>
+    /// <returns>The patched project DTO</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<Project> PatchProjectAsync(Guid id, ProjectPatchDTO dto)
+    public async Task<ProjectDTO> PatchProjectAsync(Guid id, ProjectPatchDTO dto)
     {
-        Project project = await _context.Projects.Include(p => p.Titles)
+        Project project = await _context.Projects
+                .Include(p => p.Titles)
                 .Include(p => p.Descriptions)
-                .Include(project => project.Users)
-                .Include(project => project.Products)
-                .Include(project => project.Organisations)
-                .Include(project => project.Contributors)
+                .Include(p => p.Users)
+                .Include(p => p.Products)
+                .Include(p => p.Organisations)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Roles)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Positions)
                 .SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
@@ -252,11 +293,12 @@ public class ProjectsService
         project.Users = dto.Users?.ConvertAll(u => u.ToUser(id)) ?? project.Users;
         project.Products = dto.Products?.ConvertAll(p => p.ToProduct()) ?? project.Products;
         project.Organisations = dto.Organisations?.ConvertAll(o => o.ToOrganisation()) ?? project.Organisations;
-        project.Contributors = dto.Contributors?.ConvertAll(c => c.ToContributor(id)) ?? project.Contributors;
+        project.Contributors = dto.Contributors?.ConvertAll(c => c.ToContributor()) ?? project.Contributors;
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return project;
+        
+        return MapToProjectDTO(project);
     }
 
     public async Task MintProjectInRaidAsync(Guid id)
@@ -281,5 +323,110 @@ public class ProjectsService
             throw new RAiDException("Failed to mint project in RAiD");
 
         // TODO: Finish this
+    }
+    
+    /// <summary>
+    /// Maps a Project entity to a ProjectDTO
+    /// </summary>
+    private ProjectDTO MapToProjectDTO(Project project)
+    {
+        // Get all person IDs from contributors to fetch in one query
+        var personIds = project.Contributors.Select(c => c.PersonId).Distinct().ToList();
+        
+        // Fetch all persons in one go (to avoid N+1 query problem)
+        var persons = _context.People
+            .Where(p => personIds.Contains(p.Id))
+            .ToDictionary(p => p.Id);
+
+        var titles = project.Titles.Select(t => new ProjectTitleDTO
+        {
+            Text = t.Text,
+            Type = t.Type,
+            StartDate = t.StartDate,
+            EndDate = t.EndDate
+        }).ToList();
+        var descriptions  = project.Descriptions.Select(d => new ProjectDescriptionDTO
+        {
+            Text = d.Text,
+            Type = d.Type,
+            Language = d.Language
+        }).ToList();
+        return new ProjectDTO
+        {
+            Id = project.Id,
+            
+            PrimaryTitle = titles.FirstOrDefault(t => t.Type == TitleType.Primary),
+            Titles = titles,
+            PrimaryDescription = descriptions.FirstOrDefault(d => d.Type == DescriptionType.Primary),
+            Descriptions = project.Descriptions.Select(d => new ProjectDescriptionDTO
+            {
+                Text = d.Text,
+                Type = d.Type,
+                Language = d.Language
+            }).ToList(),
+                
+            StartDate = project.StartDate,
+            EndDate = project.EndDate,
+            
+            Users = project.Users.Select(u => new UserDTO
+            {
+                SRAMId = u.SRAMId,
+                Name = u.Name,
+                Email = u.Email,
+                ORCiD = u.ORCiD,
+                Roles = u.Roles.Select(r => new UserRoleDTO
+                    {
+                        Name = r.Name,
+                        Description = r.Description,
+                        Urn = r.Urn,
+                        SCIMId = r.SCIMId
+                    })
+                    .ToList(),
+                GivenName = u.GivenName,
+                FamilyName = u.FamilyName,
+                SCIMId = u.SCIMId,
+            }).ToList(),
+            
+            Products = project.Products.Select(p => new ProductDTO
+            {
+                Title = p.Title,
+                Url = p.Url,
+                Categories = p.Categories.Select(c => c.Type).ToList(),
+                Type = p.Type
+            }).ToList(),
+            
+            Organisations = project.Organisations.Select(o => new OrganisationDTO
+            {
+                Id = o.Id,
+                Name = o.Name,
+                RORId = o.RORId,
+                Roles = o.Roles.Select(r => new OrganisationRoleDTO
+                {
+                    Role = r.Role,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                }).ToList()
+            }).ToList(),
+            
+            Contributors = project.Contributors.Select(c => new ContributorDTO
+            {
+                Person = persons.TryGetValue(c.PersonId,
+                    out var person)
+                    ? person
+                    : null,
+                Roles = c.Roles.Select(r => r.RoleType)
+                    .ToList(),
+                Positions = c.Positions.Select(p => new ContributorPositionDTO
+                    {
+                        Type = p.Position,
+                        StartDate = p.StartDate,
+                        EndDate = p.EndDate
+                    })
+                    .ToList(),
+                Leader = c.Leader,
+                Contact = c.Contact,
+                ProjectId = c.ProjectId,
+            }).ToList()
+        };
     }
 }

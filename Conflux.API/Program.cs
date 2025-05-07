@@ -383,9 +383,12 @@ public class Program
         if (context.Database.IsRelational())
             await context.Database.MigrateAsync();
 
-        if (!await featureManager.IsEnabledAsync("SeedDatabase") || await context.Projects.AnyAsync())
+        if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
 
+        // Remove existing data
+        await context.Database.EnsureDeletedAsync();
+        
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 

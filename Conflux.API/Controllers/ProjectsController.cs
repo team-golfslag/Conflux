@@ -46,8 +46,8 @@ public class ProjectsController : ControllerBase
     /// <returns>Filtered list of projects</returns>
     [Authorize]
     [HttpGet]
-    [ProducesResponseType(typeof(List<Project>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Project>>> GetProjectByQuery(
+    [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ProjectDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
 
@@ -58,8 +58,8 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    [ProducesResponseType(typeof(List<Project>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Project>>> GetAllProjects()
+    [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ProjectDTO>>> GetAllProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -73,8 +73,8 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("{id:guid}")]
-    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Project>> GetProjectById([FromRoute] Guid id) =>
+    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
 
     /// <summary>
@@ -85,8 +85,8 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
-    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Project>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
+    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
     /// <summary>
@@ -97,8 +97,8 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPatch]
     [Route("{id:guid}")]
-    [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Project>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
+    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectDTO>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
         await _projectsService.PatchProjectAsync(id, projectDto);
 
     [HttpPost]
@@ -108,16 +108,6 @@ public class ProjectsController : ControllerBase
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {
         await _iSRAMProjectSyncService.SyncProjectAsync(id);
-        return Ok();
-    }
-
-    [HttpPost]
-    [Route("{id:guid}/mint")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> MintProjectInRaid([FromRoute] Guid id)
-    {
-        await _projectsService.MintProjectInRaidAsync(id);
         return Ok();
     }
 }

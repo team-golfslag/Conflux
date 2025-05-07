@@ -21,9 +21,9 @@ namespace Conflux.API.Controllers;
 [Route("projects/{projectId:guid}/contributors")]
 public class ContributorsController : ControllerBase
 {
-    private readonly ContributorsService _contributorsService;
+    private readonly IContributorsService _contributorsService;
 
-    public ContributorsController(ContributorsService contributorsService)
+    public ContributorsController(IContributorsService contributorsService)
     {
         _contributorsService = contributorsService;
     }
@@ -34,8 +34,8 @@ public class ContributorsController : ControllerBase
     /// <param name="query">Optional: The string to search in the title or description</param>
     /// <returns>Filtered list of contributors</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(List<Contributor>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Contributor>>> GetContributorsByQuery(Guid projectId,
+    [ProducesResponseType(typeof(List<ContributorDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ContributorDTO>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
         await _contributorsService.GetContributorsByQueryAsync(projectId, query);
 
@@ -47,8 +47,8 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpGet]
     [Route("{personId:guid}")]
-    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Contributor>> GetContributorByIdAsync([FromRoute] Guid projectId,
+    [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ContributorDTO>> GetContributorByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid personId) =>
         await _contributorsService.GetContributorByIdAsync(projectId, personId);
 
@@ -59,10 +59,14 @@ public class ContributorsController : ControllerBase
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
-    [ProducesResponseType(typeof(Contributor), StatusCodes.Status201Created)]
-    public async Task<ActionResult<Contributor>> CreateContributor([FromRoute] Guid projectId,
-        [FromBody] ContributorDTO contributorDTO) =>
-        await _contributorsService.CreateContributorAsync(projectId, contributorDTO);
+    [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status201Created)]
+    public async Task<ActionResult<ContributorDTO>> CreateContributor([FromRoute] Guid projectId,
+        [FromBody] ContributorDTO contributorDTO)
+    {
+        if (contributorDTO.ProjectId != projectId)
+            return BadRequest("Project ID in the URL does not match the one in the body.");
+        return await _contributorsService.CreateContributorAsync(contributorDTO);
+    }
 
     /// <summary>
     /// Updates a contributor via PUT
@@ -73,16 +77,16 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{personId:guid}")]
-    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Contributor>> UpdateContributor([FromRoute] Guid projectId,
+    [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ContributorDTO>> UpdateContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId,
         [FromBody] ContributorDTO contributorDTO) =>
         await _contributorsService.UpdateContributorAsync(projectId, personId, contributorDTO);
 
     [HttpPatch]
     [Route("{personId:guid}")]
-    [ProducesResponseType(typeof(Contributor), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Contributor>>
+    [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ContributorDTO>>
         PatchContributor([FromRoute] Guid projectId, [FromRoute] Guid personId,
             [FromBody] ContributorPatchDTO contributorDTO) =>
         await _contributorsService.PatchContributorAsync(projectId, personId, contributorDTO);

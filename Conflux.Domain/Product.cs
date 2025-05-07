@@ -16,12 +16,13 @@ public class Product
     /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
     /// </summary>
 
-    [Key] public Guid Id { get; init; }
+    [Key]
+    public Guid Id { get; init; }
 
-    public ProductSchema? Schema { get; set; }
-    
+    public ProductSchema Schema { get; set; }
+
     // TODO: Kijk of de identifier wel echt aan het schema voldoet.
-    public string? Url { get; set; }
+    public string Url { get; set; }
 
     public required string Title { get; set; }
 
@@ -40,8 +41,7 @@ public class Product
             ProductSchema.Isbn    => "https://www.isbn-international.org/",
             ProductSchema.Rrid    => "https://scicrunch.org/resolver/",
             ProductSchema.Archive => "https://archive.org/",
-            null                  => null,
-            _                     => throw new ArgumentOutOfRangeException()
+            _                     => throw new ArgumentOutOfRangeException(),
         };
 
     public HashSet<ProductCategory> Categories { get; set; } = [];

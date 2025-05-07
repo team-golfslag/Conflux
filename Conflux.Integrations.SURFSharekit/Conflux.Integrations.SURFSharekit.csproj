@@ -7,7 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="SURFSharekit.Net" Version="1.1.0" />
+      <PackageReference Include="SURFSharekit.Net" Version="1.1.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj" />
     </ItemGroup>
 
 </Project>

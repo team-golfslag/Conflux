@@ -11,7 +11,7 @@ public class ProductDTO
     public ProductSchema? Schema { get; init; }
     public string? Url { get; init; }
     public required string Title { get; init; }
-    public required ProductType Type { get; init; }
+    public ProductType? Type { get; init; }
     public List<ProductCategoryType> Categories { get; init; } = [];
 
     public Product ToProduct() =>

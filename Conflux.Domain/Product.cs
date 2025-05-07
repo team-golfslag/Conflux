@@ -25,7 +25,7 @@ public class Product
 
     public required string Title { get; set; }
 
-    public required ProductType Type { get; init; }
+    public ProductType? Type { get; init; }
     public string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
 
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>

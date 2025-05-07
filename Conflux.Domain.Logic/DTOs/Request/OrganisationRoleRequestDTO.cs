@@ -5,9 +5,9 @@
 
 namespace Conflux.Domain.Logic.DTOs;
 
-public class ContributorPositionDTO
+public class OrganisationRoleRequestDTO
 {
-    public DateTime? EndDate { get; init; }
+    public required OrganisationRoleType Role { get; init; }
     public DateTime StartDate { get; init; }
-    public ContributorPositionType Type { get; init; }
+    public DateTime? EndDate { get; init; }
 }

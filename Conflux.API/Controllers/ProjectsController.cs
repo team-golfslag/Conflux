@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Services;
@@ -86,7 +85,7 @@ public class ProjectsController : ControllerBase
     [HttpPut]
     [Route("{id:guid}")]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
+    public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectRequestDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
     /// <summary>

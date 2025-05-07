@@ -29,7 +29,8 @@ public class ContributorsService : IContributorsService
     /// <param name="projectId">The GUID of the project</param>
     /// <param name="personId">The GUID of the person</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
-    public async Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorDTO contributorDTO)
+    public async Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId,
+        ContributorDTO contributorDTO)
     {
         Contributor contributor = await GetContributorEntityAsync(projectId, personId);
         contributor.Roles = contributorDTO.Roles.ConvertAll(r => new ContributorRole
@@ -52,7 +53,7 @@ public class ContributorsService : IContributorsService
         contributor.Leader = contributorDTO.Leader;
 
         await _context.SaveChangesAsync();
-        
+
         return await MapToContributorDTOAsync(contributor);
     }
 
@@ -90,7 +91,7 @@ public class ContributorsService : IContributorsService
         if (contributorDTO.Contact.HasValue) contributor.Contact = contributorDTO.Contact.Value;
 
         await _context.SaveChangesAsync();
-        
+
         return await MapToContributorDTOAsync(contributor);
     }
 
@@ -103,7 +104,7 @@ public class ContributorsService : IContributorsService
     /// <exception cref="ContributorNotFoundException">Thrown when the contributor is not found</exception>
     public async Task<ContributorDTO> GetContributorByIdAsync(Guid projectId, Guid personId)
     {
-        var contributor = await GetContributorEntityAsync(projectId, personId);
+        Contributor contributor = await GetContributorEntityAsync(projectId, personId);
         return await MapToContributorDTOAsync(contributor);
     }
 
@@ -118,7 +119,7 @@ public class ContributorsService : IContributorsService
         Contributor contributor = contributorDTO.ToContributor();
         _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
-        
+
         return await MapToContributorDTOAsync(contributor);
     }
 
@@ -130,7 +131,7 @@ public class ContributorsService : IContributorsService
     /// <returns>Filtered list of contributor DTOs with person data</returns>
     public async Task<List<ContributorDTO>> GetContributorsByQueryAsync(Guid projectId, string? query)
     {
-        IQueryable<Contributor> contributors = _context.Contributors
+        var contributors = _context.Contributors
             .Include(c => c.Roles)
             .Include(c => c.Positions)
             .Where(c => c.ProjectId == projectId);
@@ -147,7 +148,7 @@ public class ContributorsService : IContributorsService
         }
 
         var contributorList = await contributors.ToListAsync();
-        
+
         // Fetch all the relevant persons in one go to avoid N+1 query problem
         var personIds = contributorList.Select(c => c.PersonId).Distinct().ToList();
         var persons = await _context.People
@@ -157,17 +158,17 @@ public class ContributorsService : IContributorsService
         // Map to DTOs with person data
         return contributorList.Select(c => new ContributorDTO
         {
-            Person = persons.TryGetValue(c.PersonId, out var person) ? person : null,
+            Person = persons.TryGetValue(c.PersonId, out Person? person) ? person : null,
             ProjectId = projectId,
             Roles = c.Roles.Select(r => r.RoleType).ToList(),
-            Positions = c.Positions.Select(p => new ContributorPositionDTO
+            Positions = c.Positions.Select(p => new ContributorPositionRequestDTO
             {
                 Type = p.Position,
                 StartDate = p.StartDate,
-                EndDate = p.EndDate
+                EndDate = p.EndDate,
             }).ToList(),
             Leader = c.Leader,
-            Contact = c.Contact
+            Contact = c.Contact,
         }).ToList();
     }
 
@@ -186,21 +187,21 @@ public class ContributorsService : IContributorsService
     /// </summary>
     private async Task<ContributorDTO> MapToContributorDTOAsync(Contributor contributor)
     {
-        var person = await _context.People.FindAsync(contributor.PersonId);
-        
-        return new ContributorDTO
+        Person? person = await _context.People.FindAsync(contributor.PersonId);
+
+        return new()
         {
             Person = person,
             ProjectId = contributor.ProjectId,
             Roles = contributor.Roles.Select(r => r.RoleType).ToList(),
-            Positions = contributor.Positions.Select(p => new ContributorPositionDTO
+            Positions = contributor.Positions.Select(p => new ContributorPositionRequestDTO
             {
                 Type = p.Position,
                 StartDate = p.StartDate,
-                EndDate = p.EndDate
+                EndDate = p.EndDate,
             }).ToList(),
             Leader = contributor.Leader,
-            Contact = contributor.Contact
+            Contact = contributor.Contact,
         };
     }
 }

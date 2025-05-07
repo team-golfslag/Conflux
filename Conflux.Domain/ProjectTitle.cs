@@ -41,7 +41,6 @@ public class ProjectTitle
 
     public Language? Language { get; init; }
 
-    // [JsonConverter(typeof(JsonStringEnumConverter))]
     public required TitleType Type { get; init; }
 
     public DateTime StartDate { get; init; }

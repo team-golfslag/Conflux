@@ -13,7 +13,7 @@ public class ContributorPatchDTO
 #pragma warning restore S101
 {
     public List<ContributorRoleType>? Roles { get; init; }
-    public List<ContributorPositionDTO>? Positions { get; init; }
+    public List<ContributorPositionRequestDTO>? Positions { get; init; }
     public bool? Leader { get; init; }
     public bool? Contact { get; init; }
 }

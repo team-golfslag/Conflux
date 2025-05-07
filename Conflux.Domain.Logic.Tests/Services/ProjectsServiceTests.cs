@@ -19,9 +19,9 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context = null!;
     private readonly IProjectMapperService _projectMapperService = null!;
     private readonly IRAiDService _raidService = null!;
+    private ConfluxContext _context = null!;
     private UserSessionService _userSessionService = null!;
 
     public async Task InitializeAsync()
@@ -132,7 +132,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Prepare Put DTO
-        ProjectDTO putDto = new()
+        ProjectRequestDTO putRequestDTO = new()
         {
             Titles =
             [
@@ -176,7 +176,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         };
 
         // Act
-        ProjectDTO updatedProject = await service.PutProjectAsync(originalProject.Id, putDto);
+        Project updatedProject = await service.PutProjectAsync(originalProject.Id, putRequestDTO);
 
         // Assert
         Assert.NotNull(updatedProject);

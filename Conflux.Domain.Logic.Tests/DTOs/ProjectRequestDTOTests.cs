@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.DTOs;
 
-public class ProjectDTOTests
+public class ProjectRequestDTOTests
 {
     /// <summary>
     /// Given a valid ProjectDTO with Title, Description, StartDate, and EndDate,
@@ -19,7 +19,7 @@ public class ProjectDTOTests
     public void ToProject_ShouldConvertDTOToProject()
     {
         // Arrange
-        ProjectDTO dto = new()
+        ProjectRequestDTO requestDTO = new()
         {
             Titles =
             [
@@ -63,20 +63,20 @@ public class ProjectDTOTests
         };
 
         // Act
-        Project project = dto.ToProject();
+        Project project = requestDTO.ToProject();
 
         // Assert
         Assert.NotNull(project);
         Assert.Single(project.Titles);
-        Assert.Equal(dto.Titles[0].Text, project.Titles[0].Text);
-        Assert.Equal(dto.Titles[0].Type, project.Titles[0].Type);
-        Assert.Equal(dto.Titles[0].StartDate, project.Titles[0].StartDate);
+        Assert.Equal(requestDTO.Titles[0].Text, project.Titles[0].Text);
+        Assert.Equal(requestDTO.Titles[0].Type, project.Titles[0].Type);
+        Assert.Equal(requestDTO.Titles[0].StartDate, project.Titles[0].StartDate);
         Assert.Single(project.Descriptions);
-        Assert.Equal(dto.Descriptions[0].Text, project.Descriptions[0].Text);
-        Assert.Equal(dto.Descriptions[0].Language, project.Descriptions[0].Language);
-        Assert.Equal(dto.Descriptions[0].Text, project.Descriptions[0].Text);
-        Assert.Equal(dto.StartDate, project.StartDate);
-        Assert.Equal(dto.EndDate, project.EndDate);
+        Assert.Equal(requestDTO.Descriptions[0].Text, project.Descriptions[0].Text);
+        Assert.Equal(requestDTO.Descriptions[0].Language, project.Descriptions[0].Language);
+        Assert.Equal(requestDTO.Descriptions[0].Text, project.Descriptions[0].Text);
+        Assert.Equal(requestDTO.StartDate, project.StartDate);
+        Assert.Equal(requestDTO.EndDate, project.EndDate);
         Assert.NotEqual(Guid.Empty, project.Id);
     }
 }

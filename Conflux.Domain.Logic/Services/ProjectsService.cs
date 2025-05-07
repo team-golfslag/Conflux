@@ -124,7 +124,7 @@ public class ProjectsService
         var project = (await GetAvailableProjects())
             .FirstOrDefault(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
-        
+
         return project;
     }
 
@@ -180,7 +180,7 @@ public class ProjectsService
             OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
             _                         => projects,
         };
-        
+
         return projects.ToList();
     }
 
@@ -189,14 +189,14 @@ public class ProjectsService
     /// </summary>
     /// <param name="dto">The DTO which to convert to a <see cref="Project" /></param>
     /// <returns>The created project DTO</returns>
-    public async Task<ProjectDTO> CreateProjectAsync(ProjectDTO dto)
+    public async Task<ProjectDTO> CreateProjectAsync(ProjectRequestDTO dto)
     {
         Project project = dto.ToProject();
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
-        
+
         // Reload the project with all relationships
-        var loadedProject = await _context.Projects
+        Project loadedProject = await _context.Projects
             .Include(p => p.Titles)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
@@ -207,7 +207,7 @@ public class ProjectsService
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions)
             .SingleAsync(p => p.Id == project.Id);
-            
+
         return MapToProjectDTO(loadedProject);
     }
 
@@ -220,7 +220,7 @@ public class ProjectsService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-            
+
         var projects = await GetAvailableProjects();
         return projects.ToList();
     }
@@ -232,7 +232,7 @@ public class ProjectsService
     /// <param name="dto">The Data Transfer Object for the project</param>
     /// <returns>The updated project DTO</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<ProjectDTO> PutProjectAsync(Guid id, ProjectDTO dto)
+    public async Task<ProjectDTO> PutProjectAsync(Guid id, ProjectRequestDTO dto)
     {
         Project project = await _context.Projects
                 .Include(p => p.Titles)
@@ -246,9 +246,9 @@ public class ProjectsService
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        
+
         // Reload the project with all relationships
-        var loadedProject = await _context.Projects
+        Project loadedProject = await _context.Projects
             .Include(p => p.Titles)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
@@ -259,7 +259,7 @@ public class ProjectsService
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions)
             .SingleAsync(p => p.Id == id);
-            
+
         return MapToProjectDTO(loadedProject);
     }
 
@@ -297,7 +297,7 @@ public class ProjectsService
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        
+
         return MapToProjectDTO(project);
     }
 
@@ -324,7 +324,7 @@ public class ProjectsService
 
         // TODO: Finish this
     }
-    
+
     /// <summary>
     /// Maps a Project entity to a ProjectDTO
     /// </summary>
@@ -332,7 +332,7 @@ public class ProjectsService
     {
         // Get all person IDs from contributors to fetch in one query
         var personIds = project.Contributors.Select(c => c.PersonId).Distinct().ToList();
-        
+
         // Fetch all persons in one go (to avoid N+1 query problem)
         var persons = _context.People
             .Where(p => personIds.Contains(p.Id))
@@ -343,18 +343,18 @@ public class ProjectsService
             Text = t.Text,
             Type = t.Type,
             StartDate = t.StartDate,
-            EndDate = t.EndDate
+            EndDate = t.EndDate,
         }).ToList();
-        var descriptions  = project.Descriptions.Select(d => new ProjectDescriptionDTO
+        var descriptions = project.Descriptions.Select(d => new ProjectDescriptionDTO
         {
             Text = d.Text,
             Type = d.Type,
-            Language = d.Language
+            Language = d.Language,
         }).ToList();
         return new ProjectDTO
         {
             Id = project.Id,
-            
+
             PrimaryTitle = titles.FirstOrDefault(t => t.Type == TitleType.Primary),
             Titles = titles,
             PrimaryDescription = descriptions.FirstOrDefault(d => d.Type == DescriptionType.Primary),
@@ -362,12 +362,12 @@ public class ProjectsService
             {
                 Text = d.Text,
                 Type = d.Type,
-                Language = d.Language
+                Language = d.Language,
             }).ToList(),
-                
+
             StartDate = project.StartDate,
             EndDate = project.EndDate,
-            
+
             Users = project.Users.Select(u => new UserDTO
             {
                 SRAMId = u.SRAMId,
@@ -379,54 +379,54 @@ public class ProjectsService
                         Name = r.Name,
                         Description = r.Description,
                         Urn = r.Urn,
-                        SCIMId = r.SCIMId
+                        SCIMId = r.SCIMId,
                     })
                     .ToList(),
                 GivenName = u.GivenName,
                 FamilyName = u.FamilyName,
                 SCIMId = u.SCIMId,
             }).ToList(),
-            
+
             Products = project.Products.Select(p => new ProductDTO
             {
                 Title = p.Title,
                 Url = p.Url,
                 Categories = p.Categories.Select(c => c.Type).ToList(),
-                Type = p.Type
+                Type = p.Type,
             }).ToList(),
-            
+
             Organisations = project.Organisations.Select(o => new OrganisationDTO
             {
                 Id = o.Id,
                 Name = o.Name,
                 RORId = o.RORId,
-                Roles = o.Roles.Select(r => new OrganisationRoleDTO
+                Roles = o.Roles.Select(r => new OrganisationRoleRequestDTO
                 {
                     Role = r.Role,
                     StartDate = r.StartDate,
                     EndDate = r.EndDate,
-                }).ToList()
+                }).ToList(),
             }).ToList(),
-            
+
             Contributors = project.Contributors.Select(c => new ContributorDTO
             {
                 Person = persons.TryGetValue(c.PersonId,
-                    out var person)
+                    out Person? person)
                     ? person
                     : null,
                 Roles = c.Roles.Select(r => r.RoleType)
                     .ToList(),
-                Positions = c.Positions.Select(p => new ContributorPositionDTO
+                Positions = c.Positions.Select(p => new ContributorPositionRequestDTO
                     {
                         Type = p.Position,
                         StartDate = p.StartDate,
-                        EndDate = p.EndDate
+                        EndDate = p.EndDate,
                     })
                     .ToList(),
                 Leader = c.Leader,
                 Contact = c.Contact,
                 ProjectId = c.ProjectId,
-            }).ToList()
+            }).ToList(),
         };
     }
 }

@@ -70,7 +70,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         }
 
         // Then, update it
-        ProjectDTO updatedProject = new()
+        ProjectRequestDTO updatedProjectRequest = new()
         {
             Id = project!.Id,
             Titles =
@@ -92,7 +92,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
                 },
             ],
         };
-        HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProject);
+        HttpResponseMessage putRes = await _client.PutAsJsonAsync($"/projects/{project!.Id}", updatedProjectRequest);
         putRes.EnsureSuccessStatusCode();
 
         Project? updated = await putRes.Content.ReadFromJsonAsync<Project>(JsonOptions);
@@ -166,7 +166,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetProjects_ByNonMatchingDateRange_ReturnsEmpty()
     {
         // Arrange
-        ProjectDTO project = new()
+        ProjectRequestDTO projectRequest = new()
         {
             Id = Guid.NewGuid(),
             Titles =
@@ -190,7 +190,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
             StartDate = new(2010, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2010, 12, 31, 0, 0, 0, DateTimeKind.Utc),
         };
-        JsonContent content = JsonContent.Create(project, options: new()
+        JsonContent content = JsonContent.Create(projectRequest, options: new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         });

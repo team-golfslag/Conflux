@@ -10,15 +10,11 @@ public class OrganisationDTO
     public Guid? Id { get; init; }
     public string? RORId { get; init; }
     public required string Name { get; init; }
-    public List<OrganisationRoleDTO> Roles { get; init; } = [];
 
-    public Organisation ToOrganisation()
-    {
-        return new()
+    public Organisation ToOrganisation() =>
+        new()
         {
             RORId = RORId,
             Name = Name,
-            Roles = Roles.Select(role => role.ToOrganisationRole(Id ?? Guid.NewGuid())).ToList(),
         };
-    }
 }

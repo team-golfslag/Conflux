@@ -9,7 +9,7 @@ namespace Conflux.Domain.Logic.DTOs;
 /// The Data Transfer Object for <see cref="Project" /> with POST.
 /// </summary>
 #pragma warning disable S101 // Types should be named in camel case
-public class ProjectDTO
+public class ProjectRequestDTO
 #pragma warning restore S101
 {
     public required Guid Id { get; init; }
@@ -28,7 +28,7 @@ public class ProjectDTO
 
     public List<ProductDTO> Products { get; init; } = [];
 
-    public List<OrganisationDTO> Organisations { get; init; } = [];
+    public List<ProjectOrganisationDTO> Organisations { get; init; } = [];
 
     public Project ToProject()
     {
@@ -42,7 +42,7 @@ public class ProjectDTO
             EndDate = EndDate.HasValue ? DateTime.SpecifyKind(EndDate.Value, DateTimeKind.Utc) : null,
             Users = Users.ConvertAll(u => u.ToUser(projectId)),
             Products = Products.ConvertAll(p => p.ToProduct()),
-            Organisations = Organisations.ConvertAll(o => o.ToOrganisation()),
+            ProjectOrganisations = Organisations.ConvertAll(o => o.ToProjectOrganisation()),
             Contributors = Contributors.ConvertAll(c => c.ToContributor()),
         };
     }

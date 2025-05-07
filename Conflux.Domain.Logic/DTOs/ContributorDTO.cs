@@ -15,7 +15,7 @@ public class ContributorDTO
     public required Person Person { get; init; }
     public required Guid ProjectId { get; init; }
     public List<ContributorRoleType> Roles { get; init; } = [];
-    public List<ContributorPositionDTO> Positions { get; init; } = [];
+    public List<ContributorPositionRequestDTO> Positions { get; init; } = [];
     public bool Leader { get; init; }
     public bool Contact { get; init; }
 

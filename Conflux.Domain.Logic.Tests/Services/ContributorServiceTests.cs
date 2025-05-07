@@ -362,7 +362,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         {
             Positions =
             [
-                new ContributorPositionDTO
+                new ContributorPositionRequestDTO
                 {
                     Type = ContributorPositionType.Partner,
                     StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -465,7 +465,7 @@ public class ContributorsServiceTests : IAsyncLifetime
             Roles = [ContributorRoleType.ProjectAdministration],
             Positions =
             [
-                new ContributorPositionDTO
+                new ContributorPositionRequestDTO
                 {
                     Type = ContributorPositionType.PrincipalInvestigator,
                     StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),

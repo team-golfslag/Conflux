@@ -33,6 +33,23 @@ public class ProjectsService
         _projectMapperService = projectMapperService;
         _raidService = raidService;
     }
+    
+    // Compiled query to get project by ID
+    private static readonly Func<ConfluxContext, Guid, Task<Project?>> GetProjectByIdQuery =
+        EF.CompileAsyncQuery((ConfluxContext context, Guid id) =>
+            context.Projects
+                .AsNoTracking()
+                .Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .Include(p => p.Users)
+                .ThenInclude(user => user.Roles)
+                .Include(p => p.Products)
+                .Include(p => p.Organisations)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Roles)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Positions)
+                .SingleOrDefault(p => p.Id == id));
 
     /// <summary>
     /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
@@ -50,6 +67,7 @@ public class ProjectsService
             .ToList();
 
         var projects = await _context.Projects
+            .AsNoTracking()
             .Where(p => accessibleSramIds.Contains(p.SCIMId))
             .Include(p => p.Titles)
             .Include(p => p.Descriptions)
@@ -99,17 +117,7 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<ProjectDTO> GetProjectByIdAsync(Guid id)
     {
-        Project project = await _context.Projects
-                .Include(p => p.Titles)
-                .Include(p => p.Descriptions)
-                .Include(p => p.Users)
-                .Include(p => p.Products)
-                .Include(p => p.Organisations)
-                .Include(p => p.Contributors)
-                .ThenInclude(c => c.Roles)
-                .Include(p => p.Contributors)
-                .ThenInclude(c => c.Positions)
-                .SingleOrDefaultAsync(p => p.Id == id)
+        Project project = await GetProjectByIdQuery(_context, id)
             ?? throw new ProjectNotFoundException(id);
 
         UserSession? userSession = await _userSessionService.GetUser();

@@ -72,9 +72,9 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
 
+        builder.Services.AddDistributedMemoryCache();
         await ConfigureDatabase(builder, featureManager);
 
-        builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>
         {
             options.IdleTimeout = TimeSpan.FromMinutes(20);

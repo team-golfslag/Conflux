@@ -20,7 +20,7 @@ public enum RAiDIncompatibilityType
     NoProjectContact,
     OverlappingOrganisationRoles,
     NoLeadResearchOrganisation,
-    ProductWithoutIdentifier,
+    MultipleLeadResearchOrganisation,
     NoProductCategory,
 }
 

@@ -21,9 +21,9 @@ namespace Conflux.API.Controllers;
 [Route("projects/{projectId:guid}/contributors")]
 public class ContributorsController : ControllerBase
 {
-    private readonly ContributorsService _contributorsService;
+    private readonly IContributorsService _contributorsService;
 
-    public ContributorsController(ContributorsService contributorsService)
+    public ContributorsController(IContributorsService contributorsService)
     {
         _contributorsService = contributorsService;
     }

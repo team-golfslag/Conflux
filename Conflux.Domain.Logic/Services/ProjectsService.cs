@@ -370,8 +370,10 @@ public class ProjectsService
             
             Users = project.Users.Select(u => new UserDTO
             {
+                SRAMId = u.SRAMId,
                 Name = u.Name,
                 Email = u.Email,
+                ORCiD = u.ORCiD,
                 Roles = u.Roles.Select(r => new UserRoleDTO
                     {
                         Name = r.Name,
@@ -380,6 +382,8 @@ public class ProjectsService
                         SCIMId = r.SCIMId
                     })
                     .ToList(),
+                GivenName = u.GivenName,
+                FamilyName = u.FamilyName,
                 SCIMId = u.SCIMId,
             }).ToList(),
             

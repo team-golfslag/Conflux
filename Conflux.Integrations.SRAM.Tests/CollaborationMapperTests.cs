@@ -6,10 +6,10 @@
 using Conflux.Data;
 using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM.DTOs;
-using Conflux.Integrations.SRAM.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Exceptions;
 using SRAM.SCIM.Net.Models;
 using Xunit;
 

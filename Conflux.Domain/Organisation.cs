@@ -16,9 +16,7 @@ public class Organisation
 
     public string SchemaUri => "https://ror.org/";
 
-    public string? RORId { get; set; }
-
-    public List<OrganisationRole> Roles { get; set; } = [];
+    public string RORId { get; set; }
 
     [Required] public required string Name { get; set; }
 }

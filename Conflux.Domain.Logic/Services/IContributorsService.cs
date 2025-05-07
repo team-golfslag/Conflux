@@ -15,4 +15,5 @@ public interface IContributorsService
     public Task<ContributorDTO> CreateContributorAsync(ContributorDTO contributorDTO);
     public Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorDTO contributorDTO);
     public Task<ContributorDTO> PatchContributorAsync(Guid projectId, Guid personId, ContributorPatchDTO contributorDTO);
+    public Task DeleteContributorAsync(Guid projectId, Guid personId);
 }

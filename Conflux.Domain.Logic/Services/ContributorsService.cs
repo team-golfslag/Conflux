@@ -94,6 +94,18 @@ public class ContributorsService : IContributorsService
         return await MapToContributorDTOAsync(contributor);
     }
 
+    public Task DeleteContributorAsync(Guid projectId, Guid personId)
+    {
+        Contributor contributor = _context.Contributors
+            .Include(c => c.Roles)
+            .Include(c => c.Positions)
+            .SingleOrDefault(p => p.ProjectId == projectId && p.PersonId == personId) ??
+            throw new ContributorNotFoundException(projectId);
+
+        _context.Contributors.Remove(contributor);
+        return _context.SaveChangesAsync();
+    }
+    
     /// <summary>
     /// Gets the contributor by their GUID
     /// </summary>
@@ -115,6 +127,12 @@ public class ContributorsService : IContributorsService
     /// <returns>The created contributor DTO with person data</returns>
     public async Task<ContributorDTO> CreateContributorAsync(ContributorDTO contributorDTO)
     {
+        // check if the contributor already exists
+        Contributor? existingContributor = await _context.Contributors
+            .FindAsync(contributorDTO.Person.Id, contributorDTO.ProjectId);
+        if (existingContributor != null)
+            throw new ContributorAlreadyExistsException(contributorDTO.ProjectId, contributorDTO.Person.Id);
+        
         Contributor contributor = contributorDTO.ToContributor();
         _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();

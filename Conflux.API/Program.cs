@@ -72,9 +72,9 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerDocument(c => { c.Title = "Conflux API"; });
 
+        builder.Services.AddDistributedMemoryCache();
         await ConfigureDatabase(builder, featureManager);
 
-        builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>
         {
             options.IdleTimeout = TimeSpan.FromMinutes(20);
@@ -83,7 +83,7 @@ public class Program
         });
 
         builder.Services.AddHttpContextAccessor();
-        
+
         builder.Services.AddScoped<IContributorsService, ContributorsService>();
         builder.Services.AddScoped<IPeopleService, PeopleService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
@@ -92,7 +92,7 @@ public class Program
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
-        
+
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
 
@@ -125,7 +125,9 @@ public class Program
         string connectionString = builder.Configuration.GetConnectionString("Database") ??
             ConnectionStringHelper.GetConnectionStringFromEnvironment();
         builder.Services.AddDbContextPool<ConfluxContext>(opt =>
-            opt.UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly("Conflux.Data")));
+            opt.UseNpgsql(connectionString,
+                npgsql => npgsql.MigrationsAssembly("Conflux.Data")
+                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
     }
 
     private static async Task ConfigureSRAMServices(WebApplicationBuilder builder,
@@ -323,8 +325,8 @@ public class Program
                 switch (exception)
                 {
                     case ProjectNotFoundException
-                        or ContributorNotFoundException
-                        or PersonNotFoundException:
+                         or ContributorNotFoundException
+                         or PersonNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -332,7 +334,7 @@ public class Program
                         });
                         break;
                     case PersonHasContributorsException
-                        or ContributorAlreadyAddedToProjectException:
+                         or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -388,7 +390,7 @@ public class Program
 
         // Remove existing data
         await context.Database.EnsureDeletedAsync();
-        
+
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 

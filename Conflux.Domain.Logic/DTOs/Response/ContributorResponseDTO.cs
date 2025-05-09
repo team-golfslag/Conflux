@@ -7,7 +7,7 @@ namespace Conflux.Domain.Logic.DTOs.Response;
 
 public class ContributorResponseDTO
 {
-    public Person Person { get; init; }
+    public required Person Person { get; init; }
     public List<ContributorRole> Roles { get; set; } = [];
     public List<ContributorPosition> Positions { get; set; } = [];
 

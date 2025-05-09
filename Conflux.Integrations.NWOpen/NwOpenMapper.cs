@@ -115,7 +115,7 @@ public static class NwOpenMapper
     /// <param name="product">The NWOpen product to map</param>
     private static void MapProduct(Project project, NwOpenProduct product)
     {
-        var products = Products.Where(p => p.Url == product.UrlOpenAccess).ToList();
+        List<Product> products = Products.Where(p => p.Url == product.UrlOpenAccess).ToList();
         if (products.Count != 0)
         {
             project.Products.Add(products[0]);
@@ -212,47 +212,43 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member from which the organisation is retrieved</param>
     private static void MapOrganisation(Project project, NwOpenProjectMember projectMember)
     {
-        var organisations = Organisations.Where(p => p.Name == projectMember.Organisation).ToList();
-        if (organisations.Count != 0)
+        List<Organisation> organisations = Organisations.Where(p => p.Name == projectMember.Organisation).ToList();
+
+
+        Organisation organisation;
+        if (organisations.Count == 0)
         {
-            project.Organisations.Add(organisations[0]);
-            return;
+            organisation = new()
+            {
+                Id = Guid.NewGuid(),
+                RORId = "https://ror.org/04pp8hn57",
+                Name = projectMember.Organisation!,
+            };
+            organisations.Add(organisation);
+        }
+        else
+        {
+            organisation = organisations[0];
         }
 
-        Guid organisationId = Guid.NewGuid();
 
-        Organisation mappedOrganisation = new()
+        ProjectOrganisation projectOrganisation = new()
         {
-            Id = organisationId,
-            RORId = "https://ror.org/04pp8hn57",
-            Name = projectMember.Organisation!,
+            ProjectId = project.Id,
+            OrganisationId = organisation.Id,
             Roles =
             [
-                new()
+                new OrganisationRole
                 {
-                    OrganisationId = organisationId,
-                    Role = OrganisationRoleType.Contractor,
-                    StartDate = project.StartDate,
-                    EndDate = project.EndDate,
-                },
-                new()
-                {
-                    OrganisationId = Guid.NewGuid(),
-                    Role = OrganisationRoleType.Funder,
-                    StartDate = project.StartDate,
-                    EndDate = project.EndDate,
-                },
-                new()
-                {
-                    OrganisationId = Guid.NewGuid(),
-                    Role = OrganisationRoleType.Facility,
+                    OrganisationId = organisation.Id,
+                    Role = OrganisationRoleType.LeadResearchOrganization,
                     StartDate = project.StartDate,
                     EndDate = project.EndDate,
                 },
             ],
         };
+        project.Organisations.Add(projectOrganisation);
 
-        project.Organisations.Add(mappedOrganisation);
-        Organisations.Add(mappedOrganisation);
+        Guid organisationId = Guid.NewGuid();
     }
 }

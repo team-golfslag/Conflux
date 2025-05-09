@@ -4,15 +4,15 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Request;
+using Conflux.Domain.Logic.DTOs.Response;
 
 namespace Conflux.Domain.Logic.Services;
 
 public interface IContributorsService
 {
-    public Task<List<ContributorDTO>> GetContributorsByQueryAsync(Guid projectId, string? query);
-    public Task<ContributorDTO> GetContributorByIdAsync(Guid projectId, Guid personId);
-    public Task<ContributorDTO> CreateContributorAsync(ContributorDTO contributorDTO);
-    public Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorDTO contributorDTO);
-    public Task<ContributorDTO> PatchContributorAsync(Guid projectId, Guid personId, ContributorPatchDTO contributorDTO);
+    public Task<List<ContributorResponseDTO>> GetContributorsByQueryAsync(Guid projectId, string? query);
+    public Task<ContributorResponseDTO> GetContributorByIdAsync(Guid projectId, Guid personId);
+    public Task<ContributorResponseDTO> CreateContributorAsync(ContributorRequestDTO contributorDTO);
+    public Task<ContributorResponseDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorRequestDTO contributorDTO);
 }

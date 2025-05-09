@@ -29,7 +29,7 @@ public class Project
 
     public List<Product> Products { get; set; } = [];
 
-    public List<ProjectOrganisation> ProjectOrganisations { get; set; } = [];
+    public List<ProjectOrganisation> Organisations { get; set; } = [];
 
     public List<ProjectTitle> Titles { get; set; } = [];
 

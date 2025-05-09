@@ -7,5 +7,7 @@ namespace Conflux.Domain.Logic.DTOs.Response;
 
 public class ProjectOrganisationResponseDTO
 {
-    
+    public Organisation Organisation { get; init; }
+
+    public List<OrganisationRole> Roles { get; set; } = [];
 }

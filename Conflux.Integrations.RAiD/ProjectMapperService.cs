@@ -157,13 +157,18 @@ public class ProjectMapperService : IProjectMapperService
             EndDate = role.EndDate,
         };
 
-    private static RAiDOrganisation MapOrganisation(Organisation organisation) =>
-        new()
+    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
+    {
+        Organisation organisation = _context.Organisations
+                .FirstOrDefault(o => o.Id == projectOrganisation.OrganisationId)
+            ?? throw new ArgumentNullException(nameof(projectOrganisation));
+        return new()
         {
-            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(organisation.RORId)),
+            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
             SchemaUri = organisation.SchemaUri,
-            Role = organisation.Roles.Select(MapOrganisationRole).ToList(),
+            Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
         };
+    }
 
     private static RAiDLanguage MapLanguage(Language lang) =>
         new()
@@ -189,11 +194,11 @@ public class ProjectMapperService : IProjectMapperService
             }),
         };
 
-    public List<RAiDIncompatibility> CheckProjectCompatibility(Project project)
+    public List<RAiDIncompatibility> CheckProjectCompatibility(Project project, IConfluxContext context)
     {
         List<RAiDIncompatibility> incompatibilities = [];
 
-        var activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
+        List<ProjectTitle> activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
             && (t.EndDate == null || t.EndDate >= DateTime.Now)
             && t.Type == TitleType.Primary).ToList();
 
@@ -239,7 +244,7 @@ public class ProjectMapperService : IProjectMapperService
         // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-type-id
         if (project.Descriptions.Count > 0)
         {
-            var primaryDescriptions =
+            List<ProjectDescription> primaryDescriptions =
                 project.Descriptions.Where(d => d.Type == DescriptionType.Primary).ToList();
             if (primaryDescriptions.Count == 0)
                 incompatibilities.Add(new()
@@ -261,6 +266,46 @@ public class ProjectMapperService : IProjectMapperService
                 Type = RAiDIncompatibilityType.NoContributors,
             });
 
+        // In Conflux people are not required to have an ORCiD
+        incompatibilities.AddRange(project.Contributors
+            .Where(c => context.People.Find(c.ProjectId)!.ORCiD == null)
+            .Select(c => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ContributorWithoutOrcid,
+                ObjectId = c.PersonId,
+            }));
+
+        // Constraints: contributors must have one and only one position at any given time (contributors may also be flagged as a ‘leader’ or ‘contact’ separately)
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-position
+        incompatibilities.AddRange(project.Contributors
+            .Where(c =>
+            {
+                if (c.Positions.Count == 0)
+                    return false;
+                c.Positions.Sort((p, q) => DateTime.Compare(p.StartDate, q.StartDate));
+                DateTime? last = c.Positions[0].StartDate;
+                foreach (ContributorPosition position in c.Positions)
+                {
+                    // Previous had no end and was not the last
+                    if (last == null)
+                        return true;
+                    // Previous ended after current started
+                    if (last > position.StartDate)
+                        return true;
+                    // Previous ended 
+                    if (last > position.EndDate)
+                        return true;
+                    last = position.EndDate;
+                }
+
+                return false;
+            })
+            .Select(c => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OverlappingContributorPositions,
+                ObjectId = c.PersonId,
+            }));
+
         // Requirement: at least one contributor must be flagged as a project leader
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-leader
         if (!project.Contributors.Any(c => c.Leader))
@@ -277,7 +322,86 @@ public class ProjectMapperService : IProjectMapperService
                 Type = RAiDIncompatibilityType.NoProjectContact,
             });
 
-        // project.Organisations.Any(o => o.Roles.)
+        // Note: An organisation’s role may change over time, but each organisation may have one and only one role at any given time.
+        // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role
+        incompatibilities.AddRange(project.Organisations
+            .Where(c =>
+            {
+                if (c.Roles.Count == 0)
+                    return false;
+                c.Roles.Sort((p, q) => DateTime.Compare(p.StartDate, q.StartDate));
+                DateTime? last = c.Roles[0].StartDate;
+                foreach (OrganisationRole role in c.Roles)
+                {
+                    // Previous had no end and was not the last
+                    if (last == null)
+                        return true;
+                    // Previous ended after current started
+                    if (last > role.StartDate)
+                        return true;
+                    // Previous ended 
+                    if (last > role.EndDate)
+                        return true;
+                    last = role.EndDate;
+                }
+
+                return false;
+            })
+            .Select(o => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OverlappingOrganisationRoles,
+                ObjectId = o.OrganisationId,
+            }));
+
+        // Constraints: one (and only one) Organisation must be designated as ‘Lead Research Organisation’
+        // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role-id
+        List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
+                o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
+            .ToList();
+        if (leadOrganisationsRoles.Count == 0)
+        {
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+            });
+        }
+        else
+        {
+            leadOrganisationsRoles.Sort((r1, r2) => DateTime.Compare(r1.StartDate, r2.StartDate));
+            DateTime? last = project.StartDate;
+            foreach (OrganisationRole leadOrganisationsRole in leadOrganisationsRoles)
+            {
+                // Last had no end so we have overlap
+                if (last == null)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.MultipleLeadResearchOrganisation,
+                    });
+
+                if (last != leadOrganisationsRole.StartDate)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                    });
+
+                last = leadOrganisationsRole.EndDate;
+            }
+
+            if (last != null)
+                if (last != project.EndDate)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                    });
+        }
+
+        incompatibilities.AddRange(project.Products
+            .Where(p => p.Categories.Count == 0)
+            .Select(p => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.NoProductCategory,
+                ObjectId = p.Id,
+            }));
 
 
         return incompatibilities;

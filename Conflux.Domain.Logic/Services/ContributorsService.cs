@@ -5,7 +5,8 @@
 
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Request;
+using Conflux.Domain.Logic.DTOs.Response;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,8 +30,8 @@ public class ContributorsService : IContributorsService
     /// <param name="projectId">The GUID of the project</param>
     /// <param name="personId">The GUID of the person</param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
-    public async Task<ContributorDTO> UpdateContributorAsync(Guid projectId, Guid personId,
-        ContributorDTO contributorDTO)
+    public async Task<ContributorResponseDTO> UpdateContributorAsync(Guid projectId, Guid personId,
+        ContributorRequestDTO contributorDTO)
     {
         Contributor contributor = await GetContributorEntityAsync(projectId, personId);
         contributor.Roles = contributorDTO.Roles.ConvertAll(r => new ContributorRole
@@ -58,51 +59,13 @@ public class ContributorsService : IContributorsService
     }
 
     /// <summary>
-    /// Patches a contributor
-    /// </summary>
-    /// <param name="projectId">The GUID of the project</param>
-    /// <param name="personId">The GUID of the person</param>
-    /// <param name="contributorDTO">The DTO which to partially update a <see cref="Contributor" /></param>
-    public async Task<ContributorDTO> PatchContributorAsync(Guid projectId, Guid personId,
-        ContributorPatchDTO contributorDTO)
-    {
-        Contributor contributor = await GetContributorEntityAsync(projectId, personId);
-
-        if (contributorDTO.Roles != null)
-            contributor.Roles = contributorDTO.Roles.ConvertAll(r => new ContributorRole
-            {
-                PersonId = personId,
-                ProjectId = projectId,
-                RoleType = r,
-            });
-
-        if (contributorDTO.Positions != null)
-            contributor.Positions = contributorDTO.Positions.ConvertAll(p => new ContributorPosition
-            {
-                PersonId = personId,
-                ProjectId = projectId,
-                Position = p.Type,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-            });
-
-        if (contributorDTO.Leader.HasValue) contributor.Leader = contributorDTO.Leader.Value;
-
-        if (contributorDTO.Contact.HasValue) contributor.Contact = contributorDTO.Contact.Value;
-
-        await _context.SaveChangesAsync();
-
-        return await MapToContributorDTOAsync(contributor);
-    }
-
-    /// <summary>
     /// Gets the contributor by their GUID
     /// </summary>
     /// <param name="projectId">The GUID of the project</param>
     /// <param name="personId">The GUID of the person</param>
     /// <returns>The contributor DTO with person data</returns>
     /// <exception cref="ContributorNotFoundException">Thrown when the contributor is not found</exception>
-    public async Task<ContributorDTO> GetContributorByIdAsync(Guid projectId, Guid personId)
+    public async Task<ContributorResponseDTO> GetContributorByIdAsync(Guid projectId, Guid personId)
     {
         Contributor contributor = await GetContributorEntityAsync(projectId, personId);
         return await MapToContributorDTOAsync(contributor);
@@ -114,7 +77,7 @@ public class ContributorsService : IContributorsService
     /// <param name="projectId"></param>
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The created contributor DTO with person data</returns>
-    public async Task<ContributorDTO> CreateContributorAsync(ContributorDTO contributorDTO)
+    public async Task<ContributorResponseDTO> CreateContributorAsync(ContributorRequestDTO contributorDTO)
     {
         Contributor contributor = contributorDTO.ToContributor();
         _context.Contributors.Add(contributor);
@@ -129,9 +92,9 @@ public class ContributorsService : IContributorsService
     /// <param name="projectId">The GUID of the project</param>
     /// <param name="query">The string to search in the title or description</param>
     /// <returns>Filtered list of contributor DTOs with person data</returns>
-    public async Task<List<ContributorDTO>> GetContributorsByQueryAsync(Guid projectId, string? query)
+    public async Task<List<ContributorResponseDTO>> GetContributorsByQueryAsync(Guid projectId, string? query)
     {
-        var contributors = _context.Contributors
+        IQueryable<Contributor> contributors = _context.Contributors
             .Include(c => c.Roles)
             .Include(c => c.Positions)
             .Where(c => c.ProjectId == projectId);
@@ -139,7 +102,7 @@ public class ContributorsService : IContributorsService
         if (!string.IsNullOrWhiteSpace(query))
         {
             string loweredQuery = query.ToLowerInvariant();
-            var matchingPersonIds = await _context.People
+            List<Guid> matchingPersonIds = await _context.People
                 .Where(p => p.Name.ToLower().Contains(loweredQuery))
                 .Select(p => p.Id)
                 .ToListAsync();
@@ -147,19 +110,18 @@ public class ContributorsService : IContributorsService
             contributors = contributors.Where(c => matchingPersonIds.Contains(c.PersonId));
         }
 
-        var contributorList = await contributors.ToListAsync();
+        List<Contributor> contributorList = await contributors.ToListAsync();
 
         // Fetch all the relevant persons in one go to avoid N+1 query problem
-        var personIds = contributorList.Select(c => c.PersonId).Distinct().ToList();
-        var persons = await _context.People
+        List<Guid> personIds = contributorList.Select(c => c.PersonId).Distinct().ToList();
+        Dictionary<Guid, Person> persons = await _context.People
             .Where(p => personIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
         // Map to DTOs with person data
-        return contributorList.Select(c => new ContributorDTO
+        return contributorList.Select(c => new ContributorResponseDTO()
         {
             Person = persons.TryGetValue(c.PersonId, out Person? person) ? person : null,
-            ProjectId = projectId,
             Roles = c.Roles.Select(r => r.RoleType).ToList(),
             Positions = c.Positions.Select(p => new ContributorPositionRequestDTO
             {

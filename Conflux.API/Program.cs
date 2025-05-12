@@ -388,9 +388,6 @@ public class Program
         if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
 
-        // Remove existing data
-        await context.Database.EnsureDeletedAsync();
-
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 

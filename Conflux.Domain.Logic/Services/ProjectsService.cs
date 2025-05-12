@@ -80,6 +80,13 @@ public class ProjectsService
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions)
             .ToListAsync();
+        
+        // filter roles per project per user
+        foreach (Project project in projects)
+            foreach (User user in project.Users)
+                user.Roles = user.Roles
+                    .Where(r => r.ProjectId == project.Id)
+                    .ToList();
 
         return projects.Select(MapToProjectDTO).ToList();
     }
@@ -120,6 +127,11 @@ public class ProjectsService
         Project project = await GetProjectByIdQuery(_context, id)
             ?? throw new ProjectNotFoundException(id);
 
+        // filter roles per project per user
+        foreach (User user in project.Users)
+            user.Roles = user.Roles
+                .Where(r => r.ProjectId == project.Id)
+                .ToList();
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();

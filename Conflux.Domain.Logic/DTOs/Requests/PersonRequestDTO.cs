@@ -5,7 +5,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace Conflux.Domain.Logic.DTOs.Request;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
 public class PersonRequestDTO
 {

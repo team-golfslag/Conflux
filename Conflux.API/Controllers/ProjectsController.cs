@@ -3,8 +3,9 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Queries;
+using Conflux.Domain.Logic.DTOs.Requests;
+using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authorization;
@@ -45,8 +46,8 @@ public class ProjectsController : ControllerBase
     /// <returns>Filtered list of projects</returns>
     [Authorize]
     [HttpGet]
-    [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ProjectDTO>>> GetProjectByQuery(
+    [ProducesResponseType(typeof(List<ProjectResponseDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
 
@@ -57,8 +58,8 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("all")]
-    [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ProjectDTO>>> GetAllProjects()
+    [ProducesResponseType(typeof(List<ProjectResponseDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ProjectResponseDTO>>> GetAllProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
@@ -72,8 +73,8 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("{id:guid}")]
-    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProjectDTO>> GetProjectById([FromRoute] Guid id) =>
+    [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectResponseDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
 
     /// <summary>
@@ -84,21 +85,9 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
-    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectRequestDTO projectDto) =>
+    [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProjectResponseDTO>> PutProject([FromRoute] Guid id, ProjectRequestDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
-
-    /// <summary>
-    /// Patches a project by its GUID
-    /// </summary>
-    /// <param name="id">The GUID of the project to update</param>
-    /// <param name="projectDto">The new project details</param>
-    /// <returns>The request response</returns>
-    [HttpPatch]
-    [Route("{id:guid}")]
-    [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProjectDTO>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
-        await _projectsService.PatchProjectAsync(id, projectDto);
 
     [HttpPost]
     [Route("{id:guid}/sync")]

@@ -214,7 +214,6 @@ public static class NwOpenMapper
     {
         List<Organisation> organisations = Organisations.Where(p => p.Name == projectMember.Organisation).ToList();
 
-
         Organisation organisation;
         if (organisations.Count == 0)
         {
@@ -248,7 +247,6 @@ public static class NwOpenMapper
             ],
         };
         project.Organisations.Add(projectOrganisation);
-
-        Guid organisationId = Guid.NewGuid();
+        Organisations.Add(organisation);
     }
 }

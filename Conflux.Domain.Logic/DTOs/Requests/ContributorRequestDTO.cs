@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Request;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
 public class ContributorRequestDTO
 {

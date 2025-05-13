@@ -3,13 +3,9 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Request;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
-public class ProjectDescriptionRequestDTO
+public class UserRequestDTO
 {
-    public required string Text { get; set; }
-
-    public DescriptionType Type { get; init; }
-
-    public Language? Language { get; set; }
+    
 }

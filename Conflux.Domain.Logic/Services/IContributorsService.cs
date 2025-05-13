@@ -3,8 +3,8 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain.Logic.DTOs.Request;
-using Conflux.Domain.Logic.DTOs.Response;
+using Conflux.Domain.Logic.DTOs.Requests;
+using Conflux.Domain.Logic.DTOs.Responses;
 
 namespace Conflux.Domain.Logic.Services;
 

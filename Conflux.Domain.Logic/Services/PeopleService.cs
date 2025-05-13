@@ -4,7 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Logic.DTOs.Request;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,7 +39,15 @@ public class PeopleService : IPeopleService
 
     public async Task<Person> CreatePersonAsync(PersonRequestDTO personDTO)
     {
-        Person person = personDTO.ToPerson();
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = personDTO.Name,
+            GivenName = personDTO.GivenName,
+            FamilyName = personDTO.FamilyName,
+            Email = personDTO.Email,
+            ORCiD = personDTO.ORCiD,
+        };
         _context.People.Add(person);
         await _context.SaveChangesAsync();
         return person;

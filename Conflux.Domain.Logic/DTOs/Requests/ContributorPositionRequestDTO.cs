@@ -3,9 +3,11 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Request;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
-public class UserRequestDTO
+public class ContributorPositionRequestDTO
 {
-    
+    public DateTime? EndDate { get; init; }
+    public DateTime StartDate { get; init; }
+    public ContributorPositionType Type { get; init; }
 }

@@ -8,14 +8,15 @@ namespace Conflux.Domain.Logic.DTOs.Response;
 public class ContributorResponseDTO
 {
     public required Person Person { get; init; }
-    public List<ContributorRole> Roles { get; set; } = [];
-    public List<ContributorPosition> Positions { get; set; } = [];
+    public List<ContributorRole> Roles { get; init; } = [];
+    public List<ContributorPosition> Positions { get; init; } = [];
+    public Guid ProjectId { get; init; }
 
     /// <summary>
     /// True if this contributor is a leader. Multiple leaders are allowed but 1 is required in RAiD
     /// </summary>
     public bool Leader { get; set; }
-    
+
     /// <summary>
     /// True if this contributor is a contact. Multiple contacts are allowed but 1 is required in RAiD
     /// </summary>

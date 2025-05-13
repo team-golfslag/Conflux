@@ -85,6 +85,7 @@ public class Program
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddScoped<IContributorsService, ContributorsService>();
+        builder.Services.AddScoped<IProjectDescriptionsService, ProjectDescriptionsService>();
         builder.Services.AddScoped<IPeopleService, PeopleService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
@@ -167,8 +168,8 @@ public class Program
         {
             HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>()
                 .CreateClient("RAiD");
-            var optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
-            var logger = provider.GetRequiredService<ILogger<RAiDService>>();
+            IOptions<RAiDServiceOptions> optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
+            ILogger<RAiDService> logger = provider.GetRequiredService<ILogger<RAiDService>>();
 
             RAiDService raidSvc = new(httpClient, optionsAccessor, logger);
 
@@ -325,8 +326,8 @@ public class Program
                 switch (exception)
                 {
                     case ProjectNotFoundException
-                         or ContributorNotFoundException
-                         or PersonNotFoundException:
+                        or ContributorNotFoundException
+                        or PersonNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -334,7 +335,7 @@ public class Program
                         });
                         break;
                     case PersonHasContributorsException
-                         or ContributorAlreadyAddedToProjectException:
+                        or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -461,14 +462,15 @@ public class Program
         options.SaveTokens = true;
         options.GetClaimsFromUserInfoEndpoint = true;
 
-        var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+        List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
         if (scopes != null)
             foreach (string scope in scopes)
                 options.Scope.Add(scope);
 
-        var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
+        Dictionary<string, string>? claimMappings =
+            oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
         if (claimMappings != null)
-            foreach (var mapping in claimMappings)
+            foreach (KeyValuePair<string, string> mapping in claimMappings)
                 options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
 
         options.Events.OnRedirectToIdentityProvider = context =>

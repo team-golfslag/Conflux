@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Request;
 using Conflux.Domain.Logic.DTOs.Response;
 using Conflux.Domain.Logic.Exceptions;
@@ -72,21 +71,6 @@ public class ContributorsService : IContributorsService
     }
 
     /// <summary>
-    /// Creates a new contributor
-    /// </summary>
-    /// <param name="projectId"></param>
-    /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
-    /// <returns>The created contributor DTO with person data</returns>
-    public async Task<ContributorResponseDTO> CreateContributorAsync(ContributorRequestDTO contributorDTO)
-    {
-        Contributor contributor = contributorDTO.ToContributor();
-        _context.Contributors.Add(contributor);
-        await _context.SaveChangesAsync();
-
-        return await MapToContributorDTOAsync(contributor);
-    }
-
-    /// <summary>
     /// Gets all contributors whose name contains the query (case-insensitive)
     /// </summary>
     /// <param name="projectId">The GUID of the project</param>
@@ -119,19 +103,52 @@ public class ContributorsService : IContributorsService
             .ToDictionaryAsync(p => p.Id);
 
         // Map to DTOs with person data
-        return contributorList.Select(c => new ContributorResponseDTO()
+        return contributorList.Select(c => new ContributorResponseDTO
         {
-            Person = persons.TryGetValue(c.PersonId, out Person? person) ? person : null,
-            Roles = c.Roles.Select(r => r.RoleType).ToList(),
-            Positions = c.Positions.Select(p => new ContributorPositionRequestDTO
-            {
-                Type = p.Position,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-            }).ToList(),
+            Person = persons.TryGetValue(c.PersonId, out Person? person)
+                ? person
+                : throw new PersonNotFoundException(c.PersonId),
+            Roles = c.Roles,
+            Positions = c.Positions,
             Leader = c.Leader,
             Contact = c.Contact,
         }).ToList();
+    }
+
+    /// <summary>
+    /// Creates a new contributor
+    /// </summary>
+    /// <param name="projectId"></param>
+    /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
+    /// <returns>The created contributor DTO with person data</returns>
+    public async Task<ContributorResponseDTO> CreateContributorAsync(Guid projectId, Guid personId,
+        ContributorRequestDTO contributorDTO)
+    {
+        Contributor contributor = new()
+        {
+            PersonId = personId,
+            ProjectId = projectId,
+            Roles = contributorDTO.Roles.ConvertAll(r => new ContributorRole
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                RoleType = r,
+            }),
+            Positions = contributorDTO.Positions.ConvertAll(p => new ContributorPosition
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                Position = p.Type,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+            }),
+            Leader = contributorDTO.Leader,
+            Contact = contributorDTO.Contact,
+        };
+        _context.Contributors.Add(contributor);
+        await _context.SaveChangesAsync();
+
+        return await MapToContributorDTOAsync(contributor);
     }
 
     /// <summary>
@@ -147,21 +164,17 @@ public class ContributorsService : IContributorsService
     /// <summary>
     /// Maps a contributor entity to a contributor DTO with person data
     /// </summary>
-    private async Task<ContributorDTO> MapToContributorDTOAsync(Contributor contributor)
+    private async Task<ContributorResponseDTO> MapToContributorDTOAsync(Contributor contributor)
     {
-        Person? person = await _context.People.FindAsync(contributor.PersonId);
+        Person person = await _context.People.FindAsync(contributor.PersonId) ??
+            throw new PersonNotFoundException(contributor.PersonId);
 
         return new()
         {
             Person = person,
             ProjectId = contributor.ProjectId,
-            Roles = contributor.Roles.Select(r => r.RoleType).ToList(),
-            Positions = contributor.Positions.Select(p => new ContributorPositionRequestDTO
-            {
-                Type = p.Position,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-            }).ToList(),
+            Roles = contributor.Roles,
+            Positions = contributor.Positions,
             Leader = contributor.Leader,
             Contact = contributor.Contact,
         };

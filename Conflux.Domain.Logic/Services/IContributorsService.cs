@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Request;
 using Conflux.Domain.Logic.DTOs.Response;
 
@@ -13,6 +12,10 @@ public interface IContributorsService
 {
     public Task<List<ContributorResponseDTO>> GetContributorsByQueryAsync(Guid projectId, string? query);
     public Task<ContributorResponseDTO> GetContributorByIdAsync(Guid projectId, Guid personId);
-    public Task<ContributorResponseDTO> CreateContributorAsync(ContributorRequestDTO contributorDTO);
-    public Task<ContributorResponseDTO> UpdateContributorAsync(Guid projectId, Guid personId, ContributorRequestDTO contributorDTO);
+
+    public Task<ContributorResponseDTO> CreateContributorAsync(Guid projectId, Guid personId,
+        ContributorRequestDTO contributorDTO);
+
+    public Task<ContributorResponseDTO> UpdateContributorAsync(Guid projectId, Guid personId,
+        ContributorRequestDTO contributorDTO);
 }

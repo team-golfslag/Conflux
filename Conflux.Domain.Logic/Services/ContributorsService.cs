@@ -151,6 +151,18 @@ public class ContributorsService : IContributorsService
         return await MapToContributorDTOAsync(contributor);
     }
 
+    public Task DeleteContributorAsync(Guid projectId, Guid personId)
+    {
+        Contributor contributor = _context.Contributors
+                .Include(c => c.Roles)
+                .Include(c => c.Positions)
+                .SingleOrDefault(p => p.ProjectId == projectId && p.PersonId == personId) ??
+            throw new ContributorNotFoundException(projectId);
+
+        _context.Contributors.Remove(contributor);
+        return _context.SaveChangesAsync();
+    }
+
     /// <summary>
     /// Helper method to get a contributor entity
     /// </summary>

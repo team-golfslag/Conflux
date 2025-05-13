@@ -115,6 +115,10 @@ public static class NwOpenMapper
     /// <param name="product">The NWOpen product to map</param>
     private static void MapProduct(Project project, NwOpenProduct product)
     {
+        if (string.IsNullOrEmpty(product.UrlOpenAccess))
+        {
+            return;
+        }
         List<Product> products = Products.Where(p => p.Url == product.UrlOpenAccess).ToList();
         if (products.Count != 0)
         {
@@ -223,13 +227,14 @@ public static class NwOpenMapper
                 RORId = "https://ror.org/04pp8hn57",
                 Name = projectMember.Organisation!,
             };
-            organisations.Add(organisation);
+            Organisations.Add(organisation);
         }
         else
         {
             organisation = organisations[0];
         }
 
+        if (project.Organisations.Any(o => o.OrganisationId == organisation.Id)) return;
 
         ProjectOrganisation projectOrganisation = new()
         {
@@ -247,6 +252,5 @@ public static class NwOpenMapper
             ],
         };
         project.Organisations.Add(projectOrganisation);
-        Organisations.Add(organisation);
     }
 }

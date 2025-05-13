@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
@@ -22,6 +21,23 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService
 {
+    // Compiled query to get project by ID
+    private static readonly Func<ConfluxContext, Guid, Task<Project?>> GetProjectByIdQuery =
+        EF.CompileAsyncQuery((ConfluxContext context, Guid id) =>
+            context.Projects
+                .AsNoTracking()
+                .Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .Include(p => p.Users)
+                .ThenInclude(user => user.Roles)
+                .Include(p => p.Products)
+                .Include(p => p.Organisations)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Roles)
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Positions)
+                .SingleOrDefault(p => p.Id == id));
+
     private readonly ConfluxContext _context;
     private readonly IProjectMapperService _projectMapperService;
     private readonly IRAiDService _raidService;
@@ -51,41 +67,27 @@ public class ProjectsService
             .Select(c => c.CollaborationGroup.SCIMId)
             .ToList();
 
-        var data = await _context.Projects
-            .Where(p => p.SCIMId != null && accessibleSramIds.Contains(p.SCIMId))
-            .Select(p => new
-            {
-                Project = p,
-                p.Products,
-                p.Contributors,
-                p.Titles,
-                p.Descriptions,
-                Users = p.Users.Select(person => new
-                {
-                    Person = person,
-                    Roles = person.Roles.Where(role => role.ProjectId == p.Id).ToList(),
-                }),
-                Parties = p.Organisations,
-            })
+        List<Project> projects = await _context.Projects
+            .AsNoTracking()
+            .Where(p => accessibleSramIds.Contains(p.SCIMId))
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
             .ToListAsync();
 
-        // create a list of projects with the same size as the data
-        List<Project> projects = new(data.Count);
-
-        foreach (var project in data)
-        {
-            Project newProject = project.Project;
-            newProject.Products = project.Products;
-            newProject.Contributors = project.Contributors;
-            newProject.Titles = project.Titles;
-            newProject.Descriptions = project.Descriptions;
-            newProject.Users = project.Users.Select(p => p.Person with
-            {
-                Roles = p.Roles.ToList(),
-            }).ToList();
-            newProject.Organisations = project.Parties;
-            projects.Add(newProject);
-        }
+        // filter roles per project per user
+        foreach (Project project in projects)
+            foreach (User user in project.Users)
+                user.Roles = user.Roles
+                    .Where(r => r.ProjectId == project.Id)
+                    .ToList();
 
         return projects.Select(MapToProjectDTO).ToList();
     }
@@ -123,11 +125,25 @@ public class ProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<ProjectResponseDTO> GetProjectByIdAsync(Guid id)
     {
-        ProjectResponseDTO project = (await GetAvailableProjects())
-            .FirstOrDefault(p => p.Id == id)
+        Project project = await GetProjectByIdQuery(_context, id)
             ?? throw new ProjectNotFoundException(id);
 
-        return project;
+        // filter roles per project per user
+        foreach (User user in project.Users)
+            user.Roles = user.Roles
+                .Where(r => r.ProjectId == project.Id)
+                .ToList();
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+
+        List<string> accessibleSramIds = userSession.Collaborations
+            .Select(c => c.CollaborationGroup.SCIMId)
+            .ToList();
+        if (!accessibleSramIds.Contains(project.SCIMId))
+            throw new ProjectNotFoundException(id);
+
+        return MapToProjectDTO(project);
     }
 
     /// <summary>

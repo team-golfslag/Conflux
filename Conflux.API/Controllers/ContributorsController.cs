@@ -6,6 +6,7 @@
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
+using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -52,6 +53,29 @@ public class ContributorsController : ControllerBase
     public async Task<ActionResult<ContributorResponseDTO>> GetContributorByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid personId) =>
         await _contributorsService.GetContributorByIdAsync(projectId, personId);
+
+    /// <summary>
+    /// Deletes a contributor
+    /// </summary>
+    /// <param name="projectId">The GUID of the project</param>
+    /// <param name="personId">The GUID of the person</param>
+    [HttpDelete]
+    [Route("{personId:guid}")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
+    public async Task<ActionResult> DeleteContributor([FromRoute] Guid projectId,
+        [FromRoute] Guid personId)
+    {
+        try
+        {
+            await _contributorsService.DeleteContributorAsync(projectId, personId);
+        }
+        catch (ContributorNotFoundException)
+        {
+            return NotFound("Contributor not found");
+        }
+
+        return Ok();
+    }
 
     /// <summary>
     /// Creates a new contributor via POST

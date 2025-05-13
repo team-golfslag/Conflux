@@ -18,4 +18,6 @@ public interface IContributorsService
 
     public Task<ContributorResponseDTO> UpdateContributorAsync(Guid projectId, Guid personId,
         ContributorRequestDTO contributorDTO);
+
+    public Task DeleteContributorAsync(Guid projectId, Guid personId);
 }

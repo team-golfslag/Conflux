@@ -9,7 +9,7 @@ public class ProjectDescriptionRequestDTO
 {
     public required string Text { get; set; }
 
-    public DescriptionType Type { get; init; }
+    public required DescriptionType Type { get; init; }
 
     public Language? Language { get; set; }
 }

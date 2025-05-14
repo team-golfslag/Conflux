@@ -13,6 +13,7 @@ public class ProductDTO
     public required string Title { get; init; }
     public ProductType? Type { get; init; }
     public List<ProductCategoryType> Categories { get; init; } = [];
+    public string? SURFSharekitId { get; init; }
 
     public Product ToProduct() =>
         new()
@@ -26,5 +27,6 @@ public class ProductDTO
                 Type = c,
                 ProductId = Id,
             }).ToHashSet(),
+            SURFSharekitId = SURFSharekitId,
         };
 }

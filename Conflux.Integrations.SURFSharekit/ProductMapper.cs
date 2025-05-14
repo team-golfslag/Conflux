@@ -59,6 +59,7 @@ public static class ProductMapper
                     Type = ProductCategoryType.Input,
                 },
             ],
+            SURFSharekitId = repoItem.Id,
         };
 
         return mappedProduct;

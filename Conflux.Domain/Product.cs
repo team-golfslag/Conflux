@@ -45,4 +45,5 @@ public class Product
         };
 
     public HashSet<ProductCategory> Categories { get; set; } = [];
+    public string? SURFSharekitId { get; init; }
 }

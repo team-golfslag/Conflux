@@ -5,6 +5,7 @@
 
 using Conflux.Domain;
 using SURFSharekit.Net.Models;
+using SURFSharekit.Net.Models.RepoItem;
 
 namespace Conflux.Integrations.SURFSharekit;
 

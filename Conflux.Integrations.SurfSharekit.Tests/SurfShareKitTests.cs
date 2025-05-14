@@ -11,6 +11,7 @@ using Conflux.Integrations.SURFSharekit.Tests.Helpers;
 
 using SURFSharekit.Net;
 using SURFSharekit.Net.Models;
+using SURFSharekit.Net.Models.RepoItem;
 using Xunit;
 using Xunit.Abstractions;
 

@@ -96,6 +96,11 @@ public class UserSessionService : IUserSessionService
 
 
         UserSession? user = await GetUserSession(claims);
+        if (user is { User: null })
+        {
+            user.User = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        }
+        
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 
         return user;

@@ -5,6 +5,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Conflux.API.Filters;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
@@ -92,6 +93,7 @@ public class Program
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);

@@ -87,8 +87,7 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         {
             Id = Guid.NewGuid(),
             ProjectId = project.Id,
-            Name = updatedGroup.DisplayName,
-            Description = updatedGroup.Description,
+            Type = SessionMappingService.GroupUrnToUserRoleType(updatedGroup.Urn),
             Urn = updatedGroup.Urn,
             SCIMId = updatedGroup.SCIMId,
         };

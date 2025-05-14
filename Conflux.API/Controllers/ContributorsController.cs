@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
@@ -21,6 +22,7 @@ namespace Conflux.API.Controllers;
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 [Route("projects/{projectId:guid}/contributors")]
+[RouteParamName("projectId")]
 public class ContributorsController : ControllerBase
 {
     private readonly IContributorsService _contributorsService;
@@ -37,6 +39,7 @@ public class ContributorsController : ControllerBase
     /// <returns>Filtered list of contributors</returns>
     [HttpGet]
     [ProducesResponseType(typeof(List<ContributorDTO>), StatusCodes.Status200OK)]
+    [RequireProjectRole(UserRoleType.User)]
     public async Task<ActionResult<List<ContributorDTO>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
         await _contributorsService.GetContributorsByQueryAsync(projectId, query);

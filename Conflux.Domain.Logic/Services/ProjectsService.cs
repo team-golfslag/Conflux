@@ -393,8 +393,7 @@ public class ProjectsService
                 ORCiD = u.ORCiD,
                 Roles = u.Roles.Select(r => new UserRoleDTO
                     {
-                        Name = r.Name,
-                        Description = r.Description,
+                        Type = r.Type,
                         Urn = r.Urn,
                         SCIMId = r.SCIMId
                     })

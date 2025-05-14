@@ -7,8 +7,7 @@ namespace Conflux.Domain.Logic.DTOs;
 
 public class UserRoleDTO
 {
-    public required string Name { get; init; }
-    public string? Description { get; init; }
+    public required UserRoleType Type { get; init; }
     public required string Urn { get; init; }
     public required string SCIMId { get; init; }
 
@@ -17,8 +16,7 @@ public class UserRoleDTO
         {
             Id = userId,
             ProjectId = projectId,
-            Name = Name,
-            Description = Description,
+            Type = Type,
             Urn = Urn,
             SCIMId = SCIMId,
         };

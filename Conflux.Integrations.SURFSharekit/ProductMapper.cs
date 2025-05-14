@@ -41,9 +41,11 @@ public static class ProductMapper
     /// <returns>A Product or null</returns>
     private static Product? MapProduct(SURFSharekitRepoItem repoItem)
     {
-        if (repoItem.Attributes?.Title is not { } title) //product requires a title to be made
+        if (string.IsNullOrWhiteSpace(repoItem.Attributes?.Title)) //product requires a title to be made
             return null;
-
+        
+        string title = repoItem.Attributes.Title;
+        
         Guid newId = Guid.NewGuid();
         Product mappedProduct = new()
         {

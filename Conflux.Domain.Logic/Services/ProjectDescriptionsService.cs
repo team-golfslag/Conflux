@@ -11,40 +11,40 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
 
-public class ProjectDescriptionsService : IProjectDescriptionsService
+/// <summary>
+/// Service for managing project descriptions.
+/// </summary>
+/// <param name="context">The database context.</param>
+public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescriptionsService
 {
-    private readonly ConfluxContext _context;
-
-    public ProjectDescriptionsService(ConfluxContext context)
-    {
-        _context = context;
-    }
-
+    /// <inheritdoc />
     public async Task<List<ProjectDescriptionResponseDTO>> GetDescriptionsByProjectIdAsync(Guid projectId)
     {
         // Verify project exists
-        bool projectExists = await _context.Projects.AnyAsync(p => p.Id == projectId);
+        bool projectExists = await context.Projects.AnyAsync(p => p.Id == projectId);
         if (!projectExists)
             throw new ProjectNotFoundException(projectId);
 
-        List<ProjectDescription> descriptions = await _context.ProjectDescriptions
+        List<ProjectDescription> descriptions = await context.ProjectDescriptions
             .Where(d => d.ProjectId == projectId)
             .ToListAsync();
 
         return descriptions.Select(MapToDescriptionResponseDTO).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<ProjectDescriptionResponseDTO> GetDescriptionByIdAsync(Guid projectId, Guid descriptionId)
     {
         ProjectDescription description = await GetDescriptionEntityAsync(projectId, descriptionId);
         return MapToDescriptionResponseDTO(description);
     }
 
+    /// <inheritdoc />
     public async Task<ProjectDescriptionResponseDTO> CreateDescriptionAsync(Guid projectId,
         ProjectDescriptionRequestDTO descriptionDTO)
     {
         // Verify project exists
-        bool projectExists = await _context.Projects.AnyAsync(p => p.Id == projectId);
+        bool projectExists = await context.Projects.AnyAsync(p => p.Id == projectId);
         if (!projectExists)
             throw new ProjectNotFoundException(projectId);
 
@@ -57,12 +57,13 @@ public class ProjectDescriptionsService : IProjectDescriptionsService
             Language = descriptionDTO.Language,
         };
 
-        _context.ProjectDescriptions.Add(description);
-        await _context.SaveChangesAsync();
+        context.ProjectDescriptions.Add(description);
+        await context.SaveChangesAsync();
 
         return MapToDescriptionResponseDTO(description);
     }
 
+    /// <inheritdoc />
     public async Task<ProjectDescriptionResponseDTO> UpdateDescriptionAsync(Guid projectId, Guid descriptionId,
         ProjectDescriptionRequestDTO descriptionDTO)
     {
@@ -72,17 +73,18 @@ public class ProjectDescriptionsService : IProjectDescriptionsService
         description.Type = descriptionDTO.Type;
         description.Language = descriptionDTO.Language;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return MapToDescriptionResponseDTO(description);
     }
 
+    /// <inheritdoc />
     public async Task DeleteDescriptionAsync(Guid projectId, Guid descriptionId)
     {
         ProjectDescription description = await GetDescriptionEntityAsync(projectId, descriptionId);
 
-        _context.ProjectDescriptions.Remove(description);
-        await _context.SaveChangesAsync();
+        context.ProjectDescriptions.Remove(description);
+        await context.SaveChangesAsync();
     }
 
     /// <summary>
@@ -90,7 +92,7 @@ public class ProjectDescriptionsService : IProjectDescriptionsService
     /// </summary>
     private async Task<ProjectDescription> GetDescriptionEntityAsync(Guid projectId, Guid descriptionId)
     {
-        ProjectDescription? description = await _context.ProjectDescriptions
+        ProjectDescription? description = await context.ProjectDescriptions
             .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == descriptionId);
 
         if (description == null)
@@ -109,6 +111,6 @@ public class ProjectDescriptionsService : IProjectDescriptionsService
             ProjectId = description.ProjectId,
             Text = description.Text,
             Type = description.Type,
-            Language = description.Language,
+            Language = description.Language ?? Language.DUTCH,
         };
 }

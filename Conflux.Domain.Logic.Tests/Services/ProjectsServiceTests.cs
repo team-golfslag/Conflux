@@ -4,6 +4,8 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
+using Conflux.Domain.Logic.DTOs.Requests;
+using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Integrations.RAiD;
@@ -55,33 +57,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
             new()
             {
-                Titles =
-                [
-                    new()
-                    {
-                        Text = "non-existent project",
-                        Type = TitleType.Primary,
-                        StartDate = new(2021,
-                            1,
-                            1,
-                            0,
-                            0,
-                            0,
-                            DateTimeKind.Utc),
-                    },
-                ],
-                Descriptions =
-                [
-                    new()
-                    {
-                        Text = "Will not update",
-                        Language = Language.ENGLISH,
-                        Type = DescriptionType.Primary,
-                    },
-                ],
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
-                Id = Guid.NewGuid(),
             }));
     }
 
@@ -132,30 +109,6 @@ public class ProjectsServiceTests : IAsyncLifetime
         // Prepare Put DTO
         ProjectRequestDTO putRequestDTO = new()
         {
-            Titles =
-            [
-                new()
-                {
-                    Text = "Updated Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021,
-                        1,
-                        1,
-                        0,
-                        0,
-                        0,
-                        DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    Text = "Updated Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
             StartDate = new(2024,
                 2,
                 1,
@@ -170,18 +123,13 @@ public class ProjectsServiceTests : IAsyncLifetime
                 59,
                 59,
                 DateTimeKind.Utc),
-            Id = projectId,
         };
 
         // Act
-        Project updatedProject = await service.PutProjectAsync(originalProject.Id, putRequestDTO);
+        ProjectResponseDTO updatedProject = await service.PutProjectAsync(originalProject.Id, putRequestDTO);
 
         // Assert
         Assert.NotNull(updatedProject);
-        Assert.Single(updatedProject.Titles);
-        Assert.Equal("Updated Title", updatedProject.Titles[0].Text);
-        Assert.Single(updatedProject.Descriptions);
-        Assert.Equal("Updated Description", updatedProject.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
@@ -190,106 +138,6 @@ public class ProjectsServiceTests : IAsyncLifetime
             .Include(p => p.Descriptions)
             .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
-        Assert.Single(reloaded.Titles);
-        Assert.Equal("Updated Title", reloaded.Titles[0].Text);
-        Assert.Single(reloaded.Descriptions);
-        Assert.Equal("Updated Description", reloaded.Descriptions[0].Text);
-        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
-        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
-    }
-
-    /// <summary>
-    /// Given a project service
-    /// When PatchProjectAsync is called with an existing project ID
-    /// Then the project should be patched
-    /// </summary>
-    [Fact]
-    public async Task PatchProjectAsync_ShouldPatchExistingProject()
-    {
-        // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
-        Guid projectId = Guid.NewGuid();
-
-        // Insert a test project
-        Project originalProject = new()
-        {
-            Id = projectId,
-            Titles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Text = "Original Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Text = "Original Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
-            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-        };
-
-        _context.Projects.Add(originalProject);
-        await _context.SaveChangesAsync();
-
-
-        // Prepare patch DTO
-        ProjectPatchDTO patchDto = new()
-        {
-            Titles =
-            [
-                new()
-                {
-                    Text = "Patched Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    Text = "Patched Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
-            StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
-        };
-
-        // Act
-        ProjectDTO patchedProject = await service.PatchProjectAsync(originalProject.Id, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedProject);
-        Assert.Single(patchedProject.Titles);
-        Assert.Equal("Patched Title", patchedProject.Titles[0].Text);
-        Assert.Single(patchedProject.Descriptions);
-        Assert.Equal("Patched Description", patchedProject.Descriptions[0].Text);
-        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
-        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
-
-        // Double-check by re-querying from the database
-        Project? reloaded = await _context.Projects
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
-        Assert.NotNull(reloaded);
-        Assert.Single(reloaded.Titles);
-        Assert.Equal("Patched Title", reloaded.Titles[0].Text);
-        Assert.Single(reloaded.Descriptions);
-        Assert.Equal("Patched Description", reloaded.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }

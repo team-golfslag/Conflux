@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
@@ -114,7 +115,7 @@ public class PeopleServiceTests : IAsyncLifetime
     [Fact]
     public async Task CreatePersonAsync_AddsPersonToDatabase()
     {
-        PersonDTO dto = new()
+        PersonRequestDTO dto = new()
         {
             Name = "Alice Wonderland",
             GivenName = "Alice",
@@ -130,14 +131,14 @@ public class PeopleServiceTests : IAsyncLifetime
         // Verify it persisted
         Person? fetched = await _context.People.FindAsync(created.Id);
         Assert.NotNull(fetched);
-        Assert.Equal("Alice Wonderland", fetched!.Name);
+        Assert.Equal("Alice Wonderland", fetched.Name);
     }
 
     [Fact]
     public async Task UpdatePersonAsync_WithValidId_UpdatesPerson()
     {
         Person target = await _context.People.FirstAsync();
-        PersonDTO dto = new()
+        PersonRequestDTO dto = new()
         {
             Name = "Updated",
             GivenName = "Up",
@@ -153,26 +154,6 @@ public class PeopleServiceTests : IAsyncLifetime
         // persisted?
         Person? persisted = await _context.People.FindAsync(target.Id);
         Assert.Equal("Updated", persisted!.Name);
-    }
-
-    [Fact]
-    public async Task PatchPersonAsync_WithValidId_PatchesEmailOnly()
-    {
-        Person target = await _context.People.FirstAsync();
-        string originalName = target.Name;
-
-        PersonPatchDTO patch = new()
-        {
-            Email = "patched@example.com",
-        };
-
-        Person patched = await _service.PatchPersonAsync(target.Id, patch);
-
-        Assert.Equal(originalName, patched.Name);
-        Assert.Equal("patched@example.com", patched.Email);
-
-        Person? persisted = await _context.People.FindAsync(target.Id);
-        Assert.Equal("patched@example.com", persisted!.Email);
     }
 
     [Fact]

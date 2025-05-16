@@ -12,11 +12,35 @@ using Microsoft.AspNet.WebHooks;
 using Microsoft.AspNet.WebHooks.Config;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SURFSharekit.Net.Models;
+using SURFSharekit.Net.Models.RepoItem;
 
 namespace Conflux.API.Controllers;
 
 [Route("sharekit/")]
 public class SURFSharekitController : ControllerBase
 {
-    
+    private readonly SURFSharekitService _sharekitService;
+
+    public SURFSharekitController(SURFSharekitService sharekitService)
+    {
+        _sharekitService = sharekitService;
+    }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(HttpResponse), StatusCodes.Status200OK)]
+    [Route("webhook/")]
+    public async Task<ActionResult<string>> HandleWebhook(
+        [FromBody] SURFSharekitRepoItem payload)
+    {
+        return _sharekitService.HandleWebhook(payload);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(HttpResponse), StatusCodes.Status200OK)]
+    [Route("update/")]
+    public async Task<ActionResult<List<string>>> UpdateRepoItems()
+    {
+        return await _sharekitService.UpdateRepoItems();
+    }
 }

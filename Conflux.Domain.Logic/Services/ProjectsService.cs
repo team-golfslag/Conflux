@@ -56,7 +56,7 @@ public class ProjectsService
     /// </summary>
     /// <returns>A list of projects that the current user has access to</returns>
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    private async Task<List<ProjectDTO>> GetAvailableProjects()
+  private async Task<List<ProjectDTO>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)

@@ -10,6 +10,7 @@
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
         <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj"/>
         <ProjectReference Include="..\Conflux.Integrations.SRAM\Conflux.Integrations.SRAM.csproj"/>
+        <ProjectReference Include="..\Conflux.Integrations.SURFSharekit\Conflux.Integrations.SURFSharekit.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -17,6 +18,13 @@
         <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0"/>
         <PackageReference Include="Microsoft.FeatureManagement" Version="4.0.0"/>
+        <PackageReference Include="SURFSharekit.Net" Version="1.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="SURFSharekit.Net">
+        <HintPath>..\..\..\..\..\.nuget\packages\surfsharekit.net\1.1.1\lib\net9.0\SURFSharekit.Net.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

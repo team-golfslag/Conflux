@@ -37,14 +37,14 @@ public class ProjectTitle
     [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
 
     // TODO: Should have a max length of 100
-    public required string Text { get; init; }
+    public required string Text { get; set; }
 
-    public Language? Language { get; init; }
+    public Language? Language { get; set; }
 
     public required TitleType Type { get; init; }
 
     public DateTime StartDate { get; init; }
-    public DateTime? EndDate { get; init; }
+    public DateTime? EndDate { get; set; }
 
     public string TypeSchemaUri => "https://vocabulary.raid.org/title.type.schema/376";
     public string TypeUri => $"https://vocabulary.raid.org/title.type.schema/{(int)Type}";

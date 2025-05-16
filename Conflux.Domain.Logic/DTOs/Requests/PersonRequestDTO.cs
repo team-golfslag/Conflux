@@ -3,16 +3,15 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Patch;
+using System.ComponentModel.DataAnnotations;
 
-public class UserPatchDTO
+namespace Conflux.Domain.Logic.DTOs.Requests;
+
+public class PersonRequestDTO
 {
-    public string? SRAMId { get; init; }
-    public string? SCIMId { get; init; }
-    public string? ORCiD { get; init; }
-    public string? Name { get; init; }
-    public List<UserRoleDTO>? Roles { get; init; }
+    [Required] public required string Name { get; init; }
     public string? GivenName { get; init; }
     public string? FamilyName { get; init; }
     public string? Email { get; init; }
+    public string? ORCiD { get; init; }
 }

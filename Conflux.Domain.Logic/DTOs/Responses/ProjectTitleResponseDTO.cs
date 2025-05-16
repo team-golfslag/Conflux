@@ -3,22 +3,19 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs;
+namespace Conflux.Domain.Logic.DTOs.Responses;
 
-public class ProjectTitleDTO
+public class ProjectTitleResponseDTO
 {
+    public Guid Id { get; init; }
+    public Guid ProjectId { get; init; }
+
     public required string Text { get; init; }
+
+    public Language? Language { get; init; }
+
     public required TitleType Type { get; init; }
+
     public DateTime StartDate { get; init; }
     public DateTime? EndDate { get; init; }
-
-    public ProjectTitle ToProjectTitle(Guid projectId) =>
-        new()
-        {
-            ProjectId = projectId,
-            Text = Text,
-            Type = Type,
-            StartDate = StartDate,
-            EndDate = EndDate,
-        };
 }

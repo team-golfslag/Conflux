@@ -23,10 +23,17 @@ public enum OrganisationRoleType
     OtherOrganization = 188,
 }
 
-[PrimaryKey(nameof(OrganisationId), nameof(Role))]
+[PrimaryKey(nameof(ProjectId), nameof(OrganisationId), nameof(Role))]
 public class OrganisationRole
 {
-    [ForeignKey(nameof(Project))] public Guid OrganisationId { get; init; }
+    [ForeignKey(nameof(ProjectOrganisation))]
+    [Column(Order = 0)]
+    public Guid ProjectId { get; init; }
+
+
+    [ForeignKey(nameof(ProjectOrganisation))]
+    [Column(Order = 1)]
+    public Guid OrganisationId { get; init; }
 
     [Key] public OrganisationRoleType Role { get; init; }
 

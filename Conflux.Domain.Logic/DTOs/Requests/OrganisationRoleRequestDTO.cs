@@ -3,11 +3,11 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Patch;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
-public class OrganisationPatchDTO
+public class OrganisationRoleRequestDTO
 {
-    public string? RORId { get; init; }
-    public string? Name { get; init; }
-    public List<OrganisationRoleDTO>? Roles { get; init; }
+    public required OrganisationRoleType Role { get; init; }
+    public DateTime StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
 }

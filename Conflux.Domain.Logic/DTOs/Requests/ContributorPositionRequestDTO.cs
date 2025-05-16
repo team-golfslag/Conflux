@@ -3,12 +3,11 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Patch;
+namespace Conflux.Domain.Logic.DTOs.Requests;
 
-public class PersonPatchDTO
+public class ContributorPositionRequestDTO
 {
-    public string? Name { get; init; }
-    public string? GivenName { get; init; }
-    public string? FamilyName { get; init; }
-    public string? Email { get; init; }
+    public DateTime? EndDate { get; init; }
+    public DateTime StartDate { get; init; }
+    public ContributorPositionType Type { get; init; }
 }

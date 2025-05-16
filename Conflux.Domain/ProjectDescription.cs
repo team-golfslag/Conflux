@@ -63,7 +63,7 @@ public class ProjectDescription
     /// </summary>
     public required string Text { get; set; }
 
-    public DescriptionType Type { get; init; }
+    public DescriptionType Type { get; set; }
 
     public Language? Language { get; set; }
 

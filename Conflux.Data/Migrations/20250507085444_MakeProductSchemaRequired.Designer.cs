@@ -3,6 +3,7 @@ using System;
 using Conflux.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    partial class ConfluxContextModelSnapshot : ModelSnapshot
+    [Migration("20250507085444_MakeProductSchemaRequired")]
+    partial class MakeProductSchemaRequired
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,24 +98,23 @@ namespace Conflux.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("RORId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
 
                     b.ToTable("Organisations");
                 });
 
             modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
                 {
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnOrder(0);
-
                     b.Property<Guid>("OrganisationId")
-                        .HasColumnType("uuid")
-                        .HasColumnOrder(1);
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Role")
                         .HasColumnType("integer");
@@ -123,7 +125,7 @@ namespace Conflux.Data.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("ProjectId", "OrganisationId", "Role");
+                    b.HasKey("OrganisationId", "Role");
 
                     b.ToTable("OrganisationRoles");
                 });
@@ -237,21 +239,6 @@ namespace Conflux.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ProjectDescriptions");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.ProjectOrganisation", b =>
-                {
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnOrder(0);
-
-                    b.Property<Guid>("OrganisationId")
-                        .HasColumnType("uuid")
-                        .HasColumnOrder(1);
-
-                    b.HasKey("ProjectId", "OrganisationId");
-
-                    b.ToTable("ProjectOrganisations");
                 });
 
             modelBuilder.Entity("Conflux.Domain.ProjectTitle", b =>
@@ -463,11 +450,18 @@ namespace Conflux.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+                {
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithMany("Organisations")
+                        .HasForeignKey("ProjectId");
+                });
+
             modelBuilder.Entity("Conflux.Domain.OrganisationRole", b =>
                 {
-                    b.HasOne("Conflux.Domain.ProjectOrganisation", null)
+                    b.HasOne("Conflux.Domain.Organisation", null)
                         .WithMany("Roles")
-                        .HasForeignKey("ProjectId", "OrganisationId")
+                        .HasForeignKey("OrganisationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -532,15 +526,6 @@ namespace Conflux.Data.Migrations
                         });
 
                     b.Navigation("Language");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.ProjectOrganisation", b =>
-                {
-                    b.HasOne("Conflux.Domain.Project", null)
-                        .WithMany("Organisations")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Conflux.Domain.ProjectTitle", b =>
@@ -648,6 +633,11 @@ namespace Conflux.Data.Migrations
                     b.Navigation("Roles");
                 });
 
+            modelBuilder.Entity("Conflux.Domain.Organisation", b =>
+                {
+                    b.Navigation("Roles");
+                });
+
             modelBuilder.Entity("Conflux.Domain.Product", b =>
                 {
                     b.Navigation("Categories");
@@ -658,11 +648,6 @@ namespace Conflux.Data.Migrations
                     b.Navigation("Contributors");
 
                     b.Navigation("Organisations");
-                });
-
-            modelBuilder.Entity("Conflux.Domain.ProjectOrganisation", b =>
-                {
-                    b.Navigation("Roles");
                 });
 #pragma warning restore 612, 618
         }

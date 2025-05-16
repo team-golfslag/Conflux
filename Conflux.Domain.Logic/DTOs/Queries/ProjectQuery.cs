@@ -5,7 +5,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 
-namespace Conflux.Domain.Logic.DTOs;
+namespace Conflux.Domain.Logic.DTOs.Queries;
 
 /// <summary>
 /// The Data Transfer Object for querying a <see cref="Project" />.

@@ -326,6 +326,7 @@ public class Program
                 switch (exception)
                 {
                     case ProjectNotFoundException
+                        or ProjectDescriptionNotFoundException
                         or ContributorNotFoundException
                         or PersonNotFoundException:
                         context.Response.StatusCode = 404;

@@ -46,7 +46,7 @@ public class AccessControlFilterTests
     }
     
     [Fact]
-    public async Task OnAuthorizationAsync_UserHasNoRole_ReturnsForbid()
+    public async Task OnAuthorizationAsync_UserHasNoRole_ThrowsUnauthorized()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -85,10 +85,7 @@ public class AccessControlFilterTests
         var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
         
         // Act
-        await filter.OnAuthorizationAsync(context);
-        
-        // Assert
-        Assert.IsType<ForbidResult>(context.Result);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => filter.OnAuthorizationAsync(context));
     }
     
     [Fact]

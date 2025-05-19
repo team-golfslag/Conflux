@@ -15,7 +15,7 @@ using Moq;
 
 namespace Conflux.API.Tests;
 
-public class TestWebApplicationFactory : WebApplicationFactory<Program>
+public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 {
     // This is a unique name for the in-memory database to avoid conflicts between tests
     private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.NewGuid()}";

@@ -11,11 +11,11 @@ namespace Conflux.API.Filters;
 /// Marker attribute for integration testing to specify required roles
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class AccessControlFilterAttribute : Attribute
+public class AccessControlFilterAttributeTests : Attribute
 {
     public UserRoleType RequiredRole { get; }
 
-    public AccessControlFilterAttribute(UserRoleType requiredRole = UserRoleType.Admin)
+    public AccessControlFilterAttributeTests(UserRoleType requiredRole = UserRoleType.Admin)
     {
         RequiredRole = requiredRole;
     }

@@ -16,12 +16,12 @@ namespace Conflux.API.Filters;
 /// <summary>
 /// Authorization filter for integration testing
 /// </summary>
-public class TestAuthorizationFilter : IAsyncAuthorizationFilter
+public class AuthorizationFilterTests : IAsyncAuthorizationFilter
 {
     private readonly IAccessControlService _accessControlService;
     private readonly IUserSessionService _userSessionService;
 
-    public TestAuthorizationFilter(
+    public AuthorizationFilterTests(
         IUserSessionService userSessionService,
         IAccessControlService accessControlService)
     {
@@ -35,8 +35,8 @@ public class TestAuthorizationFilter : IAsyncAuthorizationFilter
         Endpoint? endpoint = context.HttpContext.GetEndpoint();
 
         // Check for access control attribute
-        AccessControlFilterAttribute? accessControlAttribute =
-            endpoint?.Metadata.GetMetadata<AccessControlFilterAttribute>();
+        AccessControlFilterAttributeTests? accessControlAttribute =
+            endpoint?.Metadata.GetMetadata<AccessControlFilterAttributeTests>();
         if (accessControlAttribute == null)
             // No access control required
             return;

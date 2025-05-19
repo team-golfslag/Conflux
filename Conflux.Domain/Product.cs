@@ -12,10 +12,6 @@ namespace Conflux.Domain;
 /// </summary>
 public class Product
 {
-    /// <summary>
-    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
-    /// </summary>
-
     [Key]
     public Guid Id { get; init; }
 
@@ -26,7 +22,11 @@ public class Product
 
     public required string Title { get; set; }
 
-    public required ProductType Type { get; init; }
+    public required ProductType Type { get; set; }
+    
+    /// <summary>
+    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
+    /// </summary>
     public string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
 
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>

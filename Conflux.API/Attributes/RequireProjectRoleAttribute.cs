@@ -9,15 +9,33 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Conflux.API.Attributes;
 
+/// <summary>
+/// Specifies that access to a controller action or controller requires a specific project role.
+/// </summary>
+/// <remarks>
+/// This attribute is used to enforce role-based access control for project-specific endpoints.
+/// When applied to a controller or action method, it ensures that the current user has the specified 
+/// role for the project identified by the route parameter.
+/// 
+/// Use this attribute in conjunction with <see cref="RouteParamNameAttribute"/> to specify 
+/// which route parameter contains the project identifier.
+/// </remarks>
+/// <example>
+/// Usage on a controller method:
+/// <code>
+/// [HttpGet("{projectId}/details")]
+/// [RequireProjectRole(UserRoleType.Admin)]
+/// [RouteParamName("projectId")]
+/// public IActionResult GetProjectDetails(Guid projectId)
+/// {
+///     // Method implementation - only accessible to project admins
+/// }
+/// </code>
+/// </example>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public class RequireProjectRoleAttribute : Attribute, IFilterFactory
+public class RequireProjectRoleAttribute(UserRoleType role) : Attribute, IFilterFactory
 {
-    public RequireProjectRoleAttribute(UserRoleType role)
-    {
-        Permission = role;
-    }
-
-    public UserRoleType Permission { get; }
+    public UserRoleType Permission { get; } = role;
 
     // Set to false to ensure we get fresh services for each request
     public bool IsReusable => false;

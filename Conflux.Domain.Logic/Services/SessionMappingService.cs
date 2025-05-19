@@ -87,14 +87,17 @@ public class SessionMappingService : ISessionMappingService
                             EndDate = null,
                         },
                     ],
-                    Descriptions = group.Description == null ? [] : [
-                        new()
-                        {
-                            ProjectId = projectId,
-                            Text = group.Description,
-                            Type = DescriptionType.Primary,
-                        },
-                    ],
+                    Descriptions = group.Description == null
+                        ? []
+                        :
+                        [
+                            new()
+                            {
+                                ProjectId = projectId,
+                                Text = group.Description,
+                                Type = DescriptionType.Primary,
+                            },
+                        ],
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
@@ -111,15 +114,18 @@ public class SessionMappingService : ISessionMappingService
                         EndDate = null,
                     },
                 ];
-                existingCollaboration.Descriptions = group.Description == null ? [] : [
-                new()
-                {
-                    ProjectId = existingCollaboration.Id,
-                    Text = group.Description,
-                    Type = DescriptionType.Primary,
-                    Language = null,
-                }
-                ];
+                existingCollaboration.Descriptions = group.Description == null
+                    ? []
+                    :
+                    [
+                        new()
+                        {
+                            ProjectId = existingCollaboration.Id,
+                            Text = group.Description,
+                            Type = DescriptionType.Primary,
+                            Language = null,
+                        },
+                    ];
             }
         }
     }
@@ -180,8 +186,7 @@ public class SessionMappingService : ISessionMappingService
                 {
                     Id = Guid.NewGuid(),
                     ProjectId = projects.Id,
-                    Name = group.DisplayName,
-                    Description = group.Description,
+                    Type = GroupUrnToUserRoleType(group.Urn),
                     SCIMId = group.SCIMId,
                     Urn = group.Urn,
                 }))
@@ -194,6 +199,18 @@ public class SessionMappingService : ISessionMappingService
 
             await _context.SaveChangesAsync();
         }
+    }
+
+    public static UserRoleType GroupUrnToUserRoleType(string urn)
+    {
+        if (urn.EndsWith("conflux-admin"))
+            return UserRoleType.Admin;
+        if (urn.EndsWith("conflux-contributor"))
+            return UserRoleType.Contributor;
+        if (urn.EndsWith("conflux-user"))
+            return UserRoleType.User;
+        throw new ArgumentOutOfRangeException(nameof(urn),
+            $"The group urn {urn} does not match any known user role type.");
     }
 
     /// <summary>

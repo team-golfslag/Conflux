@@ -17,6 +17,7 @@ using Microsoft.FeatureManagement;
 namespace Conflux.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("orcid")]
 public class OrcidController : ControllerBase
 {
@@ -36,7 +37,6 @@ public class OrcidController : ControllerBase
     }
 
     [HttpGet("link")]
-    [Authorize] // User must be logged in with primary auth
     public async Task<IActionResult> LinkOrcid([FromQuery] string redirectUri)
     {
         // Validate redirect URL
@@ -66,7 +66,7 @@ public class OrcidController : ControllerBase
 
         // Hardcoded ORCID - likely for testing/dev only
         const string exampleOrcid = "0000-0002-1825-0097";
-        
+
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
         User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
@@ -146,12 +146,11 @@ public class OrcidController : ControllerBase
     }
 
     [HttpGet("unlink")]
-    [Authorize] // User must be logged in with primary auth
     public async Task<IActionResult> OrcidUnlink()
     {
         // Get current user session
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession == null || userSession.User == null)
+        if (userSession?.User == null)
             return Unauthorized("User not logged in or session invalid.");
 
         // Fetch the corresponding User entity from the database

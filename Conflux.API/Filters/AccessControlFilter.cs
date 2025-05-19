@@ -30,18 +30,22 @@ public class AccessControlFilter(
         RouteValueDictionary routeData = context.RouteData.Values;
         Endpoint? endpoint = context.HttpContext.GetEndpoint();
         string? routeParamName = endpoint.Metadata.OfType<RouteParamNameAttribute>().Select(e => e.Name).FirstOrDefault();
-        if (routeParamName is null)
+        
+        // If no RouteParamNameAttribute is found, we'll use a default empty GUID
+        // This allows endpoints without project-specific roles to work
+        Guid projectId = Guid.Empty;
+        
+        if (routeParamName != null)
         {
-            throw new ArgumentNullException(nameof(routeParamName), "Route parameter name is null");
-        }
-        string? projectIdString = routeData[routeParamName]?.ToString();
-        if (projectIdString is null)
-        {
-            throw new ArgumentNullException(nameof(projectIdString), "Project ID is null");
-        }
-        if (!Guid.TryParse(projectIdString, out Guid projectId))
-        {
-            throw new ArgumentException("Project ID is not a valid GUID", nameof(projectIdString));
+            string? projectIdString = routeData[routeParamName]?.ToString();
+            if (projectIdString is null)
+            {
+                throw new ArgumentNullException(nameof(projectIdString), "Project ID is null");
+            }
+            if (!Guid.TryParse(projectIdString, out projectId))
+            {
+                throw new ArgumentException("Project ID is not a valid GUID", nameof(projectIdString));
+            }
         }
 
         Guid userId = userSession.User!.Id;

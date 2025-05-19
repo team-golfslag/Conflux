@@ -5,10 +5,13 @@
 
 using Conflux.Data;
 using Conflux.Domain;
+using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace Conflux.API.Tests;
 
@@ -143,7 +146,89 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 Email = "john@doe.nl",
             });
 
+            // Add a test user with admin roles for all test projects
+            var testUserId = new Guid("00000000-0000-0000-0000-000000000001");
+            var testUser = new User 
+            { 
+                Id = testUserId, 
+                Name = "Test Admin", 
+                SCIMId = "test-admin-scim-id"
+            };
+            db.Users.Add(testUser);
+            
+            // Add roles for the test user
+            db.UserRoles.Add(new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = new Guid("00000000-0000-0000-0000-000000000001"),
+                Type = UserRoleType.Admin,
+                Urn = "test:urn:1",
+                SCIMId = "test-admin-scim-id"
+            });
+            
+            db.UserRoles.Add(new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = new Guid("00000000-0000-0000-0000-000000000002"),
+                Type = UserRoleType.Admin,
+                Urn = "test:urn:2",
+                SCIMId = "test-admin-scim-id"
+            });
+            
+            db.UserRoles.Add(new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = new Guid("00000000-0000-0000-0000-000000000003"),
+                Type = UserRoleType.Admin,
+                Urn = "test:urn:3",
+                SCIMId = "test-admin-scim-id"
+            });
+
             db.SaveChanges();
+            
+            // Mock the user session service to return our test admin user
+            var mockUserSessionService = new Mock<IUserSessionService>();
+            mockUserSessionService.Setup(m => m.GetUser()).ReturnsAsync(new UserSession
+            {
+                User = testUser,
+                Collaborations = new List<Collaboration>
+                {
+                    new Collaboration
+                    {
+                        Organization = "Test Organization",
+                        CollaborationGroup = new Group
+                        {
+                            Id = "group1",
+                            Urn = "test:urn:1",
+                            DisplayName = "Test Group 1",
+                            ExternalId = "ext1",
+                            SCIMId = "SCIM"  // This should match the projects' SCIMId
+                        },
+                        Groups = new List<Group>
+                        {
+                            new Group
+                            {
+                                Id = "group1",
+                                Urn = "test:urn:1",
+                                DisplayName = "Test Group 1",
+                                ExternalId = "ext1",
+                                SCIMId = "SCIM"
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Replace the actual service with our mock
+            services.AddScoped<IUserSessionService>(sp => mockUserSessionService.Object);
+            
+            // Mock the access control service to allow our test admin user to access all projects with admin role
+            var mockAccessControlService = new Mock<IAccessControlService>();
+            mockAccessControlService.Setup(m => m.UserHasRoleInProject(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserRoleType>())).ReturnsAsync(true);
+                
+            // Replace the actual service with our mock
+            services.AddScoped<IAccessControlService>(sp => mockAccessControlService.Object);
         });
     }
 }

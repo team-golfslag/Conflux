@@ -151,7 +151,7 @@ public class OrcidController : ControllerBase
     {
         // Get current user session
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession == null || userSession.User == null)
+        if (userSession?.User == null)
             return Unauthorized("User not logged in or session invalid.");
 
         // Fetch the corresponding User entity from the database

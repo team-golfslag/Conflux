@@ -403,12 +403,6 @@ public class Program
         await context.Organisations.AddRangeAsync(seedData.Organisations);
         await context.Projects.AddRangeAsync(seedData.Projects);
         await context.People.AddRangeAsync(seedData.People);
-        
-        // Add the users and roles from the seed data
-        if (seedData.Users.Any())
-            await context.Users.AddRangeAsync(seedData.Users.Where(u => !context.Users.Any(existingUser => existingUser.Id == u.Id)));
-        if (seedData.UserRoles.Any())
-            await context.UserRoles.AddRangeAsync(seedData.UserRoles);
 
         await context.SaveChangesAsync();
     }

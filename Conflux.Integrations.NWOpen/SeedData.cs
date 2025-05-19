@@ -17,4 +17,6 @@ public class SeedData
     public List<Contributor> Contributors { get; init; } = [];
     public List<Product> Products { get; init; } = [];
     public List<Project> Projects { get; init; } = [];
+    public List<User> Users { get; init; } = [];
+    public List<UserRole> UserRoles { get; init; } = [];
 }

@@ -392,18 +392,23 @@ public class Program
 
         if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
-
+        
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 
-        User devUser = UserSession.Development().User!;
-        if (!await context.Users.AnyAsync(u => u.Id == devUser.Id))
-            context.Users.Add(devUser);
+        await context.Users.AddRangeAsync(seedData.Users);
+        await context.UserRoles.AddRangeAsync(seedData.UserRoles);
         await context.Contributors.AddRangeAsync(seedData.Contributors);
         await context.Products.AddRangeAsync(seedData.Products);
         await context.Organisations.AddRangeAsync(seedData.Organisations);
         await context.Projects.AddRangeAsync(seedData.Projects);
         await context.People.AddRangeAsync(seedData.People);
+        
+        // Add the users and roles from the seed data
+        if (seedData.Users.Any())
+            await context.Users.AddRangeAsync(seedData.Users.Where(u => !context.Users.Any(existingUser => existingUser.Id == u.Id)));
+        if (seedData.UserRoles.Any())
+            await context.UserRoles.AddRangeAsync(seedData.UserRoles);
 
         await context.SaveChangesAsync();
     }

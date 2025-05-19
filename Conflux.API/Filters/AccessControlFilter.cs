@@ -52,6 +52,6 @@ public class AccessControlFilter(
         
         bool hasRole = await accessControlService.UserHasRoleInProject(userId, projectId, userRoleType);
         if (!hasRole) 
-            context.Result = new ForbidResult();
+            throw new UnauthorizedAccessException("User does not have the required role in the project");
     }
 }

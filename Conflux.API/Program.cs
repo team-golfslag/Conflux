@@ -346,6 +346,13 @@ public class Program
                             Error = exception.Message,
                         });
                         break;
+                    case UnauthorizedAccessException:
+                        context.Response.StatusCode = 403;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
+                        });
+                        break;
                     case UserNotAuthenticatedException:
                         context.Response.StatusCode = 401;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse

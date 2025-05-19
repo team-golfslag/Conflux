@@ -17,6 +17,7 @@ using Microsoft.FeatureManagement;
 namespace Conflux.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("orcid")]
 public class OrcidController : ControllerBase
 {
@@ -36,7 +37,6 @@ public class OrcidController : ControllerBase
     }
 
     [HttpGet("link")]
-    [Authorize] // User must be logged in with primary auth
     public async Task<IActionResult> LinkOrcid([FromQuery] string redirectUri)
     {
         // Validate redirect URL
@@ -146,7 +146,6 @@ public class OrcidController : ControllerBase
     }
 
     [HttpGet("unlink")]
-    [Authorize] // User must be logged in with primary auth
     public async Task<IActionResult> OrcidUnlink()
     {
         // Get current user session

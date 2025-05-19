@@ -8,7 +8,6 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Asn1.X509;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -32,10 +31,10 @@ public class ProjectTitlesService : IProjectTitlesService
         return titles.Select(MapToTitleResponseDTO).ToList();
     }
 
-    public async Task<ProjectTitle?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType)
+    private async Task<ProjectTitle?> GetCurrentTitleByTitleTypeHelper(Guid projectId, TitleType titleType)
     {
         await VerifyProjectExists(projectId);
-        
+
         // ASSUMPTION: Here we assume there is only one current title of each type (so no multilingual titles!!)
         ProjectTitle? title = await _context.ProjectTitles
             .Where(t => t.ProjectId == projectId && t.Type == titleType && t.EndDate == null)
@@ -44,23 +43,42 @@ public class ProjectTitlesService : IProjectTitlesService
         return title;
     }
 
-    public async Task<ProjectTitleResponseDTO> GetTitleByIdAsync(Guid projectId, Guid titleId)
+    public async Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType)
     {
-        return MapToTitleResponseDTO(await GetTitleEntityAsync(projectId, titleId));
+        ProjectTitle? title = await GetCurrentTitleByTitleTypeHelper(projectId, titleType);
+        if (title == null)
+            return null;
+        return MapToTitleResponseDTO(title);
     }
 
-    public async Task<ProjectTitleResponseDTO> CreateTitleAsync(Guid projectId, ProjectTitleRequestDTO titleDTO)
+    public async Task<Dictionary<TitleType, ProjectTitleResponseDTO?>> GetCurrentTitles(Guid projectId)
     {
         await VerifyProjectExists(projectId);
 
-        ProjectTitle? currentTitle = await GetCurrentTitleByTitleType(projectId, titleDTO.Type);
+        Dictionary<TitleType, ProjectTitleResponseDTO?> response = new();
+
+        foreach (TitleType titleType in Enum.GetValues<TitleType>())
+        {
+            ProjectTitle? title = await GetCurrentTitleByTitleTypeHelper(projectId, titleType);
+
+            response[titleType] = title == null ? null : MapToTitleResponseDTO(title);
+        }
+
+        return response;
+    }
+
+    public async Task<ProjectTitleResponseDTO> GetTitleByIdAsync(Guid projectId, Guid titleId) =>
+        MapToTitleResponseDTO(await GetTitleEntityAsync(projectId, titleId));
+
+    public async Task<List<ProjectTitleResponseDTO>> CreateTitleAsync(Guid projectId, ProjectTitleRequestDTO titleDTO)
+    {
+        await VerifyProjectExists(projectId);
+
+        ProjectTitle? currentTitle = await GetCurrentTitleByTitleTypeHelper(projectId, titleDTO.Type);
 
         DateTime today = DateTime.Today;
-        
-        if (currentTitle != null)
-        {
-            currentTitle.EndDate = today;
-        }
+
+        if (currentTitle != null) currentTitle.EndDate = today;
 
         ProjectTitle newTitle = new()
         {
@@ -77,7 +95,7 @@ public class ProjectTitlesService : IProjectTitlesService
 
         await _context.SaveChangesAsync();
 
-        return MapToTitleResponseDTO(newTitle);
+        return await GetTitlesByProjectIdAsync(projectId);
     }
 
     public async Task<ProjectTitleResponseDTO> EndTitleAsync(Guid projectId, Guid titleId)
@@ -86,44 +104,29 @@ public class ProjectTitlesService : IProjectTitlesService
 
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
-        if (title.Type == TitleType.Primary)
-        {
-            throw new Exception("Can't end primary title.");
-        }
+        if (title.Type == TitleType.Primary) throw new("Can't end primary title.");
 
-        if (title.EndDate != null)
-        {
-            throw new Exception("End date was already set.");
-        }
-        
+        if (title.EndDate != null) throw new("End date was already set.");
+
         title.EndDate = DateTime.Today;
         await _context.SaveChangesAsync();
         return MapToTitleResponseDTO(title);
     }
-    
+
     public async Task<ProjectTitleResponseDTO> UpdateTitleAsync(Guid projectId, Guid titleId,
         ProjectTitleRequestDTO titleDTO)
     {
         await VerifyProjectExists(projectId);
 
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
-        
+
         DateTime today = DateTime.Today;
         DateTime yesterday = today.Subtract(TimeSpan.FromDays(1));
-        if (title.StartDate < yesterday)
-        {
-            throw new Exception("Can't edit a title that was made more than 1 day ago.");
-        }
+        if (title.StartDate < yesterday) throw new("Can't edit a title that was made more than 1 day ago.");
 
-        if (title.EndDate != null)
-        {
-            throw new Exception("Can't edit a title that has already been succeeded.");
-        }
+        if (title.EndDate != null) throw new("Can't edit a title that has already been succeeded.");
 
-        if (title.Type != titleDTO.Type)
-        {
-            throw new Exception("Can't edit a titles type. Try deleting the title instead.");
-        }
+        if (title.Type != titleDTO.Type) throw new("Can't edit a titles type. Try deleting the title instead.");
 
         title.Language = titleDTO.Language;
         title.Text = titleDTO.Text;
@@ -131,43 +134,32 @@ public class ProjectTitlesService : IProjectTitlesService
         await _context.SaveChangesAsync();
         return MapToTitleResponseDTO(title);
     }
-    
 
-    public async Task DeleteDescriptionAsync(Guid projectId, Guid titleId) 
+
+    public async Task DeleteTitleAsync(Guid projectId, Guid titleId)
     {
         await VerifyProjectExists(projectId);
 
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
-        
+
         DateTime today = DateTime.Today;
         DateTime yesterday = today.Subtract(TimeSpan.FromDays(1));
-        if (title.StartDate < yesterday)
-        {
-            throw new Exception("Can't delete a title that was made more than 1 day ago.");
-        }
+        if (title.StartDate < yesterday) throw new("Can't delete a title that was made more than 1 day ago.");
 
-        if (title.EndDate != null)
-        {
-            throw new Exception("Can't delete a title that has already been succeeded.");
-        }
+        if (title.EndDate != null) throw new("Can't delete a title that has already been succeeded.");
 
         ProjectTitle? oldTitle = await _context.ProjectTitles
             .Where(o => o.EndDate == title.StartDate && o.Type == title.Type)
             .FirstOrDefaultAsync();
 
         if (oldTitle != null)
-        {
             oldTitle.EndDate = null;
-        }
-        else if (title.Type == TitleType.Primary)
-        {
-            throw new Exception("Can't delete primary title if there is no previous one.");
-        }
+        else if (title.Type == TitleType.Primary) throw new("Can't delete primary title if there is no previous one.");
 
         _context.ProjectTitles.Remove(title);
         await _context.SaveChangesAsync();
     }
-    
+
     private async Task VerifyProjectExists(Guid projectId)
     {
         // Verify project exists
@@ -175,23 +167,22 @@ public class ProjectTitlesService : IProjectTitlesService
         if (!projectExists)
             throw new ProjectNotFoundException(projectId);
     }
+
     /// <summary>
     /// Helper method to get a description entity
     /// </summary>
     private async Task<ProjectTitle> GetTitleEntityAsync(Guid projectId, Guid titleId)
     {
         ProjectTitle? title = await _context.ProjectTitles.FindAsync(projectId, titleId);
-            // .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == titleId);
+        // .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == titleId);
 
         if (title == null)
             throw new ProjectDescriptionNotFoundException(titleId);
 
         return title;
     }
-    
-    
-    
-    
+
+
     private ProjectTitleResponseDTO MapToTitleResponseDTO(ProjectTitle title) =>
         new()
         {

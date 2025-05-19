@@ -13,13 +13,16 @@ public interface IProjectTitlesService
     Task<List<ProjectTitleResponseDTO>> GetTitlesByProjectIdAsync(Guid projectId);
     Task<ProjectTitleResponseDTO> GetTitleByIdAsync(Guid projectId, Guid titleId);
 
-    Task<ProjectTitle?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType);
+    Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType);
 
-    Task<ProjectTitleResponseDTO> CreateTitleAsync(Guid projectId,
+    Task<Dictionary<TitleType, ProjectTitleResponseDTO?>> GetCurrentTitles(Guid projectId);
+    Task<List<ProjectTitleResponseDTO>> CreateTitleAsync(Guid projectId,
         ProjectTitleRequestDTO titleDTO);
 
     Task<ProjectTitleResponseDTO> EndTitleAsync(Guid projectId, Guid titleId);
 
     Task<ProjectTitleResponseDTO> UpdateTitleAsync(Guid projectId, Guid titleId,
         ProjectTitleRequestDTO titleDTO);
+
+    Task DeleteTitleAsync(Guid projectId, Guid titleId);
 }

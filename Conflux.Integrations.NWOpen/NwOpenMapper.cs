@@ -296,7 +296,7 @@ public static class NwOpenMapper
             Id = Guid.NewGuid(),
             ProjectId = project.Id,
             Type = UserRoleType.Admin,
-            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_admin",
+            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-admin",
             SCIMId = devUser.SCIMId,
         };
 
@@ -306,7 +306,7 @@ public static class NwOpenMapper
             Id = Guid.NewGuid(),
             ProjectId = project.Id,
             Type = UserRoleType.User,
-            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_user",
+            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-user",
             SCIMId = devUser.SCIMId,
         };
 

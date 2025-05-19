@@ -112,17 +112,17 @@ public class NwOpenMapperTests
         Assert.Single(result.Organisations);
         Organisation mappedOrganisation = result.Organisations[0];
         Assert.Equal("TestOrg", mappedOrganisation.Name);
-        
+
         // Check for development user
         Assert.NotEmpty(result.Users);
         User devUser = result.Users.Single(u => u.Id == UserSession.DevelopmentUserId);
         Assert.Equal("Development User", devUser.Name);
-        
+
         // Check for user roles
         Assert.Equal(2, result.UserRoles.Count);
         Assert.Contains(result.UserRoles, r => r.Type == UserRoleType.Admin);
         Assert.Contains(result.UserRoles, r => r.Type == UserRoleType.User);
-        
+
         // Verify development user has both roles
         Assert.Equal(2, devUser.Roles.Count);
         Assert.Contains(devUser.Roles, r => r.Type == UserRoleType.Admin);
@@ -184,32 +184,32 @@ public class NwOpenMapperTests
         // Assert
         Assert.Equal(2, seedData.Projects.Count);
         Assert.Single(seedData.Products);
-        
+
         // Check for development user
         Assert.NotEmpty(seedData.Users);
         User devUser = seedData.Users.Single(u => u.Id == UserSession.DevelopmentUserId);
-        
+
         // Check for user roles - should have 2 roles per project = 4 total
         Assert.Equal(4, seedData.UserRoles.Count);
         Assert.Equal(2, seedData.UserRoles.Count(r => r.Type == UserRoleType.Admin));
         Assert.Equal(2, seedData.UserRoles.Count(r => r.Type == UserRoleType.User));
-        
+
         // Verify each project has the development user with both roles
-        foreach (var project in seedData.Projects)
+        foreach (Project project in seedData.Projects)
         {
             Assert.Contains(project.Users, u => u.Id == UserSession.DevelopmentUserId);
             Assert.Equal(2, seedData.UserRoles.Count(r => r.ProjectId == project.Id));
             Assert.Single(seedData.UserRoles, r => r.ProjectId == project.Id && r.Type == UserRoleType.Admin);
             Assert.Single(seedData.UserRoles, r => r.ProjectId == project.Id && r.Type == UserRoleType.User);
         }
-        
+
         // Verify that the development user has all roles (2 per project = 4 total)
         Assert.Equal(4, devUser.Roles.Count);
         Assert.Equal(2, devUser.Roles.Count(r => r.Type == UserRoleType.Admin));
         Assert.Equal(2, devUser.Roles.Count(r => r.Type == UserRoleType.User));
-        
+
         // Verify that roles in UserRoles list match the ones in the user's Roles list
-        foreach (UserRole role in seedData.UserRoles) 
+        foreach (UserRole role in seedData.UserRoles)
             Assert.Contains(devUser.Roles, r => r.Id == role.Id);
     }
 

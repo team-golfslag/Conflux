@@ -15,9 +15,9 @@ namespace Conflux.Integrations.SRAM;
 
 public class CollaborationMapper : ICollaborationMapper
 {
-    private readonly List<string> GroupNames = ["conflux-admin", "conflux-contributor", "conflux-user"];
     private readonly ConfluxContext _context;
     private readonly ISCIMApiClient _scimApiClient;
+    private readonly List<string> GroupNames = ["conflux-admin", "conflux-contributor", "conflux-user"];
 
     public CollaborationMapper(ConfluxContext context, ISCIMApiClient scimApiClient)
     {

@@ -16,7 +16,7 @@ public class AccessControlService(ConfluxContext context) : IAccessControlServic
             .AsNoTracking()
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Id == userId);
-        
+
         return user != null && user.Roles.Any(r => r.ProjectId == projectId && r.Type == roleType);
     }
 }

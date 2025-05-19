@@ -9,7 +9,7 @@ namespace Conflux.API.Attributes;
 /// Specifies the name of the route parameter that contains the project identifier for access control.
 /// </summary>
 /// <remarks>
-/// This attribute is used in conjunction with the <see cref="Filters.AccessControlFilter"/> to identify
+/// This attribute is used in conjunction with the <see cref="Filters.AccessControlFilter" /> to identify
 /// which route parameter contains the project ID needed for role-based access control checks.
 /// Apply this attribute to controller methods or classes where project-specific
 /// role-based authorization is required.

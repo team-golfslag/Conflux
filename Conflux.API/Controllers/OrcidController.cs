@@ -66,7 +66,7 @@ public class OrcidController : ControllerBase
 
         // Hardcoded ORCID - likely for testing/dev only
         const string exampleOrcid = "0000-0002-1825-0097";
-        
+
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
         User? dbUser = await _context.Users.FindAsync(userSession.User.Id);

@@ -15,7 +15,7 @@ public class AccessControlServiceTests
 {
     private ConfluxContext CreateContext(string dbName)
     {
-        var serviceProvider = new ServiceCollection()
+        ServiceProvider serviceProvider = new ServiceCollection()
             .AddEntityFrameworkInMemoryDatabase()
             .BuildServiceProvider();
 
@@ -24,7 +24,7 @@ public class AccessControlServiceTests
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
         context.Database.EnsureCreated();
         return context;
     }
@@ -34,13 +34,13 @@ public class AccessControlServiceTests
     {
         // Arrange
         string dbName = $"UserHasRoleTest_{Guid.NewGuid()}";
-        var context = CreateContext(dbName);
-        
+        ConfluxContext context = CreateContext(dbName);
+
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
         UserRoleType roleType = UserRoleType.Admin;
-        
-        User user = new User
+
+        User user = new()
         {
             Id = userId,
             Roles =
@@ -57,15 +57,15 @@ public class AccessControlServiceTests
             SCIMId = "user-scim-id",
             Name = "Test User",
         };
-        
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
-        
-        AccessControlService service = new AccessControlService(context);
-        
+
+        AccessControlService service = new(context);
+
         // Act
         bool result = await service.UserHasRoleInProject(userId, projectId, roleType);
-        
+
         // Assert
         Assert.True(result);
     }
@@ -75,12 +75,12 @@ public class AccessControlServiceTests
     {
         // Arrange
         string dbName = $"UserHasDifferentRoleTest_{Guid.NewGuid()}";
-        var context = CreateContext(dbName);
-        
+        ConfluxContext context = CreateContext(dbName);
+
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
-        
-        User user = new User
+
+        User user = new()
         {
             Id = userId,
             Roles =
@@ -97,15 +97,15 @@ public class AccessControlServiceTests
             SCIMId = "user-scim-id",
             Name = "Test User",
         };
-        
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
-        
-        AccessControlService service = new AccessControlService(context);
-        
+
+        AccessControlService service = new(context);
+
         // Act
         bool result = await service.UserHasRoleInProject(userId, projectId, UserRoleType.Admin);
-        
+
         // Assert
         Assert.False(result);
     }
@@ -115,13 +115,13 @@ public class AccessControlServiceTests
     {
         // Arrange
         string dbName = $"UserHasRoleInDifferentProjectTest_{Guid.NewGuid()}";
-        var context = CreateContext(dbName);
-        
+        ConfluxContext context = CreateContext(dbName);
+
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
         Guid differentProjectId = Guid.NewGuid();
-        
-        User user = new User
+
+        User user = new()
         {
             Id = userId,
             Roles =
@@ -138,15 +138,15 @@ public class AccessControlServiceTests
             SCIMId = "user-scim-id",
             Name = "Test User",
         };
-        
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
-        
-        AccessControlService service = new AccessControlService(context);
-        
+
+        AccessControlService service = new(context);
+
         // Act
         bool result = await service.UserHasRoleInProject(userId, projectId, UserRoleType.Admin);
-        
+
         // Assert
         Assert.False(result);
     }
@@ -156,27 +156,27 @@ public class AccessControlServiceTests
     {
         // Arrange
         string dbName = $"UserHasNoRolesTest_{Guid.NewGuid()}";
-        var context = CreateContext(dbName);
-        
+        ConfluxContext context = CreateContext(dbName);
+
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
-        
-        User user = new User
+
+        User user = new()
         {
             Id = userId,
             Roles = [],
             SCIMId = "user-scim-id",
             Name = "Test User",
         };
-        
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
-        
-        AccessControlService service = new AccessControlService(context);
-        
+
+        AccessControlService service = new(context);
+
         // Act
         bool result = await service.UserHasRoleInProject(userId, projectId, UserRoleType.Admin);
-        
+
         // Assert
         Assert.False(result);
     }
@@ -186,16 +186,16 @@ public class AccessControlServiceTests
     {
         // Arrange
         string dbName = $"UserDoesNotExistTest_{Guid.NewGuid()}";
-        var context = CreateContext(dbName);
-        
+        ConfluxContext context = CreateContext(dbName);
+
         Guid userId = Guid.NewGuid(); // User that doesn't exist
         Guid projectId = Guid.NewGuid();
-        
-        AccessControlService service = new AccessControlService(context);
-        
+
+        AccessControlService service = new(context);
+
         // Act
         bool result = await service.UserHasRoleInProject(userId, projectId, UserRoleType.Admin);
-        
+
         // Assert
         Assert.False(result);
     }

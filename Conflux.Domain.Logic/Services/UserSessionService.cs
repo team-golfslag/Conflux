@@ -37,7 +37,7 @@ public class UserSessionService : IUserSessionService
     public async Task<UserSession?> GetUser()
     {
         // if there is no http context, we are in a test
-        if (_httpContextAccessor.HttpContext == null) 
+        if (_httpContextAccessor.HttpContext == null)
             return UserSession.Development();
 
         if (_httpContextAccessor.HttpContext.Session is null ||
@@ -80,8 +80,8 @@ public class UserSessionService : IUserSessionService
     {
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
         {
-            var devSession = UserSession.Development();
-            var devUser = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == devSession.SRAMId);
+            UserSession devSession = UserSession.Development();
+            User? devUser = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == devSession.SRAMId);
             if (devUser is not null)
             {
                 devSession.User = devUser;
@@ -91,22 +91,26 @@ public class UserSessionService : IUserSessionService
 
             return devSession;
         }
+
         if (_httpContextAccessor.HttpContext?.User is null)
             throw new UserNotAuthenticatedException();
 
 
         UserSession? user = await GetUserSession(claims);
-        if (user is { User: null })
-        {
-            user.User = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
-        }
-        
+        if (user is { User: null }) user.User = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 
         return user;
     }
-    
-    
+
+    public void ClearUser()
+    {
+        if (_httpContextAccessor.HttpContext.Session is not null &&
+            _httpContextAccessor.HttpContext.Session.IsAvailable)
+            _httpContextAccessor.HttpContext?.Session.Remove(UserKey);
+    }
+
     public async Task<UserSession?> GetUserSession(ClaimsPrincipal? claims)
     {
         if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
@@ -128,12 +132,5 @@ public class UserSessionService : IUserSessionService
             Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email")!,
             Collaborations = collaborations,
         };
-    }
-
-    public void ClearUser()
-    {
-        if (_httpContextAccessor.HttpContext.Session is not null &&
-            _httpContextAccessor.HttpContext.Session.IsAvailable)
-            _httpContextAccessor.HttpContext?.Session.Remove(UserKey);
     }
 }

@@ -272,7 +272,7 @@ public static class NwOpenMapper
     {
         // Get the development user
         User devUser;
-        
+
         // Check if development user already exists in our list
         User? existingUser = Users.FirstOrDefault(u => u.Id == UserSession.DevelopmentUserId);
         if (existingUser != null)
@@ -289,7 +289,7 @@ public static class NwOpenMapper
 
         // Add user to project
         project.Users.Add(devUser);
-        
+
         // Create Admin role for the user
         UserRole adminRole = new()
         {
@@ -297,9 +297,9 @@ public static class NwOpenMapper
             ProjectId = project.Id,
             Type = UserRoleType.Admin,
             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_admin",
-            SCIMId = devUser.SCIMId
+            SCIMId = devUser.SCIMId,
         };
-        
+
         // Create User role for the user
         UserRole userRole = new()
         {
@@ -307,13 +307,13 @@ public static class NwOpenMapper
             ProjectId = project.Id,
             Type = UserRoleType.User,
             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_user",
-            SCIMId = devUser.SCIMId
+            SCIMId = devUser.SCIMId,
         };
-        
+
         // Add roles to the lists
         UserRoles.Add(adminRole);
         UserRoles.Add(userRole);
-        
+
         // Add roles to the user
         devUser.Roles.Add(adminRole);
         devUser.Roles.Add(userRole);

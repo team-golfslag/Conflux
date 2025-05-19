@@ -20,17 +20,17 @@ public class AccessControlFilterFactoryTests
         // Arrange
         var userSessionService = new Mock<IUserSessionService>();
         var accessControlService = new Mock<IAccessControlService>();
-        var factory = new AccessControlFilterFactory(userSessionService.Object, accessControlService.Object);
-        
+        AccessControlFilterFactory factory = new(userSessionService.Object, accessControlService.Object);
+
         // Act
-        var filter = factory.Create(UserRoleType.Admin);
-        
+        IAsyncAuthorizationFilter filter = factory.Create(UserRoleType.Admin);
+
         // Assert
         Assert.NotNull(filter);
         Assert.IsType<AccessControlFilter>(filter);
         Assert.IsAssignableFrom<IAsyncAuthorizationFilter>(filter);
     }
-    
+
     [Theory]
     [InlineData(UserRoleType.Admin)]
     [InlineData(UserRoleType.Contributor)]
@@ -40,35 +40,31 @@ public class AccessControlFilterFactoryTests
         // Arrange
         var userSessionService = new Mock<IUserSessionService>();
         var accessControlService = new Mock<IAccessControlService>();
-        var factory = new AccessControlFilterFactory(userSessionService.Object, accessControlService.Object);
-        
+        AccessControlFilterFactory factory = new(userSessionService.Object, accessControlService.Object);
+
         // Act
-        var filter = factory.Create(role) as AccessControlFilter;
-        
+        AccessControlFilter? filter = factory.Create(role) as AccessControlFilter;
+
         // Assert
         Assert.NotNull(filter);
-        
+
         // Since we can't directly access the primary constructor parameters,
         // we'll verify the filter behavior by testing its functionality
-        
+
         // Set up a scenario where we can verify the role is used correctly
-        var userId = Guid.NewGuid();
-        var projectId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+
         // Setup the access control service to return true for the specific role we're testing
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, role))
             .ReturnsAsync(true);
-            
+
         // For all other roles, it should return false
         foreach (UserRoleType otherRole in Enum.GetValues(typeof(UserRoleType)))
-        {
             if (otherRole != role)
-            {
                 accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, otherRole))
                     .ReturnsAsync(false);
-            }
-        }
-        
+
         // The filter was created correctly if it exists
         Assert.NotNull(filter);
     }

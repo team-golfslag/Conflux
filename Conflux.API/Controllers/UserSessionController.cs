@@ -54,6 +54,7 @@ public class UserSessionController : ControllerBase
             // redirect to login page
             return Redirect("login?redirectUri=" + redirectUri);
         }
+
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);

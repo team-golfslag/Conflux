@@ -10,9 +10,7 @@ using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Routing;
 using Moq;
 using Xunit;
 
@@ -26,110 +24,126 @@ public class AccessControlFilterTests
         // Arrange
         var userSessionService = new Mock<IUserSessionService>();
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync((UserSession?)null);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act
         await filter.OnAuthorizationAsync(context);
-        
+
         // Assert
         Assert.IsType<UnauthorizedResult>(context.Result);
     }
-    
+
     [Fact]
     public async Task OnAuthorizationAsync_UserHasNoRole_ThrowsUnauthorized()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        var projectId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+
         var userSessionService = new Mock<IUserSessionService>();
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
-            User = new User { Id = userId, Name = "Test User", SCIMId = "test-scim-id" },
-            Collaborations = new List<Collaboration>()
+            User = new()
+            {
+                Id = userId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
+            },
+            Collaborations = new(),
         };
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, UserRoleType.Admin))
             .ReturnsAsync(false);
-        
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        
+
         // Add a route parameter for the project ID
         actionContext.RouteData.Values["id"] = projectId.ToString();
-        
+
         // Add the RouteParamNameAttribute to the endpoint metadata
-        var metadata = new List<object> { new RouteParamNameAttribute("id") };
-        var endpoint = new Endpoint(null, new EndpointMetadataCollection(metadata), null);
-        
+        var metadata = new List<object>
+        {
+            new RouteParamNameAttribute("id"),
+        };
+        Endpoint endpoint = new(null, new(metadata), null);
+
         actionContext.HttpContext.SetEndpoint(endpoint);
-        
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => filter.OnAuthorizationAsync(context));
     }
-    
+
     [Fact]
     public async Task OnAuthorizationAsync_UserHasRole_ReturnsNull()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        var projectId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+
         var userSessionService = new Mock<IUserSessionService>();
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
-            User = new User { Id = userId, Name = "Test User", SCIMId = "test-scim-id" },
-            Collaborations = new List<Collaboration>()
+            User = new()
+            {
+                Id = userId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
+            },
+            Collaborations = new(),
         };
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, UserRoleType.Admin))
             .ReturnsAsync(true);
-        
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        
+
         // Add a route parameter for the project ID
         actionContext.RouteData.Values["id"] = projectId.ToString();
-        
+
         // Add the RouteParamNameAttribute to the endpoint metadata
-        var metadata = new List<object> { new RouteParamNameAttribute("id") };
-        var endpoint = new Endpoint(null, new EndpointMetadataCollection(metadata), null);
-        
+        var metadata = new List<object>
+        {
+            new RouteParamNameAttribute("id"),
+        };
+        Endpoint endpoint = new(null, new(metadata), null);
+
         actionContext.HttpContext.SetEndpoint(endpoint);
-        
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act
         await filter.OnAuthorizationAsync(context);
-        
+
         // Assert
         Assert.Null(context.Result); // No result means authorization passed
     }
@@ -138,120 +152,141 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_MissingRouteParamNameAttribute_UsesEmptyGuid()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+
         var userSessionService = new Mock<IUserSessionService>();
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
-            User = new User { Id = userId, Name = "Test User", SCIMId = "test-scim-id" },
-            Collaborations = new List<Collaboration>()
+            User = new()
+            {
+                Id = userId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
+            },
+            Collaborations = new(),
         };
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(
                 userId, Guid.Empty, UserRoleType.Admin))
             .ReturnsAsync(true);
-            
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        
+
         // No RouteParamNameAttribute added to the endpoint metadata
-        var endpoint = new Endpoint(null, new EndpointMetadataCollection(), null);
-        
+        Endpoint endpoint = new(null, new(), null);
+
         actionContext.HttpContext.SetEndpoint(endpoint);
-        
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act
         await filter.OnAuthorizationAsync(context);
-        
+
         // Assert - the filter should succeed because it uses Guid.Empty
         Assert.Null(context.Result);
-        
+
         // Verify that UserHasRoleInProject was called with the empty GUID
         accessControlService.Verify(s => s.UserHasRoleInProject(userId, Guid.Empty, UserRoleType.Admin), Times.Once);
     }
-    
+
     [Fact]
     public async Task OnAuthorizationAsync_MissingProjectId_ThrowsArgumentNullException()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+
         var userSessionService = new Mock<IUserSessionService>();
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
-            User = new User { Id = userId, Name = "Test User", SCIMId = "test-scim-id" },
-            Collaborations = new List<Collaboration>()
+            User = new()
+            {
+                Id = userId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
+            },
+            Collaborations = new(),
         };
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        
+
         // No project ID in the route data
-        
+
         // Add the RouteParamNameAttribute to the endpoint metadata
-        var metadata = new List<object> { new RouteParamNameAttribute("id") };
-        var endpoint = new Endpoint(null, new EndpointMetadataCollection(metadata), null);
-        
+        var metadata = new List<object>
+        {
+            new RouteParamNameAttribute("id"),
+        };
+        Endpoint endpoint = new(null, new(metadata), null);
+
         actionContext.HttpContext.SetEndpoint(endpoint);
-        
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() => filter.OnAuthorizationAsync(context));
     }
-    
+
     [Fact]
     public async Task OnAuthorizationAsync_InvalidProjectIdFormat_ThrowsArgumentException()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        
+        Guid userId = Guid.NewGuid();
+
         var userSessionService = new Mock<IUserSessionService>();
-        var userSession = new UserSession
+        UserSession userSession = new()
         {
-            User = new User { Id = userId, Name = "Test User", SCIMId = "test-scim-id" },
-            Collaborations = new List<Collaboration>()
+            User = new()
+            {
+                Id = userId,
+                Name = "Test User",
+                SCIMId = "test-scim-id",
+            },
+            Collaborations = new(),
         };
         userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
-        
+
         var accessControlService = new Mock<IAccessControlService>();
-        var filter = new AccessControlFilter(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
-        
-        var actionContext = new ActionContext
+        AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
+
+        ActionContext actionContext = new()
         {
             HttpContext = new DefaultHttpContext(),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
+            RouteData = new(),
+            ActionDescriptor = new(),
         };
-        
+
         // Invalid project ID format in the route data
         actionContext.RouteData.Values["id"] = "not-a-guid";
-        
+
         // Add the RouteParamNameAttribute to the endpoint metadata
-        var metadata = new List<object> { new RouteParamNameAttribute("id") };
-        var endpoint = new Endpoint(null, new EndpointMetadataCollection(metadata), null);
-        
+        var metadata = new List<object>
+        {
+            new RouteParamNameAttribute("id"),
+        };
+        Endpoint endpoint = new(null, new(metadata), null);
+
         actionContext.HttpContext.SetEndpoint(endpoint);
-        
-        var context = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
-        
+
+        AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
+
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => filter.OnAuthorizationAsync(context));
     }

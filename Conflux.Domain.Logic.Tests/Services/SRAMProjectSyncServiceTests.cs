@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Reflection;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
@@ -23,62 +24,63 @@ public class SRAMProjectSyncServiceTests
     {
         // Arrange
         string dbName = $"SyncProject_{Guid.NewGuid()}";
-        var context = CreateInMemoryContext(dbName);
+        ConfluxContext context = CreateInMemoryContext(dbName);
         var mockScimApiClient = new Mock<ISCIMApiClient>();
 
         // Create a new SCIMGroup response with a new user
-        var scimGroup = new SCIMGroup
+        SCIMGroup scimGroup = new()
         {
             Id = "scim-id",
             DisplayName = "Test Project",
             ExternalId = "external-id",
-            Schemas = new List<string> { "urn:ietf:params:scim:schemas:core:2.0:Group" },
-            Members = new List<SCIMMember>
+            Schemas = new()
+            {
+                "urn:ietf:params:scim:schemas:core:2.0:Group",
+            },
+            Members = new()
             {
                 new()
                 {
                     Display = "New User",
                     Value = "new-user-scim-id",
-                    Ref = null!
-                }
+                    Ref = null!,
+                },
             },
-            SCIMGroupInfo = new SCIMGroupInfo
+            SCIMGroupInfo = new()
             {
-                Urn = "group-urn"
+                Urn = "group-urn",
             },
-            SCIMMeta = new SCIMMeta
+            SCIMMeta = new()
             {
                 Created = DateTime.UtcNow,
                 Location = null!,
                 ResourceType = null!,
-                Version = null!
-            }
+                Version = null!,
+            },
         };
 
         // Setup the mock
         mockScimApiClient.Setup(m => m.GetSCIMGroup(It.IsAny<string>())).ReturnsAsync(scimGroup);
 
         // Create a service that only tests the user addition logic
-        var service = new SRAMProjectSyncService(mockScimApiClient.Object, context);
-        
+        SRAMProjectSyncService service = new(mockScimApiClient.Object, context);
+
         // Use reflection to call the private method that adds users
-        var methodInfo = typeof(SRAMProjectSyncService).GetMethod("AddMissingUsers", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
+        MethodInfo? methodInfo = typeof(SRAMProjectSyncService).GetMethod("AddMissingUsers",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+
         if (methodInfo == null)
-        {
             // If the method doesn't exist or has a different name, skip the test
             return;
-        }
-        
-        var project = new Project
+
+        Project project = new()
         {
             Id = Guid.NewGuid(),
             SCIMId = "project-scim-id",
-            Users = new List<User>(),
-            StartDate = DateTime.UtcNow
+            Users = new(),
+            StartDate = DateTime.UtcNow,
         };
-        
+
         // Act - invoke the private method
         await (Task)methodInfo.Invoke(service, new object[] { project, scimGroup })!;
 
@@ -91,12 +93,12 @@ public class SRAMProjectSyncServiceTests
     {
         // Arrange
         string dbName = $"NonExistentProject_{Guid.NewGuid()}";
-        var context = CreateInMemoryContext(dbName);
+        ConfluxContext context = CreateInMemoryContext(dbName);
         var mockScimApiClient = new Mock<ISCIMApiClient>();
 
         Guid nonExistentProjectId = Guid.NewGuid();
 
-        var service = new SRAMProjectSyncService(mockScimApiClient.Object, context);
+        SRAMProjectSyncService service = new(mockScimApiClient.Object, context);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
@@ -110,18 +112,18 @@ public class SRAMProjectSyncServiceTests
     {
         // Arrange
         string dbName = $"ProjectNotInApi_{Guid.NewGuid()}";
-        var context = CreateInMemoryContext(dbName);
+        ConfluxContext context = CreateInMemoryContext(dbName);
         var mockScimApiClient = new Mock<ISCIMApiClient>();
 
         Guid projectId = Guid.NewGuid();
         string projectScimId = "project-scim-id";
 
-        var project = new Project
+        Project project = new()
         {
             Id = projectId,
             SCIMId = projectScimId,
-            Users = new List<User>(),
-            StartDate = DateTime.UtcNow.AddDays(-10)
+            Users = new(),
+            StartDate = DateTime.UtcNow.AddDays(-10),
         };
 
         context.Projects.Add(project);
@@ -129,7 +131,7 @@ public class SRAMProjectSyncServiceTests
 
         mockScimApiClient.Setup(m => m.GetSCIMGroup(projectScimId)).ReturnsAsync((SCIMGroup)null!);
 
-        var service = new SRAMProjectSyncService(mockScimApiClient.Object, context);
+        SRAMProjectSyncService service = new(mockScimApiClient.Object, context);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
@@ -150,7 +152,7 @@ public class SRAMProjectSyncServiceTests
     {
         // Arrange
         string dbName = $"RoleNotInApi_{Guid.NewGuid()}";
-        var context = CreateInMemoryContext(dbName);
+        ConfluxContext context = CreateInMemoryContext(dbName);
         var mockScimApiClient = new Mock<ISCIMApiClient>();
 
         Guid projectId = Guid.NewGuid();
@@ -159,26 +161,26 @@ public class SRAMProjectSyncServiceTests
         string roleScimId = "role-scim-id";
         string roleUrn = "urn:mace:surf.nl:sram:group:org:co:conflux-admin";
 
-        var project = new Project
+        Project project = new()
         {
             Id = projectId,
             SCIMId = projectScimId,
-            Users = new List<User>(),
-            StartDate = DateTime.UtcNow.AddDays(-10)
+            Users = new(),
+            StartDate = DateTime.UtcNow.AddDays(-10),
         };
 
-        var role = new UserRole
+        UserRole role = new()
         {
             Id = roleId,
             ProjectId = projectId,
             Type = UserRoleType.Admin,
             SCIMId = roleScimId,
-            Urn = roleUrn
+            Urn = roleUrn,
         };
 
         mockScimApiClient.Setup(m => m.GetSCIMGroup(roleScimId)).ReturnsAsync((SCIMGroup)null!);
 
-        var service = new SRAMProjectSyncService(mockScimApiClient.Object, context);
+        SRAMProjectSyncService service = new(mockScimApiClient.Object, context);
 
         // Act & Assert
         await Assert.ThrowsAsync<GroupNotFoundException>(() =>
@@ -189,7 +191,7 @@ public class SRAMProjectSyncServiceTests
 
     private ConfluxContext CreateInMemoryContext(string dbName)
     {
-        var serviceProvider = new ServiceCollection()
+        ServiceProvider serviceProvider = new ServiceCollection()
             .AddEntityFrameworkInMemoryDatabase()
             .BuildServiceProvider();
 
@@ -198,7 +200,7 @@ public class SRAMProjectSyncServiceTests
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
-        var context = new ConfluxContext(options);
+        ConfluxContext context = new(options);
         context.Database.EnsureCreated();
         return context;
     }

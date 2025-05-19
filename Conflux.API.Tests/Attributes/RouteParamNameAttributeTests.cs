@@ -14,12 +14,12 @@ public class RouteParamNameAttributeTests
     public void Constructor_SetsName()
     {
         // Arrange & Act
-        var attribute = new RouteParamNameAttribute("test");
-        
+        RouteParamNameAttribute attribute = new("test");
+
         // Assert
         Assert.Equal("test", attribute.Name);
     }
-    
+
     [Theory]
     [InlineData("id")]
     [InlineData("projectId")]
@@ -27,8 +27,8 @@ public class RouteParamNameAttributeTests
     public void Constructor_WithDifferentNames_SetsNameProperty(string name)
     {
         // Arrange & Act
-        var attribute = new RouteParamNameAttribute(name);
-        
+        RouteParamNameAttribute attribute = new(name);
+
         // Assert
         Assert.Equal(name, attribute.Name);
     }

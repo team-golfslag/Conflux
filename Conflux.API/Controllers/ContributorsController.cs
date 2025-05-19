@@ -10,7 +10,6 @@ using Conflux.Domain.Logic.DTOs.Patch;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Conflux.API.Controllers;
@@ -60,7 +59,7 @@ public class ContributorsController : ControllerBase
     public async Task<ActionResult<ContributorDTO>> GetContributorByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid personId) =>
         await _contributorsService.GetContributorByIdAsync(projectId, personId);
-    
+
     /// <summary>
     /// Deletes a contributor
     /// </summary>
@@ -73,7 +72,7 @@ public class ContributorsController : ControllerBase
     public async Task<ActionResult> DeleteContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId)
     {
-        try 
+        try
         {
             await _contributorsService.DeleteContributorAsync(projectId, personId);
         }
@@ -81,7 +80,7 @@ public class ContributorsController : ControllerBase
         {
             return NotFound("Contributor not found");
         }
-        
+
         return Ok();
     }
 
@@ -102,7 +101,8 @@ public class ContributorsController : ControllerBase
         try
         {
             return await _contributorsService.CreateContributorAsync(contributorDTO);
-        } catch (ContributorAlreadyExistsException)
+        }
+        catch (ContributorAlreadyExistsException)
         {
             return Conflict("Contributor already exists");
         }

@@ -43,22 +43,22 @@ public class CollaborationMapperTests
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = groupUrn,
-            Id = "1"
+            Id = "1",
         });
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-admin",
-            Id = "2"
+            Id = "2",
         });
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-contributor",
-            Id = "3"
+            Id = "3",
         });
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-user",
-            Id = "4"
+            Id = "4",
         });
         await _context.SaveChangesAsync();
 
@@ -109,7 +109,7 @@ public class CollaborationMapperTests
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = groupUrn,
-            Id = "1"
+            Id = "1",
         });
         await _context.SaveChangesAsync();
 

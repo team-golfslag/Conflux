@@ -22,6 +22,6 @@ public class AccessControlFilterFactory(
     /// </summary>
     /// <param name="permission">The permission required for access.</param>
     /// <returns>An instance of AccessControlFilter.</returns>
-    public IAsyncAuthorizationFilter Create(UserRoleType permission) => 
+    public IAsyncAuthorizationFilter Create(UserRoleType permission) =>
         new AccessControlFilter(userSessionService, accessControlService, permission);
 }

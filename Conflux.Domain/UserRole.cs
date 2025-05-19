@@ -11,11 +11,15 @@ namespace Conflux.Domain;
 
 public class UserRole
 {
-    [Key] public required Guid Id { get; init; }
-    [ForeignKey(nameof(Project))] public required Guid ProjectId { get; init; }
+    [Key]
+    public required Guid Id { get; init; }
+
+    [ForeignKey(nameof(Project))]
+    public required Guid ProjectId { get; init; }
 
     public required UserRoleType Type { get; init; }
     public required string Urn { get; init; }
 
-    [JsonPropertyName("scim_id")] public required string SCIMId { get; init; }
+    [JsonPropertyName("scim_id")]
+    public required string SCIMId { get; init; }
 }

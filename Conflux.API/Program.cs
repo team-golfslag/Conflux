@@ -7,10 +7,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Conflux.API.Filters;
 using Conflux.Data;
-using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
-using Conflux.Domain.Session;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
@@ -94,7 +92,7 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
-        
+
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();
 
@@ -399,7 +397,7 @@ public class Program
 
         if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
-        
+
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 

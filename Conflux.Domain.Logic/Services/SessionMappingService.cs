@@ -87,14 +87,17 @@ public class SessionMappingService : ISessionMappingService
                             EndDate = null,
                         },
                     ],
-                    Descriptions = group.Description == null ? [] : [
-                        new()
-                        {
-                            ProjectId = projectId,
-                            Text = group.Description,
-                            Type = DescriptionType.Primary,
-                        },
-                    ],
+                    Descriptions = group.Description == null
+                        ? []
+                        :
+                        [
+                            new()
+                            {
+                                ProjectId = projectId,
+                                Text = group.Description,
+                                Type = DescriptionType.Primary,
+                            },
+                        ],
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
@@ -111,15 +114,18 @@ public class SessionMappingService : ISessionMappingService
                         EndDate = null,
                     },
                 ];
-                existingCollaboration.Descriptions = group.Description == null ? [] : [
-                new()
-                {
-                    ProjectId = existingCollaboration.Id,
-                    Text = group.Description,
-                    Type = DescriptionType.Primary,
-                    Language = null,
-                }
-                ];
+                existingCollaboration.Descriptions = group.Description == null
+                    ? []
+                    :
+                    [
+                        new()
+                        {
+                            ProjectId = existingCollaboration.Id,
+                            Text = group.Description,
+                            Type = DescriptionType.Primary,
+                            Language = null,
+                        },
+                    ];
             }
         }
     }

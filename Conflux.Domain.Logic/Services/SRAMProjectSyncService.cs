@@ -87,7 +87,7 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
             user.Roles.RemoveAll(r => r.ProjectId == project.Id && r.Type == userRole.Type);
 
         _confluxContext.UserRoles.Remove(userRole);
-        
+
         UserRole newUserRole = new()
         {
             Id = Guid.NewGuid(),

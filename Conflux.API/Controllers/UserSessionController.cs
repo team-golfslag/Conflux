@@ -41,7 +41,19 @@ public class UserSessionController : ControllerBase
     [ProducesResponseType(StatusCodes.Status302Found)]
     public async Task<ActionResult> LogIn([FromQuery] string redirectUri)
     {
-        UserSession? user = await _userSessionService.GetUser();
+        UserSession? user;
+        try
+        {
+            user = await _userSessionService.GetUser();
+        }
+        catch (Exception)
+        {
+            // clear user claims and force re-authentication
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+            // redirect to login page
+            return Redirect("login?redirectUri=" + redirectUri);
+        }
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);

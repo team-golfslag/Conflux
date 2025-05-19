@@ -37,19 +37,28 @@ public class CollaborationMapperTests
     {
         const string orgName = "org";
         const string coName = "co";
-        const string groupName = "group";
         const string groupUrn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}";
-        const string subGroupUrn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:{groupName}";
 
+        // Add the main collaboration group and all three role groups to cache
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = groupUrn,
-            Id = "1",
+            Id = "1"
         });
         _context.SRAMGroupIdConnections.Add(new()
         {
-            Urn = subGroupUrn,
-            Id = "2",
+            Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-admin",
+            Id = "2"
+        });
+        _context.SRAMGroupIdConnections.Add(new()
+        {
+            Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-contributor",
+            Id = "3"
+        });
+        _context.SRAMGroupIdConnections.Add(new()
+        {
+            Urn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}:conflux-user",
+            Id = "4"
         });
         await _context.SaveChangesAsync();
 
@@ -59,27 +68,34 @@ public class CollaborationMapperTests
             {
                 Organization = orgName,
                 Name = coName,
-                Groups = [groupName],
+                // No need to specify groups as the mapper uses the fixed list
             },
         ];
 
         SCIMGroup scimGroup1 = CreateSCIMGroup("1", "Main Group", "main-urn");
-        SCIMGroup scimGroup2 = CreateSCIMGroup("2", "Sub Group", "sub-urn");
+        SCIMGroup scimGroup2 = CreateSCIMGroup("2", "Admin Group", "admin-urn");
+        SCIMGroup scimGroup3 = CreateSCIMGroup("3", "Contributor Group", "contributor-urn");
+        SCIMGroup scimGroup4 = CreateSCIMGroup("4", "User Group", "user-urn");
 
         _mockScimApiClient.Setup(m => m.GetSCIMGroup("1")).ReturnsAsync(scimGroup1);
         _mockScimApiClient.Setup(m => m.GetSCIMGroup("2")).ReturnsAsync(scimGroup2);
+        _mockScimApiClient.Setup(m => m.GetSCIMGroup("3")).ReturnsAsync(scimGroup3);
+        _mockScimApiClient.Setup(m => m.GetSCIMGroup("4")).ReturnsAsync(scimGroup4);
 
         var result = await _mapper.Map(collaborationDTOs);
 
         Assert.Single(result);
         Assert.Equal(orgName, result[0].Organization);
         Assert.Equal("Main Group", result[0].CollaborationGroup!.DisplayName);
-        Assert.Single(result[0].Groups!);
-        Assert.Equal("Sub Group", result[0].Groups![0].DisplayName);
+        Assert.Equal(3, result[0].Groups!.Count);
+        Assert.Equal("Admin Group", result[0].Groups![0].DisplayName);
+        Assert.Equal("Contributor Group", result[0].Groups![1].DisplayName);
+        Assert.Equal("User Group", result[0].Groups![2].DisplayName);
 
-        // Mock verification should only use overridable methods
         _mockScimApiClient.Verify(m => m.GetSCIMGroup("1"), Times.Once);
         _mockScimApiClient.Verify(m => m.GetSCIMGroup("2"), Times.Once);
+        _mockScimApiClient.Verify(m => m.GetSCIMGroup("3"), Times.Once);
+        _mockScimApiClient.Verify(m => m.GetSCIMGroup("4"), Times.Once);
     }
 
     [Fact]
@@ -87,14 +103,13 @@ public class CollaborationMapperTests
     {
         const string orgName = "org";
         const string coName = "co";
-        const string groupName = "group";
         const string groupUrn = $"urn:mace:surf.nl:sram:group:{orgName}:{coName}";
 
         // Only add one group to cache, forcing full retrieval
         _context.SRAMGroupIdConnections.Add(new()
         {
             Urn = groupUrn,
-            Id = "1",
+            Id = "1"
         });
         await _context.SaveChangesAsync();
 
@@ -104,31 +119,28 @@ public class CollaborationMapperTests
             {
                 Organization = orgName,
                 Name = coName,
-                Groups = [groupName],
+                // No need to specify groups as the mapper uses the fixed list
             },
         ];
 
         SCIMGroup scimGroup1 = CreateSCIMGroup("1", "Main Group", $"{orgName}:{coName}");
-        SCIMGroup scimGroup2 = CreateSCIMGroup("2", "Sub Group", $"{orgName}:{coName}:{groupName}");
-        List<SCIMGroup> allGroups =
-        [
-            scimGroup1,
-            scimGroup2,
-        ];
+        SCIMGroup scimGroup2 = CreateSCIMGroup("2", "Admin Group", $"{orgName}:{coName}:conflux-admin");
+        SCIMGroup scimGroup3 = CreateSCIMGroup("3", "Contributor Group", $"{orgName}:{coName}:conflux-contributor");
+        SCIMGroup scimGroup4 = CreateSCIMGroup("4", "User Group", $"{orgName}:{coName}:conflux-user");
+
+        List<SCIMGroup> allGroups = [scimGroup1, scimGroup2, scimGroup3, scimGroup4];
         _mockScimApiClient.Setup(m => m.GetAllGroups()).ReturnsAsync(allGroups);
 
-        // Test only public methods of CollaborationMapper
         var result = await _mapper.Map(collaborationDTOs);
 
         Assert.Single(result);
         Assert.Equal(orgName, result[0].Organization);
         Assert.Equal("Main Group", result[0].CollaborationGroup!.DisplayName);
-        Assert.Single(result[0].Groups!);
-        Assert.Equal("Sub Group", result[0].Groups![0].DisplayName);
+        Assert.Equal(3, result[0].Groups!.Count);
 
-        // Verify cache was updated
+        // Verify cache was updated for all 4 groups
         var connections = await _context.SRAMGroupIdConnections.ToListAsync();
-        Assert.Equal(2, connections.Count);
+        Assert.Equal(4, connections.Count);
     }
 
     [Fact]
@@ -140,28 +152,24 @@ public class CollaborationMapperTests
             {
                 Organization = "org1",
                 Name = "co1",
-                Groups = ["group1"],
             },
-
             new()
             {
                 Organization = "org2",
                 Name = "co2",
-                Groups =
-                [
-                    "group2",
-                    "group3",
-                ],
             },
         ];
 
         List<SCIMGroup> scimGroups =
         [
             CreateSCIMGroup("1", "Org1 Co1", "org1:co1"),
-            CreateSCIMGroup("2", "Org1 Co1 Group1", "org1:co1:group1"),
-            CreateSCIMGroup("3", "Org2 Co2", "org2:co2"),
-            CreateSCIMGroup("4", "Org2 Co2 Group2", "org2:co2:group2"),
-            CreateSCIMGroup("5", "Org2 Co2 Group3", "org2:co2:group3"),
+            CreateSCIMGroup("2", "Org1 Co1 Admin", "org1:co1:conflux-admin"),
+            CreateSCIMGroup("3", "Org1 Co1 Contributor", "org1:co1:conflux-contributor"),
+            CreateSCIMGroup("4", "Org1 Co1 User", "org1:co1:conflux-user"),
+            CreateSCIMGroup("5", "Org2 Co2", "org2:co2"),
+            CreateSCIMGroup("6", "Org2 Co2 Admin", "org2:co2:conflux-admin"),
+            CreateSCIMGroup("7", "Org2 Co2 Contributor", "org2:co2:conflux-contributor"),
+            CreateSCIMGroup("8", "Org2 Co2 User", "org2:co2:conflux-user"),
         ];
         _mockScimApiClient.Setup(m => m.GetAllGroups()).ReturnsAsync(scimGroups);
 
@@ -171,25 +179,11 @@ public class CollaborationMapperTests
 
         Assert.Equal("org1", result[0].Organization);
         Assert.Equal("Org1 Co1", result[0].CollaborationGroup!.DisplayName);
-        Assert.Single(result[0].Groups!);
+        Assert.Equal(3, result[0].Groups!.Count);
 
         Assert.Equal("org2", result[1].Organization);
         Assert.Equal("Org2 Co2", result[1].CollaborationGroup!.DisplayName);
-        Assert.Equal(2, result[1].Groups!.Count);
-    }
-
-    // Tests for private methods should be removed or tested through public APIs
-
-    [Fact]
-    public void FormatGroupUrn_WithoutGroupName_FormatsCorrectly()
-    {
-        const string orgName = "org";
-        const string coName = "co";
-
-        // Use instance method instead of static method
-        string result = CollaborationMapper.FormatGroupUrn(orgName, coName);
-
-        Assert.Equal("urn:mace:surf.nl:sram:group:org:co", result);
+        Assert.Equal(3, result[1].Groups!.Count);
     }
 
     [Fact]

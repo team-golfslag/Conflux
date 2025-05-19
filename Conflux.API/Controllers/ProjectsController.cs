@@ -110,7 +110,7 @@ public class ProjectsController : ControllerBase
     [HttpPost]
     [Route("{id:guid}/sync")]
     [RouteParamName("id")]
-    [RequireProjectRole(UserRoleType.Admin)]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {

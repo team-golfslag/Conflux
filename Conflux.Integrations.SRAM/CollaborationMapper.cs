@@ -15,6 +15,7 @@ namespace Conflux.Integrations.SRAM;
 
 public class CollaborationMapper : ICollaborationMapper
 {
+    private readonly List<string> GroupNames = ["conflux-admin", "conflux-contributor", "conflux-user"];
     private readonly ConfluxContext _context;
     private readonly ISCIMApiClient _scimApiClient;
 
@@ -36,7 +37,7 @@ public class CollaborationMapper : ICollaborationMapper
         {
             string groupUrn = FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name);
             urns.Add(groupUrn);
-            urns.AddRange(collaborationDto.Groups.Select(g =>
+            urns.AddRange(GroupNames.Select(g =>
                 FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name, g)));
         }
 
@@ -96,7 +97,7 @@ public class CollaborationMapper : ICollaborationMapper
             Group collaborationGroup = MapSCIMGroup(collaborationGroupUrn, groupMap[collaborationGroupUrn]);
 
             List<Group> groups = [];
-            groups.AddRange(collaborationDto.Groups
+            groups.AddRange(GroupNames
                 .Select(groupId =>
                     FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name, groupId))
                 .Select(groupUrn =>
@@ -127,7 +128,7 @@ public class CollaborationMapper : ICollaborationMapper
         Group collaborationGroup = await GetGroupFromSCIMApi(collaborationGroupUrn);
 
         List<Group> groups = [];
-        foreach (string groupUrn in collaborationDto.Groups.Select(groupId =>
+        foreach (string groupUrn in GroupNames.Select(groupId =>
             FormatGroupUrn(collaborationDto.Organization, collaborationDto.Name, groupId)))
         {
             Group group = await GetGroupFromSCIMApi(groupUrn);

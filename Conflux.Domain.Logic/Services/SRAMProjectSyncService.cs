@@ -7,6 +7,7 @@ using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM;
+using Conflux.Integrations.SRAM.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using SRAM.SCIM.Net;
 using SRAM.SCIM.Net.Models;
@@ -16,9 +17,9 @@ namespace Conflux.Domain.Logic.Services;
 public class SRAMProjectSyncService : ISRAMProjectSyncService
 {
     private readonly ConfluxContext _confluxContext;
-    private readonly SCIMApiClient _scimApiClient;
+    private readonly ISCIMApiClient _scimApiClient;
 
-    public SRAMProjectSyncService(SCIMApiClient scimApiClient, ConfluxContext confluxContext)
+    public SRAMProjectSyncService(ISCIMApiClient scimApiClient, ConfluxContext confluxContext)
     {
         _scimApiClient = scimApiClient;
         _confluxContext = confluxContext;
@@ -63,7 +64,9 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         project.Users.AddRange(newUsers);
 
         // Get all roles 
-        var roles = project.Users.SelectMany(p => p.Roles).DistinctBy(p => p.Id);
+        var roles = await _confluxContext.UserRoles
+            .Where(r => r.ProjectId == project.Id)
+            .ToListAsync();
         foreach (UserRole role in roles)
             await SyncProjectRoleAsync(project, role);
 
@@ -74,15 +77,17 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
 
     public async Task SyncProjectRoleAsync(Project project, UserRole userRole)
     {
-        SCIMGroup? updatedScimGroup = await _scimApiClient.GetSCIMGroup(project.SCIMId ?? string.Empty);
-        if (updatedScimGroup == null) throw new ProjectNotFoundException(project.Id);
+        SCIMGroup? updatedScimGroup = await _scimApiClient.GetSCIMGroup(userRole.SCIMId);
+        if (updatedScimGroup == null) throw new GroupNotFoundException(userRole.Urn);
 
         Group updatedGroup = CollaborationMapper.MapSCIMGroup(userRole.Urn, updatedScimGroup);
 
         // remove role from all users
         foreach (User user in project.Users)
-            user.Roles.Remove(userRole);
+            user.Roles.RemoveAll(r => r.ProjectId == project.Id && r.Type == userRole.Type);
 
+        _confluxContext.UserRoles.Remove(userRole);
+        
         UserRole newUserRole = new()
         {
             Id = Guid.NewGuid(),
@@ -92,6 +97,10 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
             SCIMId = updatedGroup.SCIMId,
         };
 
+        // Add the new role to the context first
+        _confluxContext.UserRoles.Add(newUserRole);
+
+        // Then associate it with users
         foreach (User user in project.Users.Where(u => updatedGroup.Members.Any(m => m.SCIMId == u.SCIMId)))
             user.Roles.Add(newUserRole);
     }

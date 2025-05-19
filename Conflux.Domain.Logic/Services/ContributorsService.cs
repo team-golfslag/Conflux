@@ -165,6 +165,8 @@ public class ContributorsService : IContributorsService
         }
 
         var contributorList = await contributors.ToListAsync();
+        if (contributorList.Count == 0)
+            return [];
         
         // Fetch all the relevant persons in one go to avoid N+1 query problem
         var personIds = contributorList.Select(c => c.PersonId).Distinct().ToList();

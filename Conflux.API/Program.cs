@@ -94,6 +94,9 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+        
+        // Register the filter factory with scoped lifetime to match its dependencies
+        builder.Services.AddScoped<AccessControlFilterFactory>();
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);

@@ -3,6 +3,7 @@ using Conflux.Domain;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Conflux.API.Attributes;
 
@@ -10,7 +11,10 @@ namespace Conflux.API.Attributes;
 public class RequireProjectRoleAttribute : Attribute, IFilterFactory
 {
     public UserRoleType Permission { get; }
-    public bool IsReusable => true;
+    
+    // Set to false to ensure we get fresh services for each request
+    public bool IsReusable => false;
+    
     public RequireProjectRoleAttribute(UserRoleType role) 
     {
         Permission = role;
@@ -18,8 +22,10 @@ public class RequireProjectRoleAttribute : Attribute, IFilterFactory
     
     public IFilterMetadata CreateInstance(IServiceProvider serviceProvider)
     {
-        var userSessionService = serviceProvider.GetRequiredService<IUserSessionService>();
-        var accessControlService = serviceProvider.GetRequiredService<IAccessControlService>();
-        return new AccessControlFilter(userSessionService, accessControlService, Permission);
+        // Get the filter factory from the DI container
+        var filterFactory = serviceProvider.GetRequiredService<AccessControlFilterFactory>();
+        
+        // Create a filter with the specified permission
+        return filterFactory.Create(Permission);
     }
 }

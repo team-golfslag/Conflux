@@ -40,6 +40,7 @@ public class ContributorsController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(List<ContributorDTO>), StatusCodes.Status200OK)]
     [RequireProjectRole(UserRoleType.User)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<ContributorDTO>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
         await _contributorsService.GetContributorsByQueryAsync(projectId, query);
@@ -52,7 +53,9 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpGet]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ContributorDTO>> GetContributorByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid personId) =>
         await _contributorsService.GetContributorByIdAsync(projectId, personId);
@@ -64,7 +67,9 @@ public class ContributorsController : ControllerBase
     /// <param name="personId">The GUID of the person</param>
     [HttpDelete]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult> DeleteContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId)
     {
@@ -87,7 +92,9 @@ public class ContributorsController : ControllerBase
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ContributorDTO>> CreateContributor([FromRoute] Guid projectId,
         [FromBody] ContributorDTO contributorDTO)
     {
@@ -111,7 +118,9 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ContributorDTO>> UpdateContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId,
         [FromBody] ContributorDTO contributorDTO) =>
@@ -119,7 +128,9 @@ public class ContributorsController : ControllerBase
 
     [HttpPatch]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ContributorDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ContributorDTO>>
         PatchContributor([FromRoute] Guid projectId, [FromRoute] Guid personId,
             [FromBody] ContributorPatchDTO contributorDTO) =>

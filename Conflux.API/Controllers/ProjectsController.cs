@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
@@ -73,7 +74,10 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProjectDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
 
@@ -85,7 +89,10 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
@@ -97,14 +104,20 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPatch]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProjectDTO>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
         await _projectsService.PatchProjectAsync(id, projectDto);
 
     [HttpPost]
     [Route("{id:guid}/sync")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {
         await _iSRAMProjectSyncService.SyncProjectAsync(id);

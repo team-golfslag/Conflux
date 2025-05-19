@@ -8,23 +8,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
 
-public class AccessControlService : IAccessControlService
+public class AccessControlService(ConfluxContext context) : IAccessControlService
 {
-    private readonly ConfluxContext _context;
-
-    public AccessControlService(ConfluxContext context)
-    {
-        _context = context;
-    }
-
     public async Task<bool> UserHasRoleInProject(Guid userId, Guid projectId, UserRoleType roleType)
     {
-        var user = await _context.Users.AsNoTracking().Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-        {
-            return false;
-        }
-
-        return user.Roles.Any(r => r.ProjectId == projectId && r.Type == roleType);
+        User? user = await context.Users
+            .AsNoTracking()
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        
+        return user != null && user.Roles.Any(r => r.ProjectId == projectId && r.Type == roleType);
     }
 }

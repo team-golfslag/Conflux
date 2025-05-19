@@ -16,7 +16,7 @@ using SURFSharekit.Net.Models.WebhooksByDocumentation;
 
 namespace Conflux.Domain.Logic.Services;
 
-public class SURFSharekitService
+public class SURFSharekitService : ISURFSharekitService
 {
     private readonly ConfluxContext _context;
     private readonly IRAiDService _raidService;
@@ -82,6 +82,8 @@ public class SURFSharekitService
         if (product == null) return null;
 
         // via raid koppelen aan bijbehorend project
+        
+        // TODO: new project when raid does not match
         Project project = _context.Projects.Include(project => project.Organisations)
             .Include(project => project.Contributors).First(p =>
                 p.RAiDInfo != null && p.RAiDInfo.RAiDId == webhookCreate.Attributes.Raid);

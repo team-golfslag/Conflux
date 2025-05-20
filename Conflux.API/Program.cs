@@ -23,6 +23,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using ORCID.Net.Services;
 using RAiD.Net;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
@@ -92,6 +93,19 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+        builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
+        {
+            IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
+                .GetSection("Authentication:Orcid");
+            PersonRetrievalServiceOptions options = new()
+            {
+                BaseUrl = orcidConfig["Origin"]!,
+                MediaHeader = PersonRetrievalServiceOptions.JsonMediaHeader,
+                MaxResults = PersonRetrievalServiceOptions.MaxRecommendedResults,
+                AuthorizationCode = null // TODO: credential based auth
+            };
+            return new PersonRetrievalService(options);
+        });
 
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();

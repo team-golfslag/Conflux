@@ -17,11 +17,11 @@ using ServiceProviderServiceExtensions = Microsoft.Extensions.DependencyInjectio
 
 namespace Conflux.API.Tests.Controllers;
 
-public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
 {
     private static readonly JsonSerializerOptions JsonOptions;
     private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
+    private readonly WebApplicationFactoryTests _factoryTests;
 
     static ProjectsControllerTests()
     {
@@ -33,10 +33,10 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         JsonOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    public ProjectsControllerTests(TestWebApplicationFactory factory)
+    public ProjectsControllerTests(WebApplicationFactoryTests factoryTests)
     {
-        _factory = factory;
-        _client = factory.CreateClient();
+        _factoryTests = factoryTests;
+        _client = factoryTests.CreateClient();
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         // First, create a new project
         Project? project;
-        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factoryTests.Services))
         {
             ConfluxContext context =
                 ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);
@@ -105,7 +105,7 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task PatchProject_UpdatesDescriptionOnly()
     {
         Project? project;
-        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factory.Services))
+        using (IServiceScope scope = ServiceProviderServiceExtensions.CreateScope(_factoryTests.Services))
         {
             ConfluxContext context =
                 ServiceProviderServiceExtensions.GetRequiredService<ConfluxContext>(scope.ServiceProvider);

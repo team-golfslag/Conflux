@@ -8,9 +8,9 @@ namespace Conflux.Domain.Logic.DTOs;
 public class ProjectDescriptionDTO
 {
     public required string Text { get; set; }
-    
+
     public DescriptionType Type { get; init; }
-    
+
     public Language? Language { get; set; }
 
     public ProjectDescription ToProjectDescription(Guid projectId) =>
@@ -21,5 +21,4 @@ public class ProjectDescriptionDTO
             Language = Language,
             Type = Type,
         };
-
 }

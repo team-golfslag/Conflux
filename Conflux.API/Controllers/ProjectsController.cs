@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Patch;
@@ -17,9 +18,11 @@ namespace Conflux.API.Controllers;
 /// Represents the controller for querying projects
 /// </summary>
 [Route("projects/")]
+[Authorize]
 [ApiController]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ProjectsController : ControllerBase
 {
@@ -44,7 +47,6 @@ public class ProjectsController : ControllerBase
     /// the query
     /// </param>
     /// <returns>Filtered list of projects</returns>
-    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectDTO>>> GetProjectByQuery(
@@ -56,7 +58,6 @@ public class ProjectsController : ControllerBase
     /// </summary>
     /// <returns>All projects</returns>
     [HttpGet]
-    [Authorize]
     [Route("all")]
     [ProducesResponseType(typeof(List<ProjectDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectDTO>>> GetAllProjects()
@@ -71,8 +72,9 @@ public class ProjectsController : ControllerBase
     /// Gets a project by its GUID.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
@@ -85,6 +87,8 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectDTO>> PutProject([FromRoute] Guid id, ProjectDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
@@ -97,13 +101,16 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPatch]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectDTO>> PatchProject([FromRoute] Guid id, ProjectPatchDTO projectDto) =>
         await _projectsService.PatchProjectAsync(id, projectDto);
 
     [HttpPost]
     [Route("{id:guid}/sync")]
-    [Authorize]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {

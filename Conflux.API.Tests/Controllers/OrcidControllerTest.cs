@@ -408,7 +408,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser.ORCiD);                                       // ORCID should be null after unlinking
+        Assert.Null(dbUser.ORCiD);                                              // ORCID should be null after unlinking
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
@@ -435,7 +435,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser.ORCiD);                                       // ORCID should remain null
+        Assert.Null(dbUser.ORCiD);                                              // ORCID should remain null
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 

@@ -5,12 +5,10 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Conflux.API.Controllers;
+using Conflux.API.Filters;
 using Conflux.Data;
-using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
-using Conflux.Domain.Session;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
@@ -93,6 +91,10 @@ public class Program
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+
+        // Register the filter factory with scoped lifetime to match its dependencies
+        builder.Services.AddScoped<AccessControlFilterFactory>();
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
@@ -342,6 +344,13 @@ public class Program
                             Error = exception.Message,
                         });
                         break;
+                    case UnauthorizedAccessException:
+                        context.Response.StatusCode = 403;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
+                        });
+                        break;
                     case UserNotAuthenticatedException:
                         context.Response.StatusCode = 401;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
@@ -392,9 +401,8 @@ public class Program
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 
-        User devUser = UserSession.Development().User!;
-        if (!await context.Users.AnyAsync(u => u.Id == devUser.Id))
-            context.Users.Add(devUser);
+        await context.Users.AddRangeAsync(seedData.Users);
+        await context.UserRoles.AddRangeAsync(seedData.UserRoles);
         await context.Contributors.AddRangeAsync(seedData.Contributors);
         await context.Products.AddRangeAsync(seedData.Products);
         await context.Organisations.AddRangeAsync(seedData.Organisations);

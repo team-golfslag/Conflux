@@ -41,7 +41,7 @@ public class Product
             ProductSchema.Rrid    => "https://scicrunch.org/resolver/",
             ProductSchema.Archive => "https://archive.org/",
             null                  => null,
-            _                     => throw new ArgumentOutOfRangeException()
+            _                     => throw new ArgumentOutOfRangeException(),
         };
 
     public HashSet<ProductCategory> Categories { get; set; } = [];

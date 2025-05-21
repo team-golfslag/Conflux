@@ -19,9 +19,9 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context = null!;
     private readonly IProjectMapperService _projectMapperService = null!;
     private readonly IRAiDService _raidService = null!;
+    private ConfluxContext _context = null!;
     private UserSessionService _userSessionService = null!;
 
     public async Task InitializeAsync()

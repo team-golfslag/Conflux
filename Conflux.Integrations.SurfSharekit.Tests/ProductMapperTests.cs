@@ -9,7 +9,8 @@ using Conflux.Domain;
 using Conflux.Integrations.SURFSharekit;
 using Conflux.Integrations.SURFSharekit.Tests;
 using Conflux.Integrations.SURFSharekit.Tests.Helpers;
-
+using Crossref.Net.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using SURFSharekit.Net;
 using SURFSharekit.Net.Models;
 using SURFSharekit.Net.Models.RepoItem;
@@ -41,10 +42,19 @@ public class ProductMapperTests
             BaseAddress = new("https://dummy/"),
         };
         SURFSharekitApiClient client = new(httpClient);
+        
+        FakeHttpMessageHandler crossRefHandler = new($"{{\"data\":[{SURFSharekitJsonReponse.DummyResponse}]}}", HttpStatusCode.OK);
+        HttpClient crossRefHttpClient = new(handler)
+        {
+            BaseAddress = new("https://dummy/"),
+        };
+        
+        CrossrefService crossrefService = new(crossRefHttpClient, new NullLogger<CrossrefService>());
+        ProductMapper productMapper = new(crossrefService);
 
         var result = await client.GetAllRepoItems();
 
-        var allProducts = ProductMapper.MultipleRepoItemsToProducts(result);
+        var allProducts = productMapper.MultipleRepoItemsToProducts(result);
         
         Assert.Single(allProducts);
         
@@ -76,7 +86,17 @@ public class ProductMapperTests
         };
         SURFSharekitApiClient client = new(httpClient);
         SURFSharekitRepoItem item = await client.GetRepoItemById("dummy-id");
-        Product? product = ProductMapper.SingleRepoItemToProduct(item);
+        
+        FakeHttpMessageHandler crossRefHandler = new($"{{\"data\":[{SURFSharekitJsonReponse.DummyResponse}]}}", HttpStatusCode.OK);
+        HttpClient crossRefHttpClient = new(handler)
+        {
+            BaseAddress = new("https://dummy/"),
+        };
+        
+        CrossrefService crossrefService = new(crossRefHttpClient, new NullLogger<CrossrefService>());
+        ProductMapper productMapper = new(crossrefService);
+        
+        Product? product = productMapper.SingleRepoItemToProduct(item);
         
         Assert.NotNull(product);
         Assert.NotNull(product.Title);

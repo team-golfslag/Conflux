@@ -3,16 +3,18 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.Diagnostics;
 using Conflux.Data;
 using Conflux.Integrations.SURFSharekit;
-using Microsoft.AspNetCore.Mvc;
+using Crossref.Net.Services;
 using Microsoft.EntityFrameworkCore;
 using RAiD.Net;
 using SURFSharekit.Net;
 using SURFSharekit.Net.Models.RepoItem;
 using SURFSharekit.Net.Models.Webhooks;
 using SURFSharekit.Net.Models.WebhooksByDocumentation;
+
+using Conflux.Integrations.SURFSharekit;
+
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -21,13 +23,15 @@ public class SURFSharekitService : ISURFSharekitService
     private readonly ConfluxContext _context;
     private readonly IRAiDService _raidService;
     private readonly SURFSharekitApiClient _SURFSharekitApiClient;
+    private readonly ProductMapper _productMapper;
 
     public SURFSharekitService(ConfluxContext context, IRAiDService raidService,
-        SURFSharekitApiClient surfSharekitApiClient)
+        SURFSharekitApiClient surfSharekitApiClient, CrossrefService crossrefService)
     {
         _context = context;
         _raidService = raidService;
         _SURFSharekitApiClient = surfSharekitApiClient;
+        _productMapper = new(crossrefService);
     }
 
     public string HandleWebhook(SURFSharekitRepoItem payload)
@@ -78,7 +82,7 @@ public class SURFSharekitService : ISURFSharekitService
     {
         if (webhookCreate.Attributes is null || webhookCreate.Id is null) return null;
         // map naar product
-        Product? product = ProductMapper.SingleRepoItemToProduct(webhookCreate);
+        Product? product = _productMapper.SingleRepoItemToProduct(webhookCreate);
         if (product == null) return null;
 
         // via raid koppelen aan bijbehorend project
@@ -204,4 +208,5 @@ public class SURFSharekitService : ISURFSharekitService
 
         return existingPerson;
     }
+    
 }

@@ -7,11 +7,11 @@ using System.Reflection;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
-using Conflux.Integrations.SRAM.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SRAM.SCIM.Net;
+using SRAM.SCIM.Net.Exceptions;
 using SRAM.SCIM.Net.Models;
 using Xunit;
 

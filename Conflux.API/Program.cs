@@ -23,6 +23,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using ORCID.Net.Services;
 using RAiD.Net;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
@@ -92,6 +93,21 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+
+        if (await featureManager.IsEnabledAsync("OrcidIntegration"))
+            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
+            {
+                IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
+                    .GetSection("Authentication:Orcid");
+                string? secret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
+                if (string.IsNullOrEmpty(secret))
+                    throw new InvalidOperationException("ORCID_CLIENT_SECRET not set.");
+                PersonRetrievalServiceOptions options = new(
+                    orcidConfig["Origin"],
+                    orcidConfig["ClientId"],
+                    secret);
+                return new(options);
+            });
 
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();

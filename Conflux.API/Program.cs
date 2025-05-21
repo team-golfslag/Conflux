@@ -93,19 +93,21 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
-        builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
-        {
-            IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
-                .GetSection("Authentication:Orcid");
-            PersonRetrievalServiceOptions options = new()
+
+        if (await featureManager.IsEnabledAsync("OrcidIntegration"))
+            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
             {
-                BaseUrl = orcidConfig["Origin"]!,
-                MediaHeader = PersonRetrievalServiceOptions.JsonMediaHeader,
-                MaxResults = PersonRetrievalServiceOptions.MaxRecommendedResults,
-                AuthorizationCode = null // TODO: credential based auth
-            };
-            return new PersonRetrievalService(options);
-        });
+                IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
+                    .GetSection("Authentication:Orcid");
+                string? secret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
+                if (string.IsNullOrEmpty(secret))
+                    throw new InvalidOperationException("ORCID_CLIENT_SECRET not set.");
+                PersonRetrievalServiceOptions options = new(
+                    orcidConfig["Origin"],
+                    orcidConfig["ClientId"],
+                    secret);
+                return new(options);
+            });
 
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();

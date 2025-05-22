@@ -28,7 +28,7 @@ public class ProductsService : IProductsService
 
     public async Task<ProductResponseDTO> CreateProductAsync(ProductRequestDTO productDTO)
     {
-       Product product = new()
+        Product product = new()
         {
             Id = Guid.NewGuid(),
             Schema = productDTO.Schema,

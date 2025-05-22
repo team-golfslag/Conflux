@@ -316,7 +316,6 @@ public class ProjectsService
             .Include(p => p.Organisations)
             .ThenInclude(o => o.Roles)
             .Include(p => p.Products)
-            .ThenInclude(p => p.Categories)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
             .Include(p => p.Contributors)

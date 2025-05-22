@@ -329,6 +329,7 @@ public class Program
                     case ProjectNotFoundException
                         or ProjectDescriptionNotFoundException
                         or ContributorNotFoundException
+                        or ProductNotFoundException
                         or PersonNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse

@@ -93,6 +93,7 @@ public class Program
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IProductsService, ProductsService>();
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);

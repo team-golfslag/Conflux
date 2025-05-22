@@ -11,5 +11,5 @@ public class ProductRequestDTO
     public required string Url { get; init; }
     public required string Title { get; init; }
     public required ProductType Type { get; init; }
-    public List<ProductCategoryType> Categories { get; init; } = [];
+    public HashSet<ProductCategory> Categories { get; init; } = [];
 }

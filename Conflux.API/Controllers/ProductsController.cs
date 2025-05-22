@@ -16,11 +16,11 @@ namespace Conflux.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("products")]
-public class ProductController : ControllerBase
+public class ProductsController : ControllerBase
 {
     private readonly IProductsService _productService;
 
-    public ProductController(IProductsService productService)
+    public ProductsController(IProductsService productService)
     {
         _productService = productService;
     }

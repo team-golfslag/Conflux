@@ -10,7 +10,6 @@ namespace Conflux.Domain.Logic.Services;
 
 public interface IProductsService
 {
-    public Task<List<ProductResponseDTO>> GetProductsByQueryAsync(string? query);
     public Task<ProductResponseDTO> GetProductByIdAsync(Guid productId);
     public Task<ProductResponseDTO> CreateProductAsync(ProductRequestDTO productDTO);
     public Task<ProductResponseDTO> UpdateProductAsync(Guid productId,

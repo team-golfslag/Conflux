@@ -20,15 +20,6 @@ public class ProductsService : IProductsService
         _context = context;
     }
 
-    public async Task<List<ProductResponseDTO>> GetProductsByQueryAsync(string? query)
-    {
-        List<Product> products = await _context.Products
-            .Where(p => string.IsNullOrEmpty(query) || p.Title.Contains(query))
-            .ToListAsync();
-
-        return products.Select(MapToProductResponseDTO).ToList();
-    }
-
     public async Task<ProductResponseDTO> GetProductByIdAsync(Guid productId)
     {
         Product product = await GetProductEntityAsync(productId);

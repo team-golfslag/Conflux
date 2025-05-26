@@ -29,9 +29,11 @@ public class ProductMapper
     /// </summary>
     /// <param name="repoItems"></param>
     /// <returns>A list of products</returns>
-    public List<Product> MultipleRepoItemsToProducts(List<SURFSharekitRepoItem> repoItems)
+    public async Task<List<Product>> MultipleRepoItemsToProducts(List<SURFSharekitRepoItem> repoItems)
     {
-        return repoItems.Select(MapProduct).OfType<Product>().ToList();
+        var tasks = repoItems.Select(MapProduct).ToList();
+        var result = await Task.WhenAll(tasks);
+        return result.OfType<Product>().ToList();
     }
 
     /// <summary>
@@ -40,9 +42,9 @@ public class ProductMapper
     /// </summary>
     /// <param name="repoItem"></param>
     /// <returns>A product or null</returns>
-    public Product? SingleRepoItemToProduct(SURFSharekitRepoItem repoItem)
+    public async Task<Product?> SingleRepoItemToProduct(SURFSharekitRepoItem repoItem)
     {
-        return MapProduct(repoItem);
+        return await MapProduct(repoItem);
     }
 
     /// <summary>
@@ -51,7 +53,7 @@ public class ProductMapper
     /// </summary>
     /// <param name="repoItem"></param>
     /// <returns>A Product or null</returns>
-    private Product? MapProduct(SURFSharekitRepoItem repoItem)
+    private async Task<Product?> MapProduct(SURFSharekitRepoItem repoItem)
     {
         if (string.IsNullOrWhiteSpace(repoItem.Attributes?.Title)) //product requires a title to be made
             return null;
@@ -66,7 +68,7 @@ public class ProductMapper
             Doi.TryParse(repoItem.Attributes.Doi, out doi);
             if (doi != null)
             {
-                productType = Task.Run(() => DoiToProductType(doi)).GetAwaiter().GetResult();
+                productType = await DoiToProductType(doi);
             }
         }
         
@@ -133,7 +135,7 @@ public class ProductMapper
 
                 case "other":  //should other be something more specifc?
                 default:
-                    //type was either null or something not registered in the schame
+                    //type was either null or something not registered in the schema
                     return null;
             }
             

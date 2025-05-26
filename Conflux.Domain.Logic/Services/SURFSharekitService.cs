@@ -82,7 +82,7 @@ public class SURFSharekitService : ISURFSharekitService
     {
         if (webhookCreate.Attributes is null || webhookCreate.Id is null) return null;
         // map naar product
-        Product? product = _productMapper.SingleRepoItemToProduct(webhookCreate);
+        Product? product = await _productMapper.SingleRepoItemToProduct(webhookCreate);
         if (product == null) return null;
 
         // via raid koppelen aan bijbehorend project

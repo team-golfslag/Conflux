@@ -6,6 +6,7 @@
 using System.Security.Claims;
 using Conflux.Data;
 using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -13,27 +14,46 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
+using ORCID.Net.Models;
+using ORCID.Net.ORCIDServiceExceptions;
+using ORCID.Net.Services;
 
 namespace Conflux.API.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("orcid")]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class OrcidController : ControllerBase
 {
     private readonly string[] _allowedRedirects;
     private readonly ConfluxContext _context;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IUserSessionService _userSessionService;
+    private readonly IPersonRetrievalService _personRetrievalService;
+    private readonly IPeopleService _peopleService;
 
     public OrcidController(ConfluxContext context, IVariantFeatureManager featureManager,
-        IUserSessionService userSessionService, IConfiguration configuration)
+        IUserSessionService userSessionService, IConfiguration configuration, IPeopleService peopleService,
+        IPersonRetrievalService? personRetrievalService = null)
     {
         _context = context;
         _userSessionService = userSessionService;
         _featureManager = featureManager;
+        _personRetrievalService = personRetrievalService!;
+        _peopleService = peopleService;
         // Ensure configuration key matches exactly, including case if necessary
-        _allowedRedirects = configuration.GetSection("Authentication:Orcid:AllowedRedirectUris").Get<string[]>() ?? [];
+        // Use Value property first, which allows for better testing with mocks
+        IConfigurationSection redirectsSection = configuration.GetSection("Authentication:Orcid:AllowedRedirectUris");
+        string? redirectValue = redirectsSection.Value;
+        if (redirectValue != null)
+            _allowedRedirects = redirectValue.Split(',');
+        else
+            // Fall back to extension method if Value is null
+            _allowedRedirects = redirectsSection.Get<string[]>() ?? [];
     }
 
     [HttpGet("link")]
@@ -100,8 +120,78 @@ public class OrcidController : ControllerBase
         return false;
     }
 
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(List<Person>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<Person>>> GetPersonByQuery([FromQuery] string? query)
+    {
+        if (!await _featureManager.IsEnabledAsync("OrcidIntegration"))
+            return BadRequest("ORCID integration is not enabled.");
+
+        var orcidPeople = await _personRetrievalService!.FindPeopleByNameFast(query);
+        if (orcidPeople.Count == 0)
+            return Ok(new List<Person>());
+
+        var people = new List<Person>();
+        foreach (OrcidPerson orcidPerson in orcidPeople)
+        {
+            PersonDTO personDTO = new PersonDTO
+            {
+                Name = orcidPerson.CreditName ?? orcidPerson.FirstName + " " + orcidPerson.LastName,
+                GivenName = orcidPerson.FirstName,
+                FamilyName = orcidPerson.LastName,
+                Email = null,
+                ORCiD = orcidPerson.Orcid
+            };
+            if (orcidPerson.Orcid == null)
+                continue; // Skip if ORCID is null
+
+            // Check if user with ORCID already exists
+            if (await _peopleService.GetPersonByOrcidIdAsync(orcidPerson.Orcid) is not null)
+                continue; // Skip if user already exists
+            Person person = await _peopleService.CreatePersonAsync(personDTO);
+            people.Add(person);
+        }
+
+
+        return people;
+    }
+
+    [HttpGet("people")]
+    [ProducesResponseType(typeof(Person), StatusCodes.Status200OK)]
+    public async Task<ActionResult<Person>> GetPersonFromOrcid([FromQuery] string orcid)
+    {
+        if (!await _featureManager.IsEnabledAsync("OrcidIntegration"))
+            return BadRequest("ORCID integration is not enabled.");
+
+        // Check if user with orcid already exists
+        Person? person = await _peopleService.GetPersonByOrcidIdAsync(orcid);
+        if (person is not null)
+            return person;
+
+        OrcidPerson orcidPerson;
+        try
+        {
+            orcidPerson = await _personRetrievalService!.FindPersonByOrcid(orcid);
+        }
+        catch (OrcidServiceException ex)
+        {
+            return BadRequest($"Error retrieving ORCID data: {ex.Message}");
+        }
+
+        PersonDTO newPersonDTO = new PersonDTO
+        {
+            Name = orcidPerson.CreditName ?? orcidPerson.FirstName + " " + orcidPerson.LastName,
+            GivenName = orcidPerson.FirstName,
+            FamilyName = orcidPerson.LastName,
+            Email = null,
+            ORCiD = orcidPerson.Orcid
+        };
+
+        Person newPerson = await _peopleService.CreatePersonAsync(newPersonDTO);
+        return newPerson;
+    }
+
     [HttpGet("finalize")]
-    // No [Authorize] here, as the user is returning from ORCID and authenticated via OrcidCookie
     public async Task<IActionResult> OrcidFinalize([FromQuery] string redirectUri)
     {
         // Validate the effective redirect URL

@@ -42,6 +42,7 @@ public class ProductsServiceTests : IAsyncLifetime
         Guid productId = Guid.NewGuid();
         Product testProduct = new()
         {
+            ProjectId = projectId,
             Id = productId,
             Schema = ProductSchema.Doi,
             Url = "https://doi.org/product",
@@ -168,12 +169,12 @@ public class ProductsServiceTests : IAsyncLifetime
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
         };
-        _context.Projects.Add(project);
 
         // Add an initial product to the context
         Guid productId = Guid.NewGuid();
         Product initialProduct = new()
         {
+            ProjectId = projectId,
             Id = productId,
             Schema = ProductSchema.Doi,
             Url = "https://doi.org/initial",
@@ -185,11 +186,11 @@ public class ProductsServiceTests : IAsyncLifetime
             ],
         };
         _context.Products.Add(initialProduct);
+        project.Products.Add(initialProduct);
+        _context.Projects.Add(project);
         await _context.SaveChangesAsync();
 
-        // Detach the initial product to avoid tracking issues if ProductsService loads it again
-        _context.Entry(initialProduct).State = EntityState.Detached;
-
+        
         ProductRequestDTO updatedProductDto = new()
         {
             Schema = ProductSchema.Doi,
@@ -273,6 +274,7 @@ public class ProductsServiceTests : IAsyncLifetime
         Guid productId = Guid.NewGuid();
         Product testProduct = new()
         {
+            ProjectId = projectId,
             Id = productId,
             Schema = ProductSchema.Doi,
             Url = "https://doi.org/product",

@@ -49,8 +49,10 @@ public class ProductsService : IProductsService
     /// <returns>A <see cref="ProductResponseDTO" /> representing the created product.</returns>
     public async Task<ProductResponseDTO> CreateProductAsync(Guid projectId, ProductRequestDTO productDTO)
     {
+        Project project = await _context.Projects.FindAsync(projectId) ?? throw new ProjectNotFoundException(projectId);
         Product product = new()
         {
+            ProjectId = projectId,
             Id = Guid.NewGuid(),
             Schema = productDTO.Schema,
             Url = productDTO.Url,
@@ -60,6 +62,9 @@ public class ProductsService : IProductsService
         };
 
         await _context.Products.AddAsync(product);
+        // add the product to the project
+        project.Products.Add(product);
+        
         await _context.SaveChangesAsync();
 
         return MapToProductResponseDTO(projectId, product);
@@ -76,6 +81,7 @@ public class ProductsService : IProductsService
     public async Task<ProductResponseDTO> UpdateProductAsync(Guid projectId, Guid productId,
         ProductRequestDTO productDTO)
     {
+        
         Product product = await GetProductEntityAsync(projectId, productId);
         if (product.ProjectId != projectId)
         {

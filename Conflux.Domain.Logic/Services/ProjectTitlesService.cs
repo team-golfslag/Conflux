@@ -31,40 +31,12 @@ public class ProjectTitlesService : IProjectTitlesService
         return titles.Select(MapToTitleResponseDTO).ToList();
     }
 
-    private async Task<ProjectTitle?> GetCurrentTitleByTitleTypeHelper(Guid projectId, TitleType titleType)
-    {
-        await VerifyProjectExists(projectId);
-
-        // ASSUMPTION: Here we assume there is only one current title of each type (so no multilingual titles!!)
-        ProjectTitle? title = await _context.ProjectTitles
-            .Where(t => t.ProjectId == projectId && t.Type == titleType && t.EndDate == null)
-            .FirstOrDefaultAsync();
-
-        return title;
-    }
-
     public async Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType)
     {
         ProjectTitle? title = await GetCurrentTitleByTitleTypeHelper(projectId, titleType);
         if (title == null)
             return null;
         return MapToTitleResponseDTO(title);
-    }
-
-    public async Task<Dictionary<TitleType, ProjectTitleResponseDTO?>> GetCurrentTitles(Guid projectId)
-    {
-        await VerifyProjectExists(projectId);
-
-        Dictionary<TitleType, ProjectTitleResponseDTO?> response = new();
-
-        foreach (TitleType titleType in Enum.GetValues<TitleType>())
-        {
-            ProjectTitle? title = await GetCurrentTitleByTitleTypeHelper(projectId, titleType);
-
-            response[titleType] = title == null ? null : MapToTitleResponseDTO(title);
-        }
-
-        return response;
     }
 
     public async Task<ProjectTitleResponseDTO> GetTitleByIdAsync(Guid projectId, Guid titleId) =>
@@ -76,7 +48,7 @@ public class ProjectTitlesService : IProjectTitlesService
 
         ProjectTitle? currentTitle = await GetCurrentTitleByTitleTypeHelper(projectId, titleDTO.Type);
 
-        DateTime today = DateTime.Today;
+        DateTime today = DateTime.Today.ToUniversalTime();
 
         if (currentTitle != null) currentTitle.EndDate = today;
 
@@ -100,8 +72,6 @@ public class ProjectTitlesService : IProjectTitlesService
 
     public async Task<ProjectTitleResponseDTO> EndTitleAsync(Guid projectId, Guid titleId)
     {
-        await VerifyProjectExists(projectId);
-
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
         if (title.Type == TitleType.Primary) throw new("Can't end primary title.");
@@ -116,8 +86,6 @@ public class ProjectTitlesService : IProjectTitlesService
     public async Task<ProjectTitleResponseDTO> UpdateTitleAsync(Guid projectId, Guid titleId,
         ProjectTitleRequestDTO titleDTO)
     {
-        await VerifyProjectExists(projectId);
-
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
         DateTime today = DateTime.Today;
@@ -138,8 +106,6 @@ public class ProjectTitlesService : IProjectTitlesService
 
     public async Task DeleteTitleAsync(Guid projectId, Guid titleId)
     {
-        await VerifyProjectExists(projectId);
-
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
         DateTime today = DateTime.Today;
@@ -160,6 +126,18 @@ public class ProjectTitlesService : IProjectTitlesService
         await _context.SaveChangesAsync();
     }
 
+    internal async Task<ProjectTitle?> GetCurrentTitleByTitleTypeHelper(Guid projectId, TitleType titleType)
+    {
+        await VerifyProjectExists(projectId);
+
+        // ASSUMPTION: Here we assume there is only one current title of each type (so no multilingual titles!!)
+        ProjectTitle? title = await _context.ProjectTitles
+            .Where(t => t.ProjectId == projectId && t.Type == titleType && t.EndDate == null)
+            .FirstOrDefaultAsync();
+
+        return title;
+    }
+
     private async Task VerifyProjectExists(Guid projectId)
     {
         // Verify project exists
@@ -173,11 +151,13 @@ public class ProjectTitlesService : IProjectTitlesService
     /// </summary>
     private async Task<ProjectTitle> GetTitleEntityAsync(Guid projectId, Guid titleId)
     {
-        ProjectTitle? title = await _context.ProjectTitles.FindAsync(projectId, titleId);
-        // .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == titleId);
+        await VerifyProjectExists(projectId);
+
+        ProjectTitle? title = await _context.ProjectTitles
+            .SingleOrDefaultAsync(d => d.ProjectId == projectId && d.Id == titleId);
 
         if (title == null)
-            throw new ProjectDescriptionNotFoundException(titleId);
+            throw new ProjectTitleNotFoundException(titleId);
 
         return title;
     }

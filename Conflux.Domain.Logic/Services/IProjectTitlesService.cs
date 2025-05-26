@@ -15,7 +15,6 @@ public interface IProjectTitlesService
 
     Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType);
 
-    Task<Dictionary<TitleType, ProjectTitleResponseDTO?>> GetCurrentTitles(Guid projectId);
     Task<List<ProjectTitleResponseDTO>> CreateTitleAsync(Guid projectId,
         ProjectTitleRequestDTO titleDTO);
 

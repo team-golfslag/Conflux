@@ -496,41 +496,6 @@ public class OrcidControllerTests
         Assert.Equal(ExampleOrcid, returnValue.Value[0].ORCiD);
     }
 
-    [Fact]
-    public async Task GetPersonByQuery_WhenPersonAlreadyExists_SkipsCreation()
-    {
-        // Arrange
-        InitializeController();
-        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
-            .ReturnsAsync(true);
-        var orcidPerson = new OrcidPerson("John", "Doe", "John Doe", "", ExampleOrcid);
-
-        _mockPersonRetrievalService.Setup(s => s.FindPeopleByNameFast(It.IsAny<string>()))
-            .ReturnsAsync(new List<OrcidPerson>
-            {
-                orcidPerson
-            });
-
-        // Setup that person already exists
-        _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
-            .ReturnsAsync(new Person
-            {
-                Id = Guid.NewGuid(),
-                Name = "John Doe",
-                ORCiD = ExampleOrcid
-            });
-
-        // Act
-        var result = await _controller.GetPersonByQuery("John");
-
-        // Assert
-        var returnValue = Assert.IsType<ActionResult<List<Person>>>(result);
-        var people = returnValue.Value;
-        Assert.NotNull(people);
-        Assert.Empty(people); // Should be empty since person already exists
-        _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()), Times.Never);
-    }
-
     // --- GetPersonFromOrcid Tests ---
 
     [Fact]

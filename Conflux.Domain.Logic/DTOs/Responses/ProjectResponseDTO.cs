@@ -23,5 +23,5 @@ public class ProjectResponseDTO
 
     public List<Product> Products { get; init; } = [];
 
-    public List<OrganisationResponseDTO> Organisations { get; init; } = [];
+    public List<ProjectOrganisationResponseDTO> Organisations { get; init; } = [];
 }

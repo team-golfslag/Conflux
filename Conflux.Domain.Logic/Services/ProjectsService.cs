@@ -288,7 +288,7 @@ public class ProjectsService
             EndDate = project.EndDate,
             Users = project.Users,
             Products = project.Products,
-            Organisations = organisations.ConvertAll(o => new OrganisationResponseDTO
+            Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
                 Roles = project.Organisations.FirstOrDefault(po => po.ProjectId == o.Id)?.Roles ?? throw new
                     OrganisationNotFoundException(o.Id),

@@ -8,6 +8,7 @@ namespace Conflux.Domain.Logic.DTOs.Requests;
 public class OrganisationRequestDTO
 {
     public Guid? Id { get; init; }
+    public List<OrganisationRole> Roles { get; init; } = [];
     public string? RORId { get; init; }
     public required string Name { get; init; }
 }

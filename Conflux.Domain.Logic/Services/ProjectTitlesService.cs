@@ -34,9 +34,7 @@ public class ProjectTitlesService : IProjectTitlesService
     public async Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType)
     {
         ProjectTitle? title = await GetCurrentTitleByTitleTypeHelper(projectId, titleType);
-        if (title == null)
-            return null;
-        return MapToTitleResponseDTO(title);
+        return title == null ? null : MapToTitleResponseDTO(title);
     }
 
     public async Task<ProjectTitleResponseDTO> GetTitleByIdAsync(Guid projectId, Guid titleId) =>
@@ -116,6 +114,7 @@ public class ProjectTitlesService : IProjectTitlesService
 
         ProjectTitle? oldTitle = await _context.ProjectTitles
             .Where(o => o.EndDate == title.StartDate && o.Type == title.Type)
+            .OrderByDescending(o => o.StartDate)
             .FirstOrDefaultAsync();
 
         if (oldTitle != null)
@@ -163,7 +162,7 @@ public class ProjectTitlesService : IProjectTitlesService
     }
 
 
-    private ProjectTitleResponseDTO MapToTitleResponseDTO(ProjectTitle title) =>
+    private static ProjectTitleResponseDTO MapToTitleResponseDTO(ProjectTitle title) =>
         new()
         {
             Id = title.Id,

@@ -88,6 +88,7 @@ public class Program
         builder.Services.AddScoped<IProjectDescriptionsService, ProjectDescriptionsService>();
         builder.Services.AddScoped<IProjectTitlesService, ProjectTitlesService>();
         builder.Services.AddScoped<IPeopleService, PeopleService>();
+        builder.Services.AddScoped<IProjectOrganisationsService, ProjectOrganisationsService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();

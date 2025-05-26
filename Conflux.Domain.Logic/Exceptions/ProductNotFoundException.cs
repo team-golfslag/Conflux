@@ -10,9 +10,10 @@ public class ProductNotFoundException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="ProductNotFoundException" /> class.
     /// </summary>
+    /// <param name="projectId">The ID of the project that was given</param>
     /// <param name="productId">The ID of the product that was not found</param>
-    public ProductNotFoundException(Guid productId)
-        : base($"Product with ID {productId} was not found.")
+    public ProductNotFoundException(Guid projectId, Guid productId)
+        : base($"Product with ID {productId} and Project ID {projectId} was not found.")
     {
     }
 }

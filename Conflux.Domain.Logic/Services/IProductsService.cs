@@ -10,9 +10,11 @@ namespace Conflux.Domain.Logic.Services;
 
 public interface IProductsService
 {
-    public Task<ProductResponseDTO> GetProductByIdAsync(Guid productId);
-    public Task<ProductResponseDTO> CreateProductAsync(ProductRequestDTO productDTO);
-    public Task<ProductResponseDTO> UpdateProductAsync(Guid productId,
+    public Task<ProductResponseDTO> GetProductByIdAsync(Guid projectId, Guid productId);
+    public Task<ProductResponseDTO> CreateProductAsync(Guid projectId, ProductRequestDTO productDTO);
+
+    public Task<ProductResponseDTO> UpdateProductAsync(Guid projectId, Guid productId,
         ProductRequestDTO productDTO);
-    public Task DeleteProductAsync(Guid productId);
+
+    public Task DeleteProductAsync(Guid projectId, Guid productId);
 }

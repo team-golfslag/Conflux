@@ -7,11 +7,12 @@ namespace Conflux.Domain.Logic.DTOs.Responses;
 
 public class ProductResponseDTO
 {
+    public Guid ProjectId { get; init; }
     public Guid Id { get; init; }
 
     public ProductSchema Schema { get; set; }
 
-    public string Url { get; set; }
+    public required string Url { get; set; }
 
     public required string Title { get; set; }
 

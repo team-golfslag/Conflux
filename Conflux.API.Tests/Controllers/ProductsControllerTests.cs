@@ -3,72 +3,62 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Conflux.API.Controllers;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
+using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Logic.Services;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
 using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
 
-public class ProductsControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ProductsControllerTests 
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-    };
+    private readonly ProductsController _controller;
+    private readonly Mock<IProductsService> _mockService;
 
-    private readonly HttpClient _client;
-
-    static ProductsControllerTests()
+    public ProductsControllerTests()
     {
-        // allow enum string values to bind correctly
-        JsonOptions.Converters.Add(new JsonStringEnumConverter());
-    }
-
-    public ProductsControllerTests(TestWebApplicationFactory factory)
-    {
-        _client = factory.CreateClient();
+        _mockService = new();
+        _controller = new(_mockService.Object);
     }
 
     [Fact]
     public async Task GetProductById_ReturnsSuccess_ForValidId()
     {
         // Arrange
-        ProductRequestDTO dto = new()
+        Guid projectId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
+
+        ProductResponseDTO dto = new()
         {
+            Id = productId,
+            ProjectId = projectId,
+            Title = "Test Product",
             Schema = ProductSchema.Doi,
             Url = "https://doi.org/testproduct",
-            Title = "Test Product",
             Type = ProductType.Dataset,
             Categories = [ProductCategoryType.Output],
         };
 
-        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/products", dto, JsonOptions);
-        createResponse.EnsureSuccessStatusCode();
-
-        ProductResponseDTO? createdProduct =
-            await createResponse.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
-        Assert.NotNull(createdProduct);
+        _mockService.Setup(s => s.GetProductByIdAsync(projectId, productId)).ReturnsAsync(dto);
 
         // Act
-        HttpResponseMessage response = await _client.GetAsync($"/products/{createdProduct.Id}");
+        ActionResult<ProductResponseDTO> response = await _controller.GetProductByIdAsync(projectId, productId);
 
         // Assert
-        response.EnsureSuccessStatusCode();
-        ProductResponseDTO? product = await response.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
-        Assert.NotNull(product);
-        Assert.Equal(createdProduct.Id, product.Id);
-        Assert.Equal(dto.Title, product.Title);
-        Assert.Equal(dto.Schema, product.Schema);
-        Assert.Equal(dto.Url, product.Url);
-        Assert.Equal(dto.Type, product.Type);
-        Assert.Equal(dto.Categories.Count, product.Categories.Count);
-        Assert.Contains(ProductCategoryType.Output, product.Categories);
+        ProductResponseDTO? productResponse = response.Value;
+        Assert.NotNull(productResponse);
+        Assert.Equal(productId, productResponse.Id);
+        Assert.Equal(dto.Title, productResponse.Title);
+        Assert.Equal(dto.Schema, productResponse.Schema);
+        Assert.Equal(dto.Url, productResponse.Url);
+        Assert.Equal(dto.Type, productResponse.Type);
+        Assert.Equal(dto.Categories.Count, productResponse.Categories.Count);
+        Assert.Contains(ProductCategoryType.Output, productResponse.Categories);
     }
 
     [Fact]
@@ -76,18 +66,31 @@ public class ProductsControllerTests : IClassFixture<TestWebApplicationFactory>
     {
         // Arrange
         Guid invalidId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
 
-        // Act
-        HttpResponseMessage response = await _client.GetAsync($"/products/{invalidId}");
+        _mockService.Setup(s => s.GetProductByIdAsync(projectId, invalidId))
+            .ThrowsAsync(new ProductNotFoundException(projectId, invalidId));
 
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        // Act and Assert
+        await Assert.ThrowsAsync<ProductNotFoundException>(() => _controller.GetProductByIdAsync(projectId, invalidId));
     }
 
     [Fact]
     public async Task CreateProduct_ReturnsCreatedProduct()
     {
         // Arrange
+        Guid projectId = Guid.NewGuid();
+        ProductResponseDTO createdProduct = new()
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            Title = "New Test Product",
+            Schema = ProductSchema.Doi,
+            Url = "https://doi.org/newproduct",
+            Type = ProductType.Dataset,
+            Categories = [ProductCategoryType.Output, ProductCategoryType.Internal],
+        };
+
         ProductRequestDTO dto = new()
         {
             Schema = ProductSchema.Doi,
@@ -97,12 +100,14 @@ public class ProductsControllerTests : IClassFixture<TestWebApplicationFactory>
             Categories = [ProductCategoryType.Output, ProductCategoryType.Internal],
         };
 
+        _mockService.Setup(s => s.CreateProductAsync(projectId, It.IsAny<ProductRequestDTO>()))
+            .ReturnsAsync(createdProduct);
+
         // Act
-        HttpResponseMessage response = await _client.PostAsJsonAsync("/products", dto, JsonOptions);
+        ActionResult<ProductResponseDTO> response = await _controller.CreateProductAsync(projectId, dto);
 
         // Assert
-        response.EnsureSuccessStatusCode();
-        ProductResponseDTO? product = await response.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
+        ProductResponseDTO? product = response.Value;
         Assert.NotNull(product);
         Assert.NotEqual(Guid.Empty, product.Id);
         Assert.Equal(dto.Title, product.Title);
@@ -118,56 +123,54 @@ public class ProductsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task UpdateProduct_UpdatesProduct()
     {
         // Arrange
+        Guid projectId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
+
         ProductRequestDTO dto = new()
         {
             Schema = ProductSchema.Doi,
             Url = "https://doi.org/testupdateproduct",
             Title = "Original Test Product",
             Type = ProductType.Dataset,
-            Categories = [ProductCategoryType.Output],
-        };
-
-        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/products", dto, JsonOptions);
-        createResponse.EnsureSuccessStatusCode();
-
-        ProductResponseDTO? createdProduct =
-            await createResponse.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
-        Assert.NotNull(createdProduct);
-
-        // Create updated product data
-        ProductRequestDTO updatedProductDto = new()
-        {
-            Schema = ProductSchema.Doi,
-            Url = "https://doi.org/updated-product",
-            Title = "Updated Test Product",
-            Type = ProductType.Service,
             Categories = [ProductCategoryType.Input, ProductCategoryType.Internal],
         };
 
+        ProductResponseDTO updatedProduct = new()
+        {
+            Id = productId,
+            ProjectId = projectId,
+            Title = dto.Title,
+            Schema = dto.Schema,
+            Url = dto.Url,
+            Type = dto.Type,
+            Categories = dto.Categories,
+        };
+
+        _mockService.Setup(s => s.UpdateProductAsync(projectId, productId, It.IsAny<ProductRequestDTO>()))
+            .ReturnsAsync(updatedProduct);
+
         // Act
-        HttpResponseMessage updateResponse = await _client.PutAsJsonAsync(
-            $"/products/{createdProduct.Id}", updatedProductDto, JsonOptions);
+        ActionResult<ProductResponseDTO> updateResponse = await _controller.UpdateProductAsync(projectId, productId, dto);
 
         // Assert
-        updateResponse.EnsureSuccessStatusCode();
-        ProductResponseDTO? updatedProduct =
-            await updateResponse.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
-        Assert.NotNull(updatedProduct);
-        Assert.Equal(createdProduct.Id, updatedProduct.Id);
-        Assert.Equal(updatedProductDto.Title, updatedProduct.Title);
-        Assert.Equal(updatedProductDto.Schema, updatedProduct.Schema);
-        Assert.Equal(updatedProductDto.Url, updatedProduct.Url);
-        Assert.Equal(updatedProductDto.Type, updatedProduct.Type);
-        Assert.Equal(updatedProductDto.Categories.Count, updatedProduct.Categories.Count);
-        Assert.Contains(ProductCategoryType.Input, updatedProduct.Categories);
-        Assert.Contains(ProductCategoryType.Internal, updatedProduct.Categories);
+        ProductResponseDTO? updatedProductResponse = updateResponse.Value;
+        Assert.NotNull(updatedProductResponse);
+        Assert.Equal(updatedProduct.Id, updatedProductResponse.Id);
+        Assert.Equal(updatedProduct.Title, updatedProductResponse.Title);
+        Assert.Equal(updatedProduct.Schema, updatedProductResponse.Schema);
+        Assert.Equal(updatedProduct.Url, updatedProductResponse.Url);
+        Assert.Equal(updatedProduct.Type, updatedProductResponse.Type);
+        Assert.Equal(updatedProduct.Categories.Count, updatedProductResponse.Categories.Count);
+        Assert.Contains(ProductCategoryType.Input, updatedProductResponse.Categories);
+        Assert.Contains(ProductCategoryType.Internal, updatedProductResponse.Categories);
     }
 
     [Fact]
     public async Task UpdateProduct_ReturnsNotFound_ForInvalidId()
     {
         // Arrange
-        Guid invalidId = Guid.NewGuid();
+        Guid projectId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
         ProductRequestDTO updateDto = new()
         {
             Schema = ProductSchema.Doi,
@@ -181,55 +184,41 @@ public class ProductsControllerTests : IClassFixture<TestWebApplicationFactory>
             ],
         };
 
-        // Act
-        HttpResponseMessage response = await _client.PutAsJsonAsync(
-            $"/products/{invalidId}", updateDto, JsonOptions);
+        _mockService.Setup(s => s.UpdateProductAsync(projectId, productId, It.IsAny<ProductRequestDTO>()))
+            .ThrowsAsync(new ProductNotFoundException(projectId, productId));
 
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        // Act and Assert
+        await Assert.ThrowsAsync<ProductNotFoundException>(() => _controller.UpdateProductAsync(projectId, productId, updateDto));
     }
 
     [Fact]
     public async Task DeleteProduct_DeletesProduct()
     {
         // Arrange
-        ProductRequestDTO dto = new()
-        {
-            Schema = ProductSchema.Doi,
-            Url = "https://doi.org/testdeleteproduct",
-            Title = "Test Delete Product",
-            Type = ProductType.Dataset,
-            Categories = [ProductCategoryType.Output],
-        };
+        Guid projectId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
 
-        HttpResponseMessage createResponse = await _client.PostAsJsonAsync("/products", dto, JsonOptions);
-        createResponse.EnsureSuccessStatusCode();
-
-        ProductResponseDTO? createdProduct =
-            await createResponse.Content.ReadFromJsonAsync<ProductResponseDTO>(JsonOptions);
-        Assert.NotNull(createdProduct);
+        _mockService.Setup(s => s.DeleteProductAsync(projectId, productId)).Returns(Task.CompletedTask);
 
         // Act
-        HttpResponseMessage deleteResponse = await _client.DeleteAsync($"/products/{createdProduct.Id}");
-
+        ActionResult response = await _controller.DeleteProductAsync(projectId, productId);
+        
         // Assert
-        deleteResponse.EnsureSuccessStatusCode();
-
-        // Verify the product is deleted by trying to get it
-        HttpResponseMessage getResponse = await _client.GetAsync($"/products/{createdProduct.Id}");
-        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+        Assert.IsType<OkResult>(response);
     }
 
     [Fact]
     public async Task DeleteProduct_ReturnsNotFound_ForInvalidId()
     {
         // Arrange
-        Guid invalidId = Guid.NewGuid();
-
-        // Act
-        HttpResponseMessage response = await _client.DeleteAsync($"/products/{invalidId}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Guid projectId = Guid.NewGuid();
+        Guid productId = Guid.NewGuid();
+        
+        _mockService.Setup(s => s.DeleteProductAsync(projectId, productId))
+            .ThrowsAsync(new ProductNotFoundException(projectId, productId));
+        
+        // Act and Assert
+        ActionResult response = await _controller.DeleteProductAsync(projectId, productId);
+        Assert.IsType<NotFoundObjectResult>(response);
     }
 }

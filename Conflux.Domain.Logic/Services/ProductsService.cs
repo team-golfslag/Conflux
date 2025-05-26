@@ -20,13 +20,17 @@ public class ProductsService : IProductsService
         _context = context;
     }
 
-    public async Task<ProductResponseDTO> GetProductByIdAsync(Guid productId)
+    public async Task<ProductResponseDTO> GetProductByIdAsync(Guid projectId, Guid productId)
     {
-        Product product = await GetProductEntityAsync(productId);
-        return MapToProductResponseDTO(product);
+        Product product = await GetProductEntityAsync(projectId, productId);
+        if (product.ProjectId != projectId)
+        {
+            throw new ProductNotFoundException(projectId, productId);
+        }
+        return MapToProductResponseDTO(projectId, product);
     }
 
-    public async Task<ProductResponseDTO> CreateProductAsync(ProductRequestDTO productDTO)
+    public async Task<ProductResponseDTO> CreateProductAsync(Guid projectId, ProductRequestDTO productDTO)
     {
         Product product = new()
         {
@@ -41,12 +45,17 @@ public class ProductsService : IProductsService
         await _context.Products.AddAsync(product);
         await _context.SaveChangesAsync();
 
-        return MapToProductResponseDTO(product);
+        return MapToProductResponseDTO(projectId, product);
     }
 
-    public async Task<ProductResponseDTO> UpdateProductAsync(Guid productId, ProductRequestDTO productDTO)
+    public async Task<ProductResponseDTO> UpdateProductAsync(Guid projectId, Guid productId,
+        ProductRequestDTO productDTO)
     {
-        Product product = await GetProductEntityAsync(productId);
+        Product product = await GetProductEntityAsync(projectId, productId);
+        if (product.ProjectId != projectId)
+        {
+            throw new ProductNotFoundException(projectId, productId);
+        }
 
         product.Schema = productDTO.Schema;
         product.Url = productDTO.Url;
@@ -57,28 +66,35 @@ public class ProductsService : IProductsService
         _context.Products.Update(product);
         await _context.SaveChangesAsync();
 
-        return MapToProductResponseDTO(product);
+        return MapToProductResponseDTO(projectId, product);
     }
 
-    public async Task DeleteProductAsync(Guid productId)
+    public async Task DeleteProductAsync(Guid projectId, Guid productId)
     {
-        Product product = await GetProductEntityAsync(productId);
+        Product product = await GetProductEntityAsync(projectId, productId);
+        if (product.ProjectId != projectId)
+        {
+            throw new ProductNotFoundException(projectId, productId);
+        }
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();
     }
 
-    private async Task<Product> GetProductEntityAsync(Guid productId) =>
+    /// <exception cref="ProductNotFoundException">Thrown if the product does not exist.</exception>
+    private async Task<Product> GetProductEntityAsync(Guid projectId, Guid productId) =>
         await _context.Products.SingleOrDefaultAsync(p => p.Id == productId) ??
-        throw new ProductNotFoundException(productId);
+        throw new ProductNotFoundException(projectId, productId);
 
     /// <summary>
     /// Maps the given <see cref="Product" /> to a <see cref="ProductResponseDTO" />.
     /// </summary>
+    /// <param name="projectId">The ID for the related <see cref="Project" /></param>
     /// <param name="product">The product entity to be mapped.</param>
     /// <returns>A <see cref="ProductResponseDTO" /> instance containing the mapped product data.</returns>
-    private ProductResponseDTO MapToProductResponseDTO(Product product) =>
+    private ProductResponseDTO MapToProductResponseDTO(Guid projectId, Product product) =>
         new()
         {
+            ProjectId = projectId,
             Id = product.Id,
             Schema = product.Schema,
             Url = product.Url,

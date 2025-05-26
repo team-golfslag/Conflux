@@ -38,6 +38,7 @@ public class ProductsServiceTests : IAsyncLifetime
         ProductsService productsService = new(_context);
 
         // Add product to the context
+        Guid projectId = Guid.NewGuid();
         Guid productId = Guid.NewGuid();
         Product testProduct = new()
         {
@@ -56,7 +57,7 @@ public class ProductsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act
-        ProductResponseDTO product = await productsService.GetProductByIdAsync(productId);
+        ProductResponseDTO product = await productsService.GetProductByIdAsync(projectId, productId);
 
         // Assert
         Assert.NotNull(product);
@@ -74,11 +75,12 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
+        Guid projectId = Guid.NewGuid();
         Guid nonExistentProductId = Guid.NewGuid();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>
-            productsService.GetProductByIdAsync(nonExistentProductId));
+            productsService.GetProductByIdAsync(projectId, nonExistentProductId));
     }
 
     [Fact]
@@ -87,7 +89,27 @@ public class ProductsServiceTests : IAsyncLifetime
         // Arrange
         ProductsService productsService = new(_context);
 
-        // Create a DTO with empty Categories - they'll be populated by the service
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
+        {
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
+
         ProductRequestDTO dto = new()
         {
             Schema = ProductSchema.Doi,
@@ -98,7 +120,7 @@ public class ProductsServiceTests : IAsyncLifetime
         };
 
         // Act
-        ProductResponseDTO createdProduct = await productsService.CreateProductAsync(dto);
+        ProductResponseDTO createdProduct = await productsService.CreateProductAsync(projectId, dto);
 
         // Assert
         Assert.NotNull(createdProduct);
@@ -108,8 +130,12 @@ public class ProductsServiceTests : IAsyncLifetime
         Assert.Equal(dto.Url, createdProduct.Url);
         Assert.Equal(dto.Type, createdProduct.Type);
 
-        // Verify product is in the database
-        Product? storedProduct = await _context.Products.FindAsync(createdProduct.Id);
+        // Verify product is in the database in the related project
+        Project? storedProject = await _context.Projects
+            .Include(p => p.Products)
+            .FirstOrDefaultAsync(p => p.Id == projectId);
+
+        Product? storedProduct = storedProject?.Products.Find(p => p.Id == createdProduct.Id);
         Assert.NotNull(storedProduct);
         Assert.Equal(dto.Title, storedProduct.Title);
         Assert.Equal(2, storedProduct.Categories.Count);
@@ -122,6 +148,27 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
+
+        // Add project to the context
+        Guid projectId = Guid.NewGuid();
+        Project project = new()
+        {
+            Id = projectId,
+            Titles =
+            [
+                new()
+                {
+                    Id = projectId,
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow,
+                },
+            ],
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+        };
+        _context.Projects.Add(project);
 
         // Add an initial product to the context
         Guid productId = Guid.NewGuid();
@@ -157,7 +204,8 @@ public class ProductsServiceTests : IAsyncLifetime
         };
 
         // Act
-        ProductResponseDTO updatedProductResponse = await productsService.UpdateProductAsync(productId, updatedProductDto);
+        ProductResponseDTO updatedProductResponse =
+            await productsService.UpdateProductAsync(projectId, productId, updatedProductDto);
 
         // Assert
         Assert.NotNull(updatedProductResponse);
@@ -171,8 +219,11 @@ public class ProductsServiceTests : IAsyncLifetime
         Assert.Contains(ProductCategoryType.Internal, updatedProductResponse.Categories);
 
         // Verify product is updated in the database
-        Product? storedProduct = await _context.Products
-            .FirstOrDefaultAsync(p => p.Id == productId);
+        Project? storedProject = await _context.Projects
+            .Include(p => p.Products)
+            .FirstOrDefaultAsync(p => p.Id == projectId);
+
+        Product? storedProduct = storedProject?.Products.Find(p => p.Id == updatedProductResponse.Id);
 
         Assert.NotNull(storedProduct);
         Assert.Equal(updatedProductDto.Title, storedProduct.Title);
@@ -190,6 +241,7 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
+        Guid projectId = Guid.NewGuid();
         Guid nonExistentProductId = Guid.NewGuid();
 
         ProductRequestDTO updateDto = new()
@@ -206,7 +258,7 @@ public class ProductsServiceTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>
-            productsService.UpdateProductAsync(nonExistentProductId, updateDto));
+            productsService.UpdateProductAsync(projectId, nonExistentProductId, updateDto));
     }
 
     [Fact]
@@ -214,6 +266,8 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
+
+        Guid projectId = Guid.NewGuid();
 
         // Add product to the context
         Guid productId = Guid.NewGuid();
@@ -234,7 +288,7 @@ public class ProductsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act
-        await productsService.DeleteProductAsync(productId);
+        await productsService.DeleteProductAsync(projectId, productId);
 
         // Assert
         Product? deletedProduct = await _context.Products.FindAsync(productId);
@@ -246,10 +300,11 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
+        Guid projectId = Guid.NewGuid();
         Guid nonExistentProductId = Guid.NewGuid();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>
-            productsService.DeleteProductAsync(nonExistentProductId));
+            productsService.DeleteProductAsync(projectId, nonExistentProductId));
     }
 }

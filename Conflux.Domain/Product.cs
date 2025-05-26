@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Domain;
 
@@ -12,6 +13,7 @@ namespace Conflux.Domain;
 /// </summary>
 public class Product
 {
+    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
     [Key] public Guid Id { get; init; }
 
     public ProductSchema Schema { get; set; }
@@ -26,7 +28,7 @@ public class Product
     /// <summary>
     /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
     /// </summary>
-    public string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
+    public static string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
 
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>
     public string GetTypeUri => $"https://vocabulary.raid.org/relatedObject.type.schema/{(int)Type}";
@@ -44,8 +46,8 @@ public class Product
         };
 
     public List<ProductCategoryType> Categories { get; set; } = [];
-    public string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
+    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
 
-    public string GetCategoryUri(ProductCategoryType t) =>
+    public static string GetCategoryUri(ProductCategoryType t) =>
         $"https://vocabulary.raid.org/relatedObject.category.schema/{(int)t}";
 }

@@ -11,6 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
 
+/// <summary>
+/// The ProductsService class provides methods for managing and performing CRUD operations on products
+/// within the context of a specific project.
+/// </summary>
 public class ProductsService : IProductsService
 {
     private readonly ConfluxContext _context;
@@ -20,6 +24,13 @@ public class ProductsService : IProductsService
         _context = context;
     }
 
+    /// <summary>
+    /// Retrieves a product by its ID within the specified project.
+    /// </summary>
+    /// <param name="projectId">The ID of the project the product belongs to.</param>
+    /// <param name="productId">The ID of the product to retrieve.</param>
+    /// <returns>A <see cref="ProductResponseDTO" /> representing the product.</returns>
+    /// <exception cref="ProductNotFoundException">Thrown if the product does not exist.</exception>
     public async Task<ProductResponseDTO> GetProductByIdAsync(Guid projectId, Guid productId)
     {
         Product product = await GetProductEntityAsync(projectId, productId);
@@ -30,6 +41,12 @@ public class ProductsService : IProductsService
         return MapToProductResponseDTO(projectId, product);
     }
 
+    /// <summary>
+    /// Creates a new product within the specified project.
+    /// </summary>
+    /// <param name="projectId">The ID of the project to add the product to.</param>
+    /// <param name="productDTO">The product data to create.</param>
+    /// <returns>A <see cref="ProductResponseDTO" /> representing the created product.</returns>
     public async Task<ProductResponseDTO> CreateProductAsync(Guid projectId, ProductRequestDTO productDTO)
     {
         Product product = new()
@@ -48,6 +65,14 @@ public class ProductsService : IProductsService
         return MapToProductResponseDTO(projectId, product);
     }
 
+    /// <summary>
+    /// Updates an existing product within the specified project.
+    /// </summary>
+    /// <param name="projectId">The ID of the project the product belongs to.</param>
+    /// <param name="productId">The ID of the product to update.</param>
+    /// <param name="productDTO">The updated product data.</param>
+    /// <returns>A <see cref="ProductResponseDTO" /> representing the updated product.</returns>
+    /// <exception cref="ProductNotFoundException">Thrown if the product does not exist.</exception>
     public async Task<ProductResponseDTO> UpdateProductAsync(Guid projectId, Guid productId,
         ProductRequestDTO productDTO)
     {
@@ -69,6 +94,13 @@ public class ProductsService : IProductsService
         return MapToProductResponseDTO(projectId, product);
     }
 
+    /// <summary>
+    /// Deletes a product by its ID within the specified project.
+    /// </summary>
+    /// <param name="projectId">The ID of the project the product belongs to.</param>
+    /// <param name="productId">The ID of the product to delete.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="ProductNotFoundException">Thrown if the product does not exist.</exception>
     public async Task DeleteProductAsync(Guid projectId, Guid productId)
     {
         Product product = await GetProductEntityAsync(projectId, productId);
@@ -80,6 +112,12 @@ public class ProductsService : IProductsService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Retrieves a product entity by its ID.
+    /// </summary>
+    /// <param name="projectId">The ID of the related <see cref="Project"/></param>
+    /// <param name="productId">The ID of the product to retrieve.</param>
+    /// <returns>The <see cref="Product" /> entity.</returns>
     /// <exception cref="ProductNotFoundException">Thrown if the product does not exist.</exception>
     private async Task<Product> GetProductEntityAsync(Guid projectId, Guid productId) =>
         await _context.Products.SingleOrDefaultAsync(p => p.Id == productId) ??

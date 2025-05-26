@@ -185,12 +185,12 @@ public class ProjectMapperService : IProjectMapperService
             Type = new()
             {
                 Id = product.GetTypeUri,
-                SchemaUri = product.TypeSchemaUri,
+                SchemaUri = Product.TypeSchemaUri,
             },
             Category = product.Categories.ToList().ConvertAll(t => new RAiDRelatedObjectCategory
             {
-                Id = product.GetCategoryUri(t),
-                SchemaUri = product.CategorySchemaUri,
+                Id = Product.GetCategoryUri(t),
+                SchemaUri = Product.CategorySchemaUri,
             }),
         };
 

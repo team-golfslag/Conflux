@@ -134,6 +134,38 @@ public class PeopleServiceTests : IAsyncLifetime
         Assert.NotNull(fetched);
         Assert.Equal("Alice Wonderland", fetched!.Name);
     }
+    
+    [Fact]
+    public async Task GetPersonByOrcidIdAsync_WithValidOrcidId_ReturnsPerson()
+    {
+        // Arrange
+        const string testOrcid = "0000-0001-2345-6789";
+        Person person = await _context.People.FirstAsync();
+        person.ORCiD = testOrcid;
+        await _context.SaveChangesAsync();
+
+        // Act
+        Person? result = await _service.GetPersonByOrcidIdAsync(testOrcid);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(person.Id, result!.Id);
+        Assert.Equal(testOrcid, result.ORCiD);
+    }
+
+    [Fact]
+    public async Task GetPersonByOrcidIdAsync_WithEmptyOrcidId_ThrowsArgumentException()
+    {
+        // Arrange & Act & Assert
+        ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(() => 
+            _service.GetPersonByOrcidIdAsync(""));
+    
+        Assert.Equal("orcidId", exception.ParamName);
+    
+        // Also test null
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _service.GetPersonByOrcidIdAsync(null!));
+    }
 
     [Fact]
     public async Task UpdatePersonAsync_WithValidId_UpdatesPerson()

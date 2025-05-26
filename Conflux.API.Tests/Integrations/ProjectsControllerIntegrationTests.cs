@@ -11,13 +11,12 @@ using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Xunit;
 
-namespace Conflux.API.Tests.Controllers;
+namespace Conflux.API.Tests.Integrations;
 
 public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 {
     private static readonly JsonSerializerOptions JsonOptions;
     private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
 
     static ProjectsControllerTests()
     {
@@ -32,7 +31,6 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
 
     public ProjectsControllerTests(TestWebApplicationFactory factory)
     {
-        _factory = factory;
         _client = factory.CreateClient();
     }
 

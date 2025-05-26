@@ -160,7 +160,7 @@ public class OrcidController : ControllerBase
         return people;
     }
 
-    [HttpGet("person")]
+    [HttpGet("people")]
     [ProducesResponseType(typeof(Person), StatusCodes.Status200OK)]
     public async Task<ActionResult<Person>> GetPersonFromOrcid([FromQuery] string orcid)
     {

@@ -145,10 +145,14 @@ public class OrcidController : ControllerBase
             if (orcidPerson.Orcid == null)
                 continue; // Skip if ORCID is null
 
+            Person? person = await _peopleService.GetPersonByOrcidIdAsync(orcidPerson.Orcid);
             // Check if user with ORCID already exists
-            if (await _peopleService.GetPersonByOrcidIdAsync(orcidPerson.Orcid) is not null)
+            if (person is not null)
+            {
+                people.Add(person);
                 continue; // Skip if user already exists
-            Person person = await _peopleService.CreatePersonAsync(personDTO);
+            }
+            person = await _peopleService.CreatePersonAsync(personDTO);
             people.Add(person);
         }
 

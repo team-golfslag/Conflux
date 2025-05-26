@@ -33,7 +33,7 @@ public class OrcidController : ControllerBase
     private readonly ConfluxContext _context;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IUserSessionService _userSessionService;
-    private readonly IPersonRetrievalService? _personRetrievalService;
+    private readonly IPersonRetrievalService _personRetrievalService;
     private readonly IPeopleService _peopleService;
 
     public OrcidController(ConfluxContext context, IVariantFeatureManager featureManager,
@@ -43,21 +43,17 @@ public class OrcidController : ControllerBase
         _context = context;
         _userSessionService = userSessionService;
         _featureManager = featureManager;
-        _personRetrievalService = personRetrievalService;
+        _personRetrievalService = personRetrievalService!;
         _peopleService = peopleService;
         // Ensure configuration key matches exactly, including case if necessary
         // Use Value property first, which allows for better testing with mocks
-        var redirectsSection = configuration.GetSection("Authentication:Orcid:AllowedRedirectUris");
-        var redirectValue = redirectsSection.Value;
+        IConfigurationSection redirectsSection = configuration.GetSection("Authentication:Orcid:AllowedRedirectUris");
+        string? redirectValue = redirectsSection.Value;
         if (redirectValue != null)
-        {
             _allowedRedirects = redirectValue.Split(',');
-        }
         else
-        {
             // Fall back to extension method if Value is null
             _allowedRedirects = redirectsSection.Get<string[]>() ?? [];
-        }
     }
 
     [HttpGet("link")]

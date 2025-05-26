@@ -86,6 +86,7 @@ public class Program
 
         builder.Services.AddScoped<IContributorsService, ContributorsService>();
         builder.Services.AddScoped<IProjectDescriptionsService, ProjectDescriptionsService>();
+        builder.Services.AddScoped<IProjectTitlesService, ProjectTitlesService>();
         builder.Services.AddScoped<IPeopleService, PeopleService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
@@ -328,6 +329,7 @@ public class Program
                 {
                     case ProjectNotFoundException
                         or ProjectDescriptionNotFoundException
+                        or ProjectTitleNotFoundException
                         or ContributorNotFoundException
                         or ProductNotFoundException
                         or PersonNotFoundException:

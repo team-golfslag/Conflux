@@ -8,5 +8,5 @@ namespace Conflux.Domain.Logic.DTOs.Requests;
 public class ProjectRequestDTO
 {
     public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
+    public DateTime? EndDate { get; init; }
 }

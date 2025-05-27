@@ -7,8 +7,8 @@ namespace Conflux.Domain.Logic.DTOs.Requests;
 
 public class ContributorRequestDTO
 {
-    public bool Leader { get; set; }
-    public bool Contact { get; set; }
-    public List<ContributorRoleType> Roles { get; set; } = [];
-    public ContributorPositionType Position { get; set; }
+    public bool Leader { get; init; }
+    public bool Contact { get; init; }
+    public List<ContributorRoleType> Roles { get; init; } = [];
+    public ContributorPositionType? Position { get; init; }
 }

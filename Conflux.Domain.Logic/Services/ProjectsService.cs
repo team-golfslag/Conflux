@@ -11,9 +11,7 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Session;
-using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
-using RAiD.Net;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -40,17 +38,12 @@ public class ProjectsService
                 .SingleOrDefault(p => p.Id == id));
 
     private readonly ConfluxContext _context;
-    private readonly IProjectMapperService _projectMapperService;
-    private readonly IRAiDService _raidService;
     private readonly IUserSessionService _userSessionService;
 
-    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService,
-        IProjectMapperService projectMapperService, IRAiDService raidService)
+    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
         _userSessionService = userSessionService;
-        _projectMapperService = projectMapperService;
-        _raidService = raidService;
     }
 
     /// <summary>
@@ -284,18 +277,50 @@ public class ProjectsService
         List<Guid> organisationIds =
             project.Organisations.Select(o => o.OrganisationId).Distinct().ToList();
 
-        var orgs = _context.Organisations.ToList();
         List<Organisation> organisations = _context.Organisations
             .Where(o => organisationIds.Contains(o.Id))
             .ToList();
 
+        ProjectTitle primaryTitle = titles.Single(t => t.Type == TitleType.Primary);
+        ProjectDescription? primaryDescription = descriptions.SingleOrDefault(t => t.Type == DescriptionType.Primary);
+
         return new()
         {
             Id = project.Id,
-            PrimaryTitle = titles.FirstOrDefault(t => t.Type == TitleType.Primary),
-            Titles = titles,
-            PrimaryDescription = descriptions.FirstOrDefault(d => d.Type == DescriptionType.Primary),
-            Descriptions = project.Descriptions,
+            PrimaryTitle = new()
+            {
+                Id = primaryTitle.Id,
+                ProjectId = primaryTitle.ProjectId,
+                Text = primaryTitle.Text,
+                Language = primaryTitle.Language,
+                Type = primaryTitle.Type,
+                StartDate = primaryTitle.StartDate,
+                EndDate = primaryTitle.EndDate,
+            },
+            Titles = titles.ConvertAll(t => new ProjectTitleResponseDTO
+            {
+                Id = t.Id,
+                ProjectId = t.ProjectId,
+                Text = t.Text,
+                Language = t.Language,
+                Type = 0,
+                StartDate = t.StartDate,
+                EndDate = t.EndDate,
+            }),
+            PrimaryDescription = primaryDescription == null
+                ? null
+                : new()
+                {
+                    Text = primaryDescription.Text,
+                    Type = primaryDescription.Type,
+                    Language = primaryDescription.Language,
+                },
+            Descriptions = project.Descriptions.ConvertAll(d => new ProjectDescriptionResponseDTO
+            {
+                Text = d.Text,
+                Type = d.Type,
+                Language = d.Language,
+            }),
             StartDate = project.StartDate,
             EndDate = project.EndDate,
             Users = project.Users,

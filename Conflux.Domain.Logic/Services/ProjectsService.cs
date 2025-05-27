@@ -286,7 +286,7 @@ public class ProjectsService : IProjectsService
                 ProjectId = t.ProjectId,
                 Text = t.Text,
                 Language = t.Language,
-                Type = 0,
+                Type = t.Type,
                 StartDate = t.StartDate,
                 EndDate = t.EndDate,
             }),

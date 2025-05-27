@@ -88,7 +88,7 @@ public static class NwOpenMapper
                     Type = TitleType.Primary,
                     Language = Language.DUTCH,
                     StartDate = startDate,
-                    EndDate = endDate,
+                    EndDate = null,
                 },
             ],
             Descriptions = descriptions,

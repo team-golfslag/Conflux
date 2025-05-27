@@ -8,6 +8,7 @@ using System.Text;
 using Conflux.API.Controllers;
 using Conflux.Data;
 using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -18,9 +19,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.FeatureManagement;
 using Moq;
+using ORCID.Net.Models;
+using ORCID.Net.Services;
 using Xunit;
 
 namespace Conflux.API.Tests.Controllers;
+
+// Define a delegate type for mocking out parameters
+public delegate bool TryGetValueDelegate(string key, out byte[] value);
 
 public class OrcidControllerTests
 {
@@ -35,6 +41,8 @@ public class OrcidControllerTests
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<IVariantFeatureManager> _mockFeatureManager;
     private readonly Mock<IUserSessionService> _mockUserSessionService;
+    private readonly Mock<IPersonRetrievalService> _mockPersonRetrievalService;
+    private readonly Mock<IPeopleService> _mockPeopleService;
     private ConfluxContext _context = null!;     // Initialize in each test
     private OrcidController _controller = null!; // Initialize in each test
 
@@ -42,6 +50,8 @@ public class OrcidControllerTests
     {
         _mockFeatureManager = new();
         _mockUserSessionService = new();
+        _mockPersonRetrievalService = new();
+        _mockPeopleService = new();
         _mockConfiguration = new();
         _mockConfigSection = new();
 
@@ -50,10 +60,12 @@ public class OrcidControllerTests
             .Options;
 
         // Setup Configuration mock
-        _mockConfigSection.Setup(s => s.Value)
-            .Returns(string.Join(",", _allowedRedirects));
+        // We can't use extension method .Get<string[]>() in Moq
+        // Instead, create a new section mock specifically for the allowed redirects
+        var mockConfigSection = new Mock<IConfigurationSection>();
+        mockConfigSection.Setup(s => s.Value).Returns(string.Join(",", _allowedRedirects));
         _mockConfiguration.Setup(c => c.GetSection("Authentication:Orcid:AllowedRedirectUris"))
-            .Returns(_mockConfigSection.Object);
+            .Returns(mockConfigSection.Object);
     }
 
     private void InitializeController(User? user = null, UserSession? session = null)
@@ -66,14 +78,17 @@ public class OrcidControllerTests
         }
 
         _controller = new(_context, _mockFeatureManager.Object, _mockUserSessionService.Object,
-            _mockConfiguration.Object);
+            _mockConfiguration.Object, _mockPeopleService.Object, _mockPersonRetrievalService.Object);
 
         DefaultHttpContext httpContext = new();
         var mockAuthService = new Mock<IAuthenticationService>();
         var mockServiceProvider = new Mock<IServiceProvider>();
         mockServiceProvider.Setup(sp => sp.GetService(typeof(IAuthenticationService))).Returns(mockAuthService.Object);
         httpContext.RequestServices = mockServiceProvider.Object;
-        httpContext.Session = new Mock<ISession>().Object; // Add mock session
+        
+        // Create a mock session
+        var mockSession = new Mock<ISession>();
+        httpContext.Session = mockSession.Object;
 
         _controller.ControllerContext = new()
         {
@@ -102,17 +117,33 @@ public class OrcidControllerTests
         mockAuthService.Setup(x => x.AuthenticateAsync(_controller.HttpContext, "OrcidCookie"))
             .ReturnsAsync(authResult);
 
-        var mockSession = Mock.Get(_controller.HttpContext.Session);
+        // We need to mock the Session differently since GetString is an extension method
+        var mockSession = new Mock<ISession>();
+        
         if (orcidSession != null)
         {
-            byte[]? orcidBytes = Encoding.UTF8.GetBytes(orcidSession);
-            mockSession.Setup(s => s.TryGetValue("orcid", out orcidBytes)).Returns(true);
+            byte[] orcidBytes = Encoding.UTF8.GetBytes(orcidSession);
+            
+            // Use our custom delegate for TryGetValue
+            mockSession.Setup(s => s.TryGetValue("orcid", out It.Ref<byte[]>.IsAny))
+                .Returns(new TryGetValueDelegate((string key, out byte[] value) => 
+                {
+                    value = orcidBytes;
+                    return true;
+                }));
         }
         else
         {
-            byte[]? nullBytes = null;
-            mockSession.Setup(s => s.TryGetValue("orcid", out nullBytes)).Returns(false);
+            // Use our custom delegate for TryGetValue with no value
+            mockSession.Setup(s => s.TryGetValue("orcid", out It.Ref<byte[]>.IsAny))
+                .Returns(new TryGetValueDelegate((string key, out byte[] value) => 
+                {
+                    value = Array.Empty<byte>();
+                    return false;
+                }));
         }
+
+        _controller.ControllerContext.HttpContext.Session = mockSession.Object;
     }
 
     // --- LinkOrcid Tests ---
@@ -142,7 +173,7 @@ public class OrcidControllerTests
     }
 
     [Fact]
-    public async Task LinkOrcid_WhenOrcidAuthDisabledSramAuthEnabledAndUserLoggedIn_UpdatesOrcidAndRedirects()
+    public async Task LinkOrcid_WhenOrcidAuthDisabledAndUserLoggedIn_UpdatesOrcidAndRedirects()
     {
         User user = new()
         {
@@ -158,8 +189,6 @@ public class OrcidControllerTests
         InitializeController(user, session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
             .ReturnsAsync(false);
-        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
 
         IActionResult result = await _controller.LinkOrcid(ValidRelativeRedirect);
 
@@ -200,7 +229,7 @@ public class OrcidControllerTests
     }
 
     [Fact]
-    public async Task LinkOrcid_WhenOrcidAuthDisabledSramAuthEnabledAndUserNotInDb_ReturnsNotFound()
+    public async Task LinkOrcid_WhenUserNotInDb_ReturnsNotFound()
     {
         // User exists in session but not in DB (inconsistent state)
         User sessionUser = new()
@@ -217,8 +246,6 @@ public class OrcidControllerTests
         InitializeController(session: session); // Don't add user to DB
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
             .ReturnsAsync(false);
-        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
 
         IActionResult result = await _controller.LinkOrcid(ValidAbsoluteRedirect);
 
@@ -245,6 +272,7 @@ public class OrcidControllerTests
         IActionResult result = await _controller.LinkOrcid(InvalidRedirect);
 
         ChallengeResult challengeResult = Assert.IsType<ChallengeResult>(result);
+        Assert.Equal("/orcid/finalize", challengeResult.Properties?.RedirectUri);
         Assert.Equal(DefaultRedirect, challengeResult.Properties?.Items["finalRedirect"]);
     }
 
@@ -268,13 +296,14 @@ public class OrcidControllerTests
         IActionResult result = await _controller.LinkOrcid(ValidRelativeRedirect);
 
         ChallengeResult challengeResult = Assert.IsType<ChallengeResult>(result);
+        Assert.Equal("/orcid/finalize", challengeResult.Properties?.RedirectUri);
         Assert.Equal(ValidRelativeRedirect, challengeResult.Properties?.Items["finalRedirect"]);
     }
 
     // --- OrcidFinalize Tests ---
 
     [Fact]
-    public async Task OrcidFinalize_WhenAuthenticationFails_ReturnsUnauthorized()
+    public async Task OrcidFinalize_WhenAuthenticationFails_ReturnsBadRequest()
     {
         User user = new()
         {
@@ -309,7 +338,7 @@ public class OrcidControllerTests
     }
 
     [Fact]
-    public async Task OrcidFinalize_WhenUserSessionHasNoUser_ReturnsBadRequest()
+    public async Task OrcidFinalize_WhenUserSessionHasNoUser_ReturnsUnauthorized()
     {
         UserSession session = new()
         {
@@ -329,8 +358,8 @@ public class OrcidControllerTests
         // User exists in session but not in DB (inconsistent state)
         User sessionUser = new()
         {
-            Id = Guid.Empty,
-            SCIMId = null!,
+            Id = Guid.NewGuid(),
+            SCIMId = "scimid",
             Name = "ghost",
         };
         UserSession session = new()
@@ -346,13 +375,14 @@ public class OrcidControllerTests
     }
 
     [Fact]
-    public async Task OrcidFinalize_WhenFinalRedirectMissing_UsesDefaultRedirect()
+    public async Task OrcidFinalize_WhenSuccessful_UpdatesOrcidAndRedirects()
     {
         User user = new()
         {
             Id = Guid.NewGuid(),
             Name = "testuser",
             SCIMId = "scimid",
+            ORCiD = null,
         };
         UserSession session = new()
         {
@@ -361,28 +391,182 @@ public class OrcidControllerTests
         InitializeController(user, session);
         SetupAuthentication(ExampleOrcid); // Simulate successful ORCID auth
 
-        // Simulate properties *without* finalRedirect
-        AuthenticationProperties authProps = new(); // Empty properties
-        var mockAuthService = Mock.Get(_controller.HttpContext.RequestServices.GetService<IAuthenticationService>()!);
-        ClaimsPrincipal claimsPrincipal =
-            new(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, ExampleOrcid) },
-                "OrcidCookie"));
-        AuthenticationTicket authTicket = new(claimsPrincipal, authProps, "OrcidCookie");
-        AuthenticateResult authResult = AuthenticateResult.Success(authTicket);
-
-        mockAuthService.Setup(x => x.AuthenticateAsync(_controller.HttpContext, "OrcidCookie"))
-            .ReturnsAsync(authResult);
-
         IActionResult result = await _controller.OrcidFinalize(ValidAbsoluteRedirect);
 
         RedirectResult redirectResult = Assert.IsType<RedirectResult>(result);
-        Assert.Equal(DefaultRedirect, redirectResult.Url); // Check redirect uses default
+        Assert.Equal(ValidAbsoluteRedirect, redirectResult.Url);
 
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
-        Assert.Equal(ExampleOrcid, dbUser.ORCiD);                        // Check ORCID update
+        Assert.Equal(ExampleOrcid, dbUser!.ORCiD);                       // Check ORCID update
         _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
     }
+
+    [Fact]
+    public async Task OrcidFinalize_WithSessionOrcid_UpdatesOrcidAndRedirects()
+    {
+        User user = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "testuser",
+            SCIMId = "scimid",
+            ORCiD = null,
+        };
+        UserSession session = new()
+        {
+            User = user,
+        };
+        InitializeController(user, session);
+        // Claim missing but session has ORCID value
+        SetupAuthentication(null, ExampleOrcid);
+
+        IActionResult result = await _controller.OrcidFinalize(ValidRelativeRedirect);
+
+        RedirectResult redirectResult = Assert.IsType<RedirectResult>(result);
+        Assert.Equal(ValidRelativeRedirect, redirectResult.Url);
+
+        User? dbUser = await _context.Users.FindAsync(user.Id);
+        Assert.NotNull(dbUser);
+        Assert.Equal(ExampleOrcid, dbUser!.ORCiD);                       // Check ORCID update
+        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
+    }
+
+    // --- GetPersonByQuery Tests ---
+
+    [Fact]
+    public async Task GetPersonByQuery_WhenNoPersonsFound_ReturnsEmptyList()
+    {
+        // Arrange
+        InitializeController();
+        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
+            .ReturnsAsync(true);
+        _mockPersonRetrievalService.Setup(s => s.FindPeopleByNameFast(It.IsAny<string>()))
+            .ReturnsAsync(new List<OrcidPerson>());
+
+        // Act
+        var result = await _controller.GetPersonByQuery("test query");
+
+        // Assert
+        var returnValue = Assert.IsType<ActionResult<List<Person>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(returnValue.Result);
+        var persons = Assert.IsType<List<Person>>(okResult.Value);
+        Assert.Empty(persons);
+    }
+
+    [Fact]
+    public async Task GetPersonByQuery_WhenPersonsFound_CreatesPeopleAndReturns()
+    {
+        // Arrange
+        InitializeController();
+        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
+            .ReturnsAsync(true);
+        var orcidPerson = new OrcidPerson("John", "Doe", "John Doe", "", ExampleOrcid);
+
+        _mockPersonRetrievalService.Setup(s => s.FindPeopleByNameFast(It.IsAny<string>()))
+            .ReturnsAsync(new List<OrcidPerson>
+            {
+                orcidPerson
+            });
+
+        // Setup that person doesn't already exist
+        _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
+            .ReturnsAsync((Person?)null);
+
+        // Setup person creation
+        var newPerson = new Person
+        { 
+            Id = Guid.NewGuid(),
+            Name = "John Doe",
+            GivenName = "John",
+            FamilyName = "Doe",
+            ORCiD = ExampleOrcid
+        };
+        
+        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()))
+            .ReturnsAsync(newPerson);
+
+        // Act
+        var result = await _controller.GetPersonByQuery("John");
+
+        // Assert
+        var returnValue = Assert.IsType<ActionResult<List<Person>>>(result);
+        Assert.Equal(newPerson, returnValue.Value![0]); // The list is returned directly 
+        Assert.Single(returnValue.Value);
+        Assert.Equal("John Doe", returnValue.Value[0].Name);
+        Assert.Equal(ExampleOrcid, returnValue.Value[0].ORCiD);
+    }
+
+    // --- GetPersonFromOrcid Tests ---
+
+    [Fact]
+    public async Task GetPersonFromOrcid_WhenPersonExists_ReturnsPerson()
+    {
+        // Arrange
+        InitializeController();
+        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
+            .ReturnsAsync(true);
+        var existingPerson = new Person
+        {
+            Id = Guid.NewGuid(),
+            Name = "John Doe",
+            ORCiD = ExampleOrcid
+        };
+
+        _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
+            .ReturnsAsync(existingPerson);
+
+        // Act
+        var result = await _controller.GetPersonFromOrcid(ExampleOrcid);
+
+        // Assert
+        var actionResult = Assert.IsType<ActionResult<Person>>(result);
+        Assert.Equal(existingPerson, actionResult.Value);
+        Assert.Equal(ExampleOrcid, actionResult.Value!.ORCiD);
+        Assert.Equal("John Doe", actionResult.Value.Name);
+    }
+
+    [Fact]
+    public async Task GetPersonFromOrcid_WhenPersonDoesNotExist_CreatesAndReturnsPerson()
+    {
+        // Arrange
+        InitializeController();
+        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
+            .ReturnsAsync(true);
+        
+        // Person doesn't exist yet
+        _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
+            .ReturnsAsync((Person?)null);
+
+        // Setup ORCID API response
+        var orcidPerson = new OrcidPerson("John", "Doe", "John Doe", "", ExampleOrcid);
+
+        _mockPersonRetrievalService.Setup(s => s.FindPersonByOrcid(ExampleOrcid))
+            .ReturnsAsync(orcidPerson);
+
+        // Setup person creation
+        var newPerson = new Person
+        {
+            Id = Guid.NewGuid(),
+            Name = "John Doe",
+            GivenName = "John",
+            FamilyName = "Doe",
+            ORCiD = ExampleOrcid
+        };
+        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()))
+            .ReturnsAsync(newPerson);
+
+        // Act
+        var result = await _controller.GetPersonFromOrcid(ExampleOrcid);
+
+        // Assert
+        var actionResult = Assert.IsType<ActionResult<Person>>(result);
+        Assert.Equal(newPerson, actionResult.Value);
+        Assert.Equal(ExampleOrcid, actionResult.Value!.ORCiD);
+        Assert.Equal("John Doe", actionResult.Value.Name);
+        _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()), Times.Once);
+    }
+
+    // --- OrcidUnlink Tests ---
 
     [Fact]
     public async Task OrcidUnlink_WhenUserLoggedInAndHasOrcid_RemovesOrcidAndReturnsOk()
@@ -408,7 +592,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser.ORCiD);                                       // ORCID should be null after unlinking
+        Assert.Null(dbUser!.ORCiD);                                             // ORCID should be null after unlinking
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
@@ -435,7 +619,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser.ORCiD);                                       // ORCID should remain null
+        Assert.Null(dbUser!.ORCiD);                                             // ORCID should remain null
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 

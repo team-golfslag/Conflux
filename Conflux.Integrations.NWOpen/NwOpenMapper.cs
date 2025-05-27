@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain;
+using Conflux.Domain.Session;
 using Product = Conflux.Domain.Product;
 using Project = Conflux.Domain.Project;
 using NwOpenProject = NWOpen.Net.Models.Project;
@@ -19,6 +20,8 @@ public static class NwOpenMapper
     private static List<Person> People { get; } = [];
     private static List<Product> Products { get; } = [];
     private static List<Project> Projects { get; } = [];
+    private static List<User> Users { get; } = [];
+    private static List<UserRole> UserRoles { get; } = [];
 
     /// <summary>
     /// Maps a list of NWOpen projects to domain projects
@@ -39,6 +42,8 @@ public static class NwOpenMapper
             People = People,
             Products = Products,
             Projects = Projects,
+            Users = Users,
+            UserRoles = UserRoles,
         };
     }
 
@@ -104,6 +109,9 @@ public static class NwOpenMapper
             MapContributor(mappedProject, projectMember);
             MapOrganisation(mappedProject, projectMember);
         }
+
+        // Add development user to the project with Admin and User roles
+        AddDevelopmentUserToProject(mappedProject);
 
         Projects.Add(mappedProject);
     }
@@ -252,5 +260,60 @@ public static class NwOpenMapper
             ],
         };
         project.Organisations.Add(projectOrganisation);
+    }
+
+    /// <summary>
+    /// Adds the development user to a project with Admin and User roles.
+    /// </summary>
+    /// <param name="project">The project to add the user to</param>
+    private static void AddDevelopmentUserToProject(Project project)
+    {
+        // Get the development user
+        User devUser;
+
+        // Check if development user already exists in our list
+        User? existingUser = Users.FirstOrDefault(u => u.Id == UserSession.DevelopmentUserId);
+        if (existingUser != null)
+        {
+            // Use the existing user from our list
+            devUser = existingUser;
+        }
+        else
+        {
+            // Create a new development user and add to our list
+            devUser = UserSession.Development().User!;
+            Users.Add(devUser);
+        }
+
+        // Add user to project
+        project.Users.Add(devUser);
+
+        // Create Admin role for the user
+        UserRole adminRole = new()
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = project.Id,
+            Type = UserRoleType.Admin,
+            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-admin",
+            SCIMId = devUser.SCIMId,
+        };
+
+        // Create User role for the user
+        UserRole userRole = new()
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = project.Id,
+            Type = UserRoleType.User,
+            Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-user",
+            SCIMId = devUser.SCIMId,
+        };
+
+        // Add roles to the lists
+        UserRoles.Add(adminRole);
+        UserRoles.Add(userRole);
+
+        // Add roles to the user
+        devUser.Roles.Add(adminRole);
+        devUser.Roles.Add(userRole);
     }
 }

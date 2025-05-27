@@ -7,6 +7,7 @@ namespace Conflux.Domain.Session;
 
 public class UserSession
 {
+    public static readonly Guid DevelopmentUserId = Guid.Parse("b0ee16ff-6e23-4266-b503-b93a003c1c05");
     public string SRAMId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string GivenName { get; set; } = string.Empty;
@@ -14,8 +15,6 @@ public class UserSession
     public string Email { get; set; } = string.Empty;
     public User? User { get; set; }
     public List<Collaboration> Collaborations { get; set; } = [];
-
-    public static readonly Guid DevelopmentUserId = Guid.Parse("b0ee16ff-6e23-4266-b503-b93a003c1c05");
 
     public static UserSession Development()
     {

@@ -93,6 +93,8 @@ public class Program
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
+        builder.Services.AddScoped<IRAiDService, RAiDService>();
+        builder.Services.AddScoped<IRaidInfoService, RaidInfoService>();
         builder.Services.AddScoped<ProjectsService>();
 
         await ConfigureSRAMServices(builder, featureManager);
@@ -347,6 +349,14 @@ public class Program
                         break;
                     case UserNotAuthenticatedException:
                         context.Response.StatusCode = 401;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
+                        });
+                        break;
+                    case ProjectAlreadyMintedException
+                        or ProjectNotMintedException:
+                        context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
                             Error = exception.Message,

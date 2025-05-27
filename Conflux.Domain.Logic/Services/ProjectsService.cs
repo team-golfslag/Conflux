@@ -12,7 +12,6 @@ using Conflux.Domain.Session;
 using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
 using RAiD.Net;
-using RAiD.Net.Domain;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -239,19 +238,6 @@ public class ProjectsService
             ?? throw new ProjectNotFoundException(id);
 
         return MapToProjectDTO(loadedProject);
-    }
-
-    public async Task MintProjectInRaidAsync(Guid id)
-    {
-        // First map the project to the RAiDCreateProjectDTO
-        Project project = await GetFullProjectAsync(id)
-            ?? throw new ProjectNotFoundException(id);
-
-        RAiDCreateRequest request = _projectMapperService.MapProjectCreationRequest(project);
-        RAiDDto dto = await _raidService.MintRaidAsync(request) ??
-            throw new RAiDException("Failed to mint project in RAiD");
-
-        // TODO: Finish this
     }
 
     /// <summary>

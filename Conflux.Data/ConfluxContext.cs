@@ -39,6 +39,7 @@ public class ConfluxContext : DbContext, IConfluxContext
     public DbSet<ProjectTitle> ProjectTitles { get; set; }
     public DbSet<Organisation> Organisations { get; set; }
     public DbSet<OrganisationRole> OrganisationRoles { get; set; }
+    public DbSet<RAiDInfo> RAiDInfos { get; set; }
 
     public DbSet<SRAMGroupIdConnection> SRAMGroupIdConnections { get; set; }
 
@@ -60,6 +61,9 @@ public class ConfluxContext : DbContext, IConfluxContext
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Descriptions)
             .WithMany();
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.RAiDInfo)
+            .WithOne();
         modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();

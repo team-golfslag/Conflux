@@ -9,7 +9,7 @@ public class ProjectOrganisationResponseDTO
 {
     public ProjectResponseDTO Project { get; init; }
     public OrganisationResponseDTO Organisation { get; init; }
-    public List<OrganisationRole> Roles { get; init; } = [];
+    public List<OrganisationRoleType> Roles { get; init; } = [];
     public string RORId { get; init; }
     public required string Name { get; init; }
 }

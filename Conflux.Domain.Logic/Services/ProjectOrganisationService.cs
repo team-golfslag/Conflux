@@ -65,7 +65,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
                 },
                 Name = org.Name,
                 RORId = org.RORId,
-                Roles = po.Roles,
+                Roles = po.Roles.Select(r => r.Role).ToList(),
             };
         }).ToList();
     }
@@ -90,7 +90,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             },
             Name = organisation.Name,
             RORId = organisation.RORId,
-            Roles = projectOrganisation.Roles,
+            Roles = projectOrganisation.Roles.Select(r => r.Role).ToList(),
         };
     }
 
@@ -146,7 +146,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             },
             Name = organisation.Name,
             RORId = organisation.RORId,
-            Roles = projectOrganisation.Roles,
+            Roles = projectOrganisation.Roles.Select(r => r.Role).ToList(),
         };
     }
 
@@ -189,7 +189,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             },
             Name = organisation.Name,
             RORId = organisation.RORId ?? string.Empty,
-            Roles = updatedRoles,
+            Roles = updatedRoles.Select(r => r.Role).ToList()
         };
     }
 

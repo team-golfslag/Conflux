@@ -336,7 +336,8 @@ public class ProjectsService
             }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
-                Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles ?? throw new
+                Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(r => r.Role)
+                    .ToList() ?? throw new
                     OrganisationNotFoundException(o.Id),
                 RORId = o.RORId,
                 Name = o.Name,

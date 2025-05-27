@@ -4,14 +4,14 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace Conflux.Domain;
 
 public record RAiDInfo
 {
-    [Key] [ForeignKey(nameof(Project))] public Guid projectId { get; init; }
+    [Key] public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
 
     public DateTime? LatestSync { get; set; }
     public bool Dirty { get; set; }

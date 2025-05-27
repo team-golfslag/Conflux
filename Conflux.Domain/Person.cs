@@ -19,4 +19,6 @@ public class Person
     public string? GivenName { get; set; }
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
+
+    public List<Contributor>? Contributors { get; init; }
 }

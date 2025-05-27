@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Domain;
 
@@ -55,7 +54,8 @@ public enum DescriptionType
 public class ProjectDescription
 {
     [Key] public Guid Id { get; init; }
-    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
 
     // TODO: What is a character?
     /// <summary>

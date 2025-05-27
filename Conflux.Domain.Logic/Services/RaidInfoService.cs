@@ -107,7 +107,7 @@ public class RaidInfoService : IRaidInfoService
     private static RAiDInfo GetNewRAiDInfo(Guid projectId, RAiDDto dto) =>
         new()
         {
-            projectId = projectId,
+            ProjectId = projectId,
             LatestSync = DateTime.UtcNow,
             Dirty = false,
             RAiDId = dto.Identifier.IdValue,
@@ -120,7 +120,7 @@ public class RaidInfoService : IRaidInfoService
     private static RAiDInfoResponseDTO MapRAiDInfo(RAiDInfo info) =>
         new()
         {
-            projectId = info.projectId,
+            projectId = info.ProjectId,
             LatestSync = info.LatestSync,
             Dirty = info.Dirty,
             RAiDId = info.RAiDId,

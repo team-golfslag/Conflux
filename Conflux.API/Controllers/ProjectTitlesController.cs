@@ -28,7 +28,6 @@ public class ProjectTitlesController : ControllerBase
     }
 
     [HttpGet]
-    [Route("")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectTitleResponseDTO>>> GetTitlesByProject([FromRoute] Guid projectId) =>
         await _titlesService.GetTitlesByProjectIdAsync(projectId);

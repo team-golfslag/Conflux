@@ -332,7 +332,7 @@ public class ProjectsService
                 Url = p.Url,
                 Title = p.Title,
                 Type = p.Type,
-                Categories = p.Categories,
+                Categories = p.Categories.Select(c => c.Type).ToHashSet()
             }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {

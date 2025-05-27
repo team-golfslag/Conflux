@@ -19,5 +19,5 @@ public class ProductResponseDTO
 
     public required ProductType Type { get; init; }
 
-    public HashSet<ProductCategory> Categories { get; init; } = [];
+    public HashSet<ProductCategoryType> Categories { get; init; } = [];
 }

@@ -14,8 +14,8 @@ using Xunit;
 
 namespace Conflux.API.Tests.Integrations;
 
-public class ProjectDescriptionsControllerIntegrationTests(TestWebApplicationFactory factory)
-    : IClassFixture<TestWebApplicationFactory>
+public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactoryTests factory)
+    : IClassFixture<WebApplicationFactoryTests>
 {
     private readonly HttpClient _client = factory.CreateClient();
     private readonly Guid _existingProjectId = new("00000000-0000-0000-0000-000000000001");

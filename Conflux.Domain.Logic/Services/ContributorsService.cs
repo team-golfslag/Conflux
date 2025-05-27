@@ -108,15 +108,23 @@ public class ContributorsService : IContributorsService
 
         // Fetch all the relevant persons in one go to avoid N+1 query problem
         List<Guid> personIds = contributorList.Select(c => c.PersonId).Distinct().ToList();
-        Dictionary<Guid, Person> persons = await _context.People
+        Dictionary<Guid, Person> people = await _context.People
             .Where(p => personIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
         // Map to DTOs with person data
         return contributorList.Select(c => new ContributorResponseDTO
         {
-            Person = persons.TryGetValue(c.PersonId, out Person? person)
-                ? person
+            Person = people.TryGetValue(c.PersonId, out Person? person)
+                ? new()
+                {
+                    Id = person.Id,
+                    ORCiD = person.ORCiD,
+                    Name = person.Name,
+                    GivenName = person.GivenName,
+                    FamilyName = person.FamilyName,
+                    Email = person.Email,
+                }
                 : throw new PersonNotFoundException(c.PersonId),
             Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO
             {
@@ -212,7 +220,15 @@ public class ContributorsService : IContributorsService
 
         return new()
         {
-            Person = person,
+            Person = new()
+            {
+                Id = person.Id,
+                ORCiD = person.ORCiD,
+                Name = person.Name,
+                GivenName = person.GivenName,
+                FamilyName = person.FamilyName,
+                Email = person.Email,
+            },
             ProjectId = contributor.ProjectId,
             Roles = contributor.Roles.ConvertAll(r => new ContributorRoleResponseDTO
             {

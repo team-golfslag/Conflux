@@ -267,7 +267,7 @@ public class ProjectsService
         List<Guid> personIds = project.Contributors.Select(c => c.PersonId).Distinct().ToList();
 
         // Fetch all persons in one go (to avoid N+1 query problem)
-        Dictionary<Guid, Person> persons = _context.People
+        Dictionary<Guid, Person> people = _context.People
             .Where(p => personIds.Contains(p.Id))
             .ToDictionary(p => p.Id);
 
@@ -343,9 +343,17 @@ public class ProjectsService
             }),
             Contributors = project.Contributors.Select(c => new ContributorResponseDTO
             {
-                Person = persons.TryGetValue(c.PersonId,
+                Person = people.TryGetValue(c.PersonId,
                     out Person? person)
-                    ? person
+                    ? new()
+                    {
+                        Id = person.Id,
+                        ORCiD = person.ORCiD,
+                        Name = person.Name,
+                        GivenName = person.GivenName,
+                        FamilyName = person.FamilyName,
+                        Email = person.Email,
+                    }
                     : throw new PersonNotFoundException(c.PersonId),
                 Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO
                 {

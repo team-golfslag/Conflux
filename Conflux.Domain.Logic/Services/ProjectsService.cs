@@ -208,7 +208,6 @@ public class ProjectsService
         var exportData = projects.Select(p => new
         {
             p.Id,
-            PrimaryTitle = p.PrimaryTitle?.Text ?? string.Empty,
             StartDate = p.StartDate.ToString("yyyy MMMM dd"),
             EndDate = p.EndDate?.ToString("yyyy MMMM dd") ?? string.Empty,
             OrganisationNames = string.Join("; ", p.Organisations.Select(o => o.Name)),
@@ -280,23 +279,10 @@ public class ProjectsService
         List<Organisation> organisations = _context.Organisations
             .Where(o => organisationIds.Contains(o.Id))
             .ToList();
-
-        ProjectTitle primaryTitle = titles.Single(t => t.Type == TitleType.Primary);
-        ProjectDescription? primaryDescription = descriptions.SingleOrDefault(t => t.Type == DescriptionType.Primary);
-
+        
         return new()
         {
             Id = project.Id,
-            PrimaryTitle = new()
-            {
-                Id = primaryTitle.Id,
-                ProjectId = primaryTitle.ProjectId,
-                Text = primaryTitle.Text,
-                Language = primaryTitle.Language,
-                Type = primaryTitle.Type,
-                StartDate = primaryTitle.StartDate,
-                EndDate = primaryTitle.EndDate,
-            },
             Titles = titles.ConvertAll(t => new ProjectTitleResponseDTO
             {
                 Id = t.Id,
@@ -307,14 +293,6 @@ public class ProjectsService
                 StartDate = t.StartDate,
                 EndDate = t.EndDate,
             }),
-            PrimaryDescription = primaryDescription == null
-                ? null
-                : new()
-                {
-                    Text = primaryDescription.Text,
-                    Type = primaryDescription.Type,
-                    Language = primaryDescription.Language,
-                },
             Descriptions = project.Descriptions.ConvertAll(d => new ProjectDescriptionResponseDTO
             {
                 Id = d.Id,

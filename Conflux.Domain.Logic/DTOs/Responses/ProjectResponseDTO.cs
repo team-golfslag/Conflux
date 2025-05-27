@@ -8,9 +8,7 @@ namespace Conflux.Domain.Logic.DTOs.Responses;
 public class ProjectResponseDTO
 {
     public required Guid Id { get; init; }
-    public ProjectTitleResponseDTO? PrimaryTitle { get; init; }
     public List<ProjectTitleResponseDTO> Titles { get; init; } = [];
-    public ProjectDescriptionResponseDTO? PrimaryDescription { get; init; }
     public List<ProjectDescriptionResponseDTO> Descriptions { get; init; } = [];
 
     public DateTime StartDate { get; init; }

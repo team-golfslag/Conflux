@@ -11,5 +11,5 @@ public class ProjectDescriptionResponseDTO
     public Guid ProjectId { get; init; }
     public required string Text { get; init; }
     public required DescriptionType Type { get; init; }
-    public required Language Language { get; init; }
+    public required Language? Language { get; init; }
 }

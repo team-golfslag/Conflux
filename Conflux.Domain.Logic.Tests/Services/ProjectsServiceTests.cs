@@ -22,8 +22,6 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private readonly IProjectMapperService _projectMapperService = null!;
-    private readonly IRAiDService _raidService = null!;
     private readonly Mock<IUserSessionService> _userSessionServiceMock = new();
     private ConfluxContext _context = null!;
     private ProjectsService _service;
@@ -40,7 +38,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         _context = context;
         _userSessionServiceMock.Setup(s => s.GetUser())
             .ReturnsAsync(UserSession.Development);
-        _service = new(_context, _userSessionServiceMock.Object, _projectMapperService, _raidService);
+        _service = new(_context, _userSessionServiceMock.Object);
     }
 
     public async Task DisposeAsync()
@@ -102,7 +100,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                     StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 },
             ],
-            StartDate = DateTime.UtcNow, 
+            StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1),
             Organisations =
             [
@@ -120,14 +118,16 @@ public class ProjectsServiceTests : IAsyncLifetime
                     ProjectId = projectId,
                 },
             ],
-            Products = [
-            new()
-            {
-               Id = Guid.NewGuid(),
-               Title = "Test Product",
-               Url = "https://example.com/product",
-               Type = ProductType.Software,
-            }],
+            Products =
+            [
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Test Product",
+                    Url = "https://example.com/product",
+                    Type = ProductType.Software,
+                },
+            ],
         };
 
         _context.People.Add(person);

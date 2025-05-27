@@ -40,22 +40,24 @@ public class ContributorsService : IContributorsService
             RoleType = r,
         });
 
-        ContributorPosition? currentActivePosition = contributor.Positions
-            .FirstOrDefault(p => p.EndDate == null);
+        if (contributorDTO.Position.HasValue)
+        {
+            ContributorPosition? currentActivePosition = contributor.Positions
+                .FirstOrDefault(p => p.EndDate == null);
 
-        if (currentActivePosition != null)
-            currentActivePosition.EndDate = DateTime.UtcNow.Date;
-        
-        if (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position)
-            contributor.Positions.Add(new()
-            {
-                PersonId = personId,
-                ProjectId = projectId,
-                Position = contributorDTO.Position,
-                StartDate = DateTime.UtcNow.Date,
-                EndDate = null,
-            });
+            if (currentActivePosition != null)
+                currentActivePosition.EndDate = DateTime.UtcNow.Date;
 
+            if (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position)
+                contributor.Positions.Add(new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                    Position = contributorDTO.Position.Value,
+                    StartDate = DateTime.UtcNow.Date,
+                    EndDate = null,
+                });
+        }
 
         contributor.Contact = contributorDTO.Contact;
         contributor.Leader = contributorDTO.Leader;
@@ -132,6 +134,20 @@ public class ContributorsService : IContributorsService
     public async Task<ContributorResponseDTO> CreateContributorAsync(Guid projectId, Guid personId,
         ContributorRequestDTO contributorDTO)
     {
+        List<ContributorPosition> positions = contributorDTO.Position == null
+            ? []
+            : new()
+            {
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                    Position = contributorDTO.Position.Value,
+                    StartDate = DateTime.UtcNow.Date,
+                    EndDate = null,
+                },
+            };
+
         Contributor contributor = new()
         {
             PersonId = personId,
@@ -142,14 +158,7 @@ public class ContributorsService : IContributorsService
                 ProjectId = projectId,
                 RoleType = r,
             }),
-            Positions = [new ContributorPosition
-            {
-                PersonId = personId,
-                ProjectId = projectId,
-                Position = contributorDTO.Position,
-                StartDate = DateTime.UtcNow.Date,
-                EndDate = null,
-            }],
+            Positions = positions,
             Leader = contributorDTO.Leader,
             Contact = contributorDTO.Contact,
         };

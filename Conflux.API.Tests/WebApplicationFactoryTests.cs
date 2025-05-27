@@ -187,12 +187,12 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
             db.SaveChanges();
 
             // Mock the user session service to return our test admin user
-            var mockUserSessionService = new Mock<IUserSessionService>();
+            Mock<IUserSessionService> mockUserSessionService = new();
             mockUserSessionService.Setup(m => m.GetUser()).ReturnsAsync(new UserSession
             {
                 User = testUser,
-                Collaborations = new()
-                {
+                Collaborations =
+                [
                     new()
                     {
                         Organization = "Test Organization",
@@ -204,8 +204,8 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                             ExternalId = "ext1",
                             SCIMId = "SCIM", // This should match the projects' SCIMId
                         },
-                        Groups = new()
-                        {
+                        Groups =
+                        [
                             new()
                             {
                                 Id = "group1",
@@ -214,16 +214,16 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                                 ExternalId = "ext1",
                                 SCIMId = "SCIM",
                             },
-                        },
+                        ],
                     },
-                },
+                ],
             });
 
             // Replace the actual service with our mock
-            services.AddScoped<IUserSessionService>(sp => mockUserSessionService.Object);
+            services.AddScoped<IUserSessionService>(_ => mockUserSessionService.Object);
 
             // Mock the access control service to allow our test admin user to access all projects with admin role
-            var mockAccessControlService = new Mock<IAccessControlService>();
+            Mock<IAccessControlService> mockAccessControlService = new();
             mockAccessControlService.Setup(m => m.UserHasRoleInProject(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserRoleType>())).ReturnsAsync(true);
 

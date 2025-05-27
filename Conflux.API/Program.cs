@@ -352,7 +352,9 @@ public class Program
                         or ProjectDescriptionNotFoundException
                         or ProjectTitleNotFoundException
                         or ContributorNotFoundException
-                        or PersonNotFoundException:
+                        or PersonNotFoundException
+                        or OrganisationNotFoundException
+                        or ProjectOrganisationNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {

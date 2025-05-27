@@ -3,11 +3,9 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Requests;
+namespace Conflux.Domain.Logic.Exceptions;
 
-public class ContributorPositionRequestDTO
+public class ProjectNotMintedException(Guid projectId)
+    : Exception($"Project with id {projectId} has not been minted.")
 {
-    public DateTime? EndDate { get; init; }
-    public DateTime StartDate { get; init; }
-    public ContributorPositionType Type { get; init; }
 }

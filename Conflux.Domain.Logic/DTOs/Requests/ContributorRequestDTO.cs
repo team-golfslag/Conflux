@@ -10,5 +10,5 @@ public class ContributorRequestDTO
     public bool Leader { get; set; }
     public bool Contact { get; set; }
     public List<ContributorRoleType> Roles { get; set; } = [];
-    public List<ContributorPositionRequestDTO> Positions { get; set; } = [];
+    public ContributorPositionType Position { get; set; }
 }

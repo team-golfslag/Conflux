@@ -11,6 +11,7 @@ public interface IPeopleService
 {
     Task<List<Person>> GetPersonsByQueryAsync(string? query);
     Task<Person> GetPersonByIdAsync(Guid id);
+    Task<Person?> GetPersonByOrcidIdAsync(string orcidId);
     Task<Person> CreatePersonAsync(PersonRequestDTO personDTO);
     Task<Person> UpdatePersonAsync(Guid id, PersonRequestDTO personDTO);
     Task DeletePersonAsync(Guid id);

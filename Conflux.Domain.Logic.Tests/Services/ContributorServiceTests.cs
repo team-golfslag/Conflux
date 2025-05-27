@@ -284,14 +284,7 @@ public class ContributorsServiceTests : IAsyncLifetime
                 ContributorRoleType.Conceptualization,
                 ContributorRoleType.Methodology,
             ],
-            Positions =
-            [
-                new()
-                {
-                    StartDate = DateTime.UtcNow,
-                    Type = ContributorPositionType.Consultant,
-                },
-            ],
+            Position = ContributorPositionType.Consultant,
             Leader = false,
             Contact = false,
         };

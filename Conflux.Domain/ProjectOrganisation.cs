@@ -13,8 +13,10 @@ namespace Conflux.Domain;
 public class ProjectOrganisation
 {
     [Key] [Column(Order = 0)] public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
 
     [Key] [Column(Order = 1)] public Guid OrganisationId { get; init; }
+    public Organisation? Organisation { get; init; }
 
     public List<OrganisationRole> Roles { get; set; } = [];
 }

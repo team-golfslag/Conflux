@@ -17,7 +17,7 @@ public class Project
 
     [JsonPropertyName("scim_id")] public string? SCIMId { get; init; }
 
-    [JsonPropertyName("raid_info")] public RAiDInfo? RAiDInfo { get; init; }
+    [JsonPropertyName("raid_info")] public RAiDInfo? RAiDInfo { get; set; }
 
     public DateTime StartDate { get; set; }
 

@@ -3,7 +3,6 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain;
@@ -11,8 +10,12 @@ namespace Conflux.Domain;
 [PrimaryKey(nameof(PersonId), nameof(ProjectId))]
 public record Contributor
 {
-    [ForeignKey(nameof(Person))] public Guid PersonId { get; init; }
-    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
+    public Guid PersonId { get; init; }
+    public Person? Person { get; init; }
+
+    public required Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
+
     public List<ContributorRole> Roles { get; set; } = [];
     public List<ContributorPosition> Positions { get; set; } = [];
 
@@ -20,7 +23,7 @@ public record Contributor
     /// True if this contributor is a leader. Multiple leaders are allowed but 1 is required in RAiD
     /// </summary>
     public bool Leader { get; set; }
-    
+
     /// <summary>
     /// True if this contributor is a contact. Multiple contacts are allowed but 1 is required in RAiD
     /// </summary>

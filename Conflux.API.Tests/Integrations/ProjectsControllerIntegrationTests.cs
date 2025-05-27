@@ -8,15 +8,17 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Xunit;
 
-namespace Conflux.API.Tests.Integrations;
+namespace Conflux.API.Tests.Controllers;
 
-public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
 {
     private static readonly JsonSerializerOptions JsonOptions;
     private readonly HttpClient _client;
+    private readonly WebApplicationFactoryTests _factoryTests;
 
     static ProjectsControllerTests()
     {
@@ -29,9 +31,10 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         JsonOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    public ProjectsControllerTests(TestWebApplicationFactory factory)
+    public ProjectsControllerTests(WebApplicationFactoryTests factoryTests)
     {
-        _client = factory.CreateClient();
+        _factoryTests = factoryTests;
+        _client = factoryTests.CreateClient();
     }
 
     [Fact]
@@ -121,5 +124,28 @@ public class ProjectsControllerTests : IClassFixture<TestWebApplicationFactory>
         Project[]? projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Empty(projects);
+    }
+
+    [Fact]
+    public async Task ExportProjectsToCsv_ReturnsCsvFile()
+    {
+        // Arrange
+        ProjectQueryDTO queryDto = new()
+        {
+            Query = "Test",
+            StartDate = DateTime.UtcNow.AddDays(-30),
+            EndDate = DateTime.UtcNow.AddDays(30),
+        };
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync(
+            $"/projects/export?query={queryDto.Query}&start_date={queryDto.StartDate:yyyy-MM-ddTHH:mm:ssZ}&end_date={queryDto.EndDate:yyyy-MM-ddTHH:mm:ssZ}");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        string csvContent = await response.Content.ReadAsStringAsync();
+        Assert.NotNull(csvContent);
+        Assert.NotEmpty(csvContent);
+        Assert.Contains("Id", csvContent); // Check if CSV contains header
     }
 }

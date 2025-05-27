@@ -19,4 +19,6 @@ public class Organisation
     public string RORId { get; set; }
 
     [Required] public required string Name { get; set; }
+    
+    public List<ProjectOrganisation>? Projects { get; init; } 
 }

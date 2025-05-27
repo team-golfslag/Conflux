@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    [Migration("20250507085444_MakeProductSchemaRequired")]
-    partial class MakeProductSchemaRequired
+    [Migration("20250514135025_MakeUserRoleEnum")]
+    partial class MakeUserRoleEnum
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -164,7 +164,7 @@ namespace Conflux.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Schema")
+                    b.Property<int?>("Schema")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
@@ -175,7 +175,6 @@ namespace Conflux.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Url")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -324,13 +323,6 @@ namespace Conflux.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -338,6 +330,9 @@ namespace Conflux.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "scim_id");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Urn")
                         .IsRequired()

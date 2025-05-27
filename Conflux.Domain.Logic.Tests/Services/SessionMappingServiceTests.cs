@@ -290,7 +290,7 @@ public class SessionMappingServiceTests
             SCIMId = "role-id-1",
             DisplayName = "Role Group",
             Description = "Role Description",
-            Urn = "role:urn:1",
+            Urn = "role:urn:conflux-admin",
             ExternalId = "ext-role-1",
             Created = DateTime.UtcNow,
             Members = new()
@@ -306,7 +306,7 @@ public class SessionMappingServiceTests
             DisplayName = "Test Group",
             Description = "Test Description",
             Created = DateTime.UtcNow,
-            Urn = "urn:test:group",
+            Urn = "urn:test:conflux-admin",
             ExternalId = "ext-id-1",
             Members = new()
             {
@@ -341,9 +341,8 @@ public class SessionMappingServiceTests
         Assert.Single(context.UserRoles);
 
         UserRole userRole = await context.UserRoles.FirstAsync();
-        Assert.Equal("Role Group", userRole.Name);
-        Assert.Equal("Role Description", userRole.Description);
-        Assert.Equal("role:urn:1", userRole.Urn);
+        Assert.Equal(UserRoleType.Admin, userRole.Type);
+        Assert.Equal("role:urn:conflux-admin", userRole.Urn);
     }
 
     [Fact]

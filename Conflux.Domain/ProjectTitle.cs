@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Domain;
 
@@ -34,7 +33,8 @@ public enum TitleType
 public class ProjectTitle
 {
     [Key] public Guid Id { get; init; }
-    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
 
     // TODO: Should have a max length of 100
     public required string Text { get; set; }

@@ -37,6 +37,16 @@ public class PeopleService : IPeopleService
         await _context.People.FindAsync(id) ??
         throw new PersonNotFoundException(id);
 
+    public Task<Person?> GetPersonByOrcidIdAsync(string orcidId)
+    {
+        if (string.IsNullOrWhiteSpace(orcidId))
+            throw new ArgumentException("ORCiD ID cannot be null or empty.", nameof(orcidId));
+
+        return _context.People
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ORCiD == orcidId);
+    }
+
     public async Task<Person> CreatePersonAsync(PersonRequestDTO personDTO)
     {
         Person person = new()

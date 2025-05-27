@@ -25,6 +25,7 @@ public class ConfluxContext : DbContext, IConfluxContext
     public DbSet<ProjectDescription> ProjectDescriptions { get; set; }
 
     public DbSet<ProjectOrganisation> ProjectOrganisations { get; set; }
+    public DbSet<RAiDInfo> RAiDInfos { get; set; }
 
     public DbSet<Person> People { get; set; }
 
@@ -49,17 +50,69 @@ public class ConfluxContext : DbContext, IConfluxContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Project>()
-            .HasMany(p => p.Users)
-            .WithMany();
-        modelBuilder.Entity<Project>()
             .HasMany(p => p.Products)
-            .WithMany();
+            .WithOne(p => p.Project)
+            .HasForeignKey(p => p.ProjectId);
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Titles)
-            .WithMany();
+            .WithOne(t => t.Project)
+            .HasForeignKey(t => t.ProjectId);
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Descriptions)
+            .WithOne(d => d.Project)
+            .HasForeignKey(d => d.ProjectId);
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.RAiDInfo)
+            .WithOne(i => i.Project)
+            .HasForeignKey<RAiDInfo>(i => i.ProjectId);
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Contributors)
+            .WithOne(c => c.Project)
+            .HasForeignKey(c => c.ProjectId);
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Organisations)
+            .WithOne(o => o.Project)
+            .HasForeignKey(o => o.ProjectId);
+        modelBuilder.Entity<Project>() //TODO: make this better
+            .HasMany(p => p.Users)
             .WithMany();
+        
+        modelBuilder.Entity<Person>()
+            .HasMany(p => p.Contributors)
+            .WithOne(c => c.Person)
+            .HasForeignKey(c => c.PersonId);
+        modelBuilder.Entity<Contributor>()
+            .HasMany(c => c.Positions)
+            .WithOne(p => p.Contributor)
+            .HasForeignKey(p => new
+            {
+                p.PersonId,
+                p.ProjectId,
+            });
+        modelBuilder.Entity<Contributor>()
+            .HasMany(c => c.Roles)
+            .WithOne(r => r.Contributor)
+            .HasForeignKey(r => new
+            {
+                r.PersonId,
+                r.ProjectId,
+            });
+        modelBuilder.Entity<ProjectOrganisation>()
+            .HasMany(o => o.Roles)
+            .WithOne(r => r.Organisation)
+            .HasForeignKey(r => new
+            {
+                r.ProjectId,
+                r.OrganisationId,
+            });
+        modelBuilder.Entity<Organisation>()
+            .HasMany(o => o.Projects)
+            .WithOne(p => p.Organisation)
+            .HasForeignKey(p => p.OrganisationId);
+        modelBuilder.Entity<Product>()
+            .HasMany(p => p.Categories)
+            .WithOne(c => c.Product)
+            .HasForeignKey(c => c.ProductId);
         modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();

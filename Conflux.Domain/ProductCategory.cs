@@ -18,7 +18,8 @@ public enum ProductCategoryType
 [PrimaryKey(nameof(ProductId), nameof(Type))]
 public class ProductCategory
 {
-    [ForeignKey(nameof(Product))] public Guid ProductId { get; init; }
+    public Guid ProductId { get; init; }
+    public Product? Product { get; init; }
     public ProductCategoryType Type { get; init; }
 
     public string SchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";

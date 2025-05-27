@@ -6,11 +6,13 @@
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Conflux.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("people")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]

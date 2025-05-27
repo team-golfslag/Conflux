@@ -5,6 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain;
+using Microsoft.EntityFrameworkCore;
 using RAiD.Net.Domain;
 
 namespace Conflux.Integrations.RAiD;
@@ -18,8 +19,11 @@ public class ProjectMapperService : IProjectMapperService
         _context = context;
     }
 
-    public RAiDCreateRequest MapProjectCreationRequest(Project project) =>
-        new()
+    public async Task<RAiDCreateRequest> MapProjectCreationRequest(Guid projectId)
+    {
+        Project project = await GetProject(projectId);
+
+        return new()
         {
             Title = project.Titles.ConvertAll(MapProjectTitle),
             Date = new()
@@ -44,158 +48,22 @@ public class ProjectMapperService : IProjectMapperService
             Subject = null,     // Not implemented for now
             RelatedRaid = null, // Not implemented for now
             RelatedObject = project.Products.ConvertAll(MapProduct),
-            AlternateIdentifier = null, // Not implemented for now
-            SpatialCoverage = null,     // Not implemented for now
-        };
-
-    public RAiDUpdateRequest MapProjectUpdateRequest(Project project) =>
-        new()
-        {
-            Metadata = null,
-            Identifier = new()
-            {
-                IdValue = null,
-                SchemaUri = null,
-                RegistrationAgency = new()
+            AlternateIdentifier =
+            [
+                new()
                 {
-                    Id = null,
-                    SchemaUri = null,
+                    Id = project.Id.ToString(),
+                    Type = "conflux-id",
                 },
-                Owner = new()
-                {
-                    Id = null,
-                    SchemaUri = null,
-                    ServicePoint = null,
-                },
-                RaidAgencyUrl = null,
-                License = null,
-                Version = 1,
-            },
-            Title = null,
-            Date = null,
-            Description = null,
-            Access = null,
-            AlternateUrl = null,
-            Contributor = null,
-            Organisation = null,
-            Subject = null,
-            RelatedRaid = null,
-            RelatedObject = null,
-            AlternateIdentifier = null,
-            SpatialCoverage = null,
-        };
-
-    private static RAiDTitle MapProjectTitle(ProjectTitle title) =>
-        new()
-        {
-            Text = title.Text,
-            Type = new()
-            {
-                Id = title.TypeUri,
-                SchemaUri = title.TypeSchemaUri,
-            },
-            StartDate = title.StartDate,
-            EndDate = title.EndDate,
-            Language = title.Language == null
-                ? null
-                : MapLanguage(title.Language),
-        };
-
-    private static RAiDDescription MapProjectDescription(ProjectDescription desc) =>
-        new()
-        {
-            Text = desc.Text,
-            Type = new()
-            {
-                Id = desc.TypeUri,
-                SchemaUri = desc.TypeSchemaUri,
-            },
-            Language = desc.Language == null ? null : MapLanguage(desc.Language),
-        };
-
-    private static RAiDContributorRole MapContributorRole(ContributorRole role) =>
-        new()
-        {
-            SchemaUri = role.SchemaUri,
-            Id = role.GetUri(),
-        };
-
-    private static RAiDContributorPosition MapContributorPosition(ContributorPosition position) =>
-        new()
-        {
-            SchemaUri = position.SchemaUri,
-            Id = position.GetUri,
-            StartDate = position.StartDate,
-            EndDate = position.EndDate,
-        };
-
-    private RAiDContributor MapContributor(Contributor contributor)
-    {
-        Person person = _context.People
-                .FirstOrDefault(p => p.Id == contributor.PersonId)
-            ?? throw new ArgumentNullException(nameof(contributor));
-
-        return new()
-        {
-            SchemaUri = person.SchemaUri,
-            Email = person.Email,
-            Uuid = null,
-            Id = person.ORCiD,
-            Position = contributor.Positions.Select(MapContributorPosition).ToList(),
-            Role = contributor.Roles.Select(MapContributorRole).ToList(),
-            Leader = contributor.Leader,
-            Contact = contributor.Contact,
+            ],
+            SpatialCoverage = null, // Not implemented for now
         };
     }
 
-    private static RAiDOrganisationRole MapOrganisationRole(OrganisationRole role) =>
-        new()
-        {
-            SchemaUri = role.SchemaUri,
-            Id = role.GetUri,
-            StartDate = role.StartDate,
-            EndDate = role.EndDate,
-        };
-
-    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
+    public async Task<List<RAiDIncompatibility>> CheckProjectCompatibility(Guid projectId)
     {
-        Organisation organisation = _context.Organisations
-                .FirstOrDefault(o => o.Id == projectOrganisation.OrganisationId)
-            ?? throw new ArgumentNullException(nameof(projectOrganisation));
-        return new()
-        {
-            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
-            SchemaUri = organisation.SchemaUri,
-            Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
-        };
-    }
+        Project project = await GetProject(projectId);
 
-    private static RAiDLanguage MapLanguage(Language lang) =>
-        new()
-        {
-            Id = lang.Id,
-            SchemaUri = lang.SchemaUri,
-        };
-
-    private static RAiDRelatedObject MapProduct(Product product) =>
-        new()
-        {
-            Id = product.Url,
-            SchemaUri = product.SchemaUri,
-            Type = new()
-            {
-                Id = product.GetTypeUri,
-                SchemaUri = product.TypeSchemaUri,
-            },
-            Category = product.Categories.ToList().ConvertAll(p => new RAiDRelatedObjectCategory
-            {
-                Id = p.GetUri,
-                SchemaUri = p.SchemaUri,
-            }),
-        };
-
-    public List<RAiDIncompatibility> CheckProjectCompatibility(Project project, IConfluxContext context)
-    {
         List<RAiDIncompatibility> incompatibilities = [];
 
         List<ProjectTitle> activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
@@ -268,7 +136,7 @@ public class ProjectMapperService : IProjectMapperService
 
         // In Conflux people are not required to have an ORCiD
         incompatibilities.AddRange(project.Contributors
-            .Where(c => context.People.Find(c.ProjectId)!.ORCiD == null)
+            .Where(c => _context.People.Find(c.PersonId)!.ORCiD == null)
             .Select(c => new RAiDIncompatibility
             {
                 Type = RAiDIncompatibilityType.ContributorWithoutOrcid,
@@ -406,4 +274,198 @@ public class ProjectMapperService : IProjectMapperService
 
         return incompatibilities;
     }
+
+    private async Task<Project> GetProject(Guid projectId)
+    {
+        Project? project = await _context.Projects.Where(p => p.Id == projectId)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Titles)
+            .Include(p => p.Organisations)
+            .Include(p => p.Products)
+            .Include(p => p.RAiDInfo)
+            .FirstOrDefaultAsync();
+
+        if (project == null)
+            throw new($"Project with id {projectId} does not exist.");
+
+        return project;
+    }
+
+    public async Task<RAiDUpdateRequest> MapProjectUpdateRequest(Guid projectId)
+    {
+        Project project = await GetProject(projectId);
+
+        return new()
+        {
+            Metadata = null,
+            Identifier = MapRAiDInfo(project.RAiDInfo!),
+            Title = project.Titles.ConvertAll(MapProjectTitle),
+            Date = new()
+            {
+                StartDate = project.StartDate,
+                EndDate = project.EndDate,
+            },
+
+            Description = project.Descriptions.ConvertAll(MapProjectDescription),
+            Access = new()
+            {
+                Type = new() // TODO make an enum for this
+                {
+                    Id = "https://vocabularies.coar-repositories.org/access_rights/c_abf2/",
+                    SchemaUri = "https://vocabularies.coar-repositories.org/access_rights/",
+                },
+                EmbargoExpiry = null, // Not implemented for now
+                Statement = null,     // Not implemented for now
+            },
+            AlternateUrl = null,
+            Contributor = project.Contributors.ConvertAll(MapContributor),
+            Organisation = project.Organisations.ConvertAll(MapOrganisation),
+            Subject = null,     // Not implemented for now
+            RelatedRaid = null, // Not implemented for now
+            RelatedObject = project.Products.ConvertAll(MapProduct),
+            AlternateIdentifier =
+            [
+                new()
+                {
+                    Id = project.Id.ToString(),
+                    Type = "conflux-id",
+                },
+            ],
+            SpatialCoverage = null, // Not implemented for now
+        };
+    }
+
+    private static RAiDId MapRAiDInfo(RAiDInfo raidInfo) =>
+        new()
+        {
+            IdValue = raidInfo.RAiDId,
+            SchemaUri = raidInfo.SchemaUri,
+            RegistrationAgency = new()
+            {
+                Id = raidInfo.RegistrationAgencyId,
+                SchemaUri = raidInfo.RegistrationAgencySchemaUri,
+            },
+            Owner = new()
+            {
+                Id = raidInfo.OwnerId,
+                SchemaUri = raidInfo.OwnerSchemaUri,
+                ServicePoint = raidInfo.OwnerServicePoint,
+            },
+            RaidAgencyUrl = raidInfo.RegistrationAgencyId,
+            License = raidInfo.License,
+            Version = raidInfo.Version,
+        };
+
+    private static RAiDTitle MapProjectTitle(ProjectTitle title) =>
+        new()
+        {
+            Text = title.Text,
+            Type = new()
+            {
+                Id = title.TypeUri,
+                SchemaUri = title.TypeSchemaUri,
+            },
+            StartDate = title.StartDate,
+            EndDate = title.EndDate,
+            Language = title.Language == null
+                ? null
+                : MapLanguage(title.Language),
+        };
+
+    private static RAiDDescription MapProjectDescription(ProjectDescription desc) =>
+        new()
+        {
+            Text = desc.Text,
+            Type = new()
+            {
+                Id = desc.TypeUri,
+                SchemaUri = desc.TypeSchemaUri,
+            },
+            Language = desc.Language == null ? null : MapLanguage(desc.Language),
+        };
+
+    private static RAiDContributorRole MapContributorRole(ContributorRole role) =>
+        new()
+        {
+            SchemaUri = role.SchemaUri,
+            Id = role.GetUri(),
+        };
+
+    private static RAiDContributorPosition MapContributorPosition(ContributorPosition position) =>
+        new()
+        {
+            SchemaUri = position.SchemaUri,
+            Id = position.GetUri,
+            StartDate = position.StartDate,
+            EndDate = position.EndDate,
+        };
+
+    private RAiDContributor MapContributor(Contributor contributor)
+    {
+        Person person = _context.People
+                .FirstOrDefault(p => p.Id == contributor.PersonId)
+            ?? throw new ArgumentNullException(nameof(contributor));
+
+        return new()
+        {
+            SchemaUri = person.SchemaUri,
+            Email = person.Email,
+            Uuid = null,
+            Id = person.ORCiD,
+            Position = contributor.Positions.Select(MapContributorPosition).ToList(),
+            Role = contributor.Roles.Select(MapContributorRole).ToList(),
+            Leader = contributor.Leader,
+            Contact = contributor.Contact,
+        };
+    }
+
+    private static RAiDOrganisationRole MapOrganisationRole(OrganisationRole role) =>
+        new()
+        {
+            SchemaUri = role.SchemaUri,
+            Id = role.GetUri,
+            StartDate = role.StartDate,
+            EndDate = role.EndDate,
+        };
+
+    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
+    {
+        Organisation organisation = _context.Organisations
+                .FirstOrDefault(o => o.Id == projectOrganisation.OrganisationId)
+            ?? throw new ArgumentNullException(nameof(projectOrganisation));
+        return new()
+        {
+            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
+            SchemaUri = organisation.SchemaUri,
+            Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
+        };
+    }
+
+    private static RAiDLanguage MapLanguage(Language lang) =>
+        new()
+        {
+            Id = lang.Id,
+            SchemaUri = lang.SchemaUri,
+        };
+
+    private static RAiDRelatedObject MapProduct(Product product) =>
+        new()
+        {
+            Id = product.Url,
+            SchemaUri = product.SchemaUri,
+            Type = new()
+            {
+                Id = product.GetTypeUri,
+                SchemaUri = product.TypeSchemaUri,
+            },
+            Category = product.Categories.ToList().ConvertAll(p => new RAiDRelatedObjectCategory
+            {
+                Id = p.GetUri,
+                SchemaUri = p.SchemaUri,
+            }),
+        };
 }

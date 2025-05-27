@@ -19,6 +19,9 @@ public class Product
     [Key]
     public Guid Id { get; init; }
 
+    public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
+
     public ProductSchema Schema { get; set; }
 
     // TODO: Kijk of de identifier wel echt aan het schema voldoet.

@@ -3,6 +3,8 @@
 //
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Reflection;
+using System.Text;
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
@@ -12,7 +14,6 @@ using Conflux.Domain.Session;
 using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
 using RAiD.Net;
-using RAiD.Net.Domain;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -203,6 +204,29 @@ public class ProjectsService
     }
 
     /// <summary>
+    /// Exports a list of <see cref="Project" />s matching the specified query criteria into a CSV format.
+    /// </summary>
+    /// <param name="dto">The query criteria used to filter the projects to be exported.</param>
+    /// <returns>A string containing the CSV representation of the filtered projects.</returns>
+    public async Task<string> ExportProjectsToCsvAsync(ProjectQueryDTO dto)
+    {
+        List<ProjectResponseDTO> projects = await GetProjectsByQueryAsync(dto);
+
+        var exportData = projects.Select(p => new
+        {
+            p.Id,
+            PrimaryTitle = p.PrimaryTitle?.Text ?? string.Empty,
+            StartDate = p.StartDate.ToString("yyyy MMMM dd"),
+            EndDate = p.EndDate?.ToString("yyyy MMMM dd") ?? string.Empty,
+            OrganisationNames = string.Join("; ", p.Organisations.Select(o => o.Name)),
+            Contributors = string.Join("; ", p.Contributors.Select(c => c.Person.Name)),
+            Products = string.Join("; ", p.Products.Select(pr => pr.Title)),
+        });
+
+        return GenerateCsv(exportData);
+    }
+
+    /// <summary>
     /// Gets all projects.
     /// </summary>
     /// <returns>All projects as DTOs</returns>
@@ -241,19 +265,6 @@ public class ProjectsService
         return MapToProjectDTO(loadedProject);
     }
 
-    public async Task MintProjectInRaidAsync(Guid id)
-    {
-        // First map the project to the RAiDCreateProjectDTO
-        Project project = await GetFullProjectAsync(id)
-            ?? throw new ProjectNotFoundException(id);
-
-        RAiDCreateRequest request = _projectMapperService.MapProjectCreationRequest(project);
-        RAiDDto dto = await _raidService.MintRaidAsync(request) ??
-            throw new RAiDException("Failed to mint project in RAiD");
-
-        // TODO: Finish this
-    }
-
     /// <summary>
     /// Maps a Project entity to a ProjectDTO
     /// </summary>
@@ -271,8 +282,9 @@ public class ProjectsService
         List<ProjectDescription> descriptions = project.Descriptions;
 
         List<Guid> organisationIds =
-            project.Organisations.Select(o => o.ProjectId).Distinct().ToList();
+            project.Organisations.Select(o => o.OrganisationId).Distinct().ToList();
 
+        var orgs = _context.Organisations.ToList();
         List<Organisation> organisations = _context.Organisations
             .Where(o => organisationIds.Contains(o.Id))
             .ToList();
@@ -290,7 +302,7 @@ public class ProjectsService
             Products = project.Products,
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
-                Roles = project.Organisations.FirstOrDefault(po => po.ProjectId == o.Id)?.Roles ?? throw new
+                Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles ?? throw new
                     OrganisationNotFoundException(o.Id),
                 RORId = o.RORId,
                 Name = o.Name,
@@ -324,4 +336,37 @@ public class ProjectsService
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions)
             .SingleOrDefaultAsync(p => p.Id == projectId);
+
+    /// <summary>
+    /// Generates a CSV formatted string from a collection of data objects,
+    /// where each object's properties are used to populate the CSV rows and columns.
+    /// </summary>
+    /// <typeparam name="T">The type of objects in the data collection to be converted to CSV format.</typeparam>
+    /// <param name="data">The collection of data objects to be serialized to CSV.</param>
+    /// <returns>A CSV formatted string representing the data collection.</returns>
+    private static string GenerateCsv<T>(IEnumerable<T> data)
+    {
+        StringBuilder csv = new();
+        PropertyInfo[] properties = typeof(T).GetProperties();
+
+        // Generate header 
+        csv.AppendLine(string.Join(",", properties.Select(p => p.Name)));
+
+        // Generate rows
+        foreach (T item in data)
+        {
+            IEnumerable<string> values = properties.Select(p =>
+            {
+                string value = p.GetValue(item)?.ToString() ?? string.Empty;
+                // Escape commas and quotes in values
+                if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+                    value = $"\"{value.Replace("\"", "\"\"")}\"";
+                return value;
+            });
+
+            csv.AppendLine(string.Join(",", values));
+        }
+
+        return csv.ToString();
+    }
 }

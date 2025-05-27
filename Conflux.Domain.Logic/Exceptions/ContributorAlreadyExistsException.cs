@@ -3,7 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.Services;
+namespace Conflux.Domain.Logic.Exceptions;
 
 public class ContributorAlreadyExistsException(Guid contributorDtoProjectId, Guid personId)
     : Exception($"Contributor with project ID {contributorDtoProjectId} and person ID {personId} already exists.");

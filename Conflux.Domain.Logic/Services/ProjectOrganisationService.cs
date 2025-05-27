@@ -17,9 +17,9 @@ namespace Conflux.Domain.Logic.Services;
 public class ProjectOrganisationsService : IProjectOrganisationsService
 {
     private readonly ConfluxContext _context;
-    private readonly ProjectsService _projectsService;
+    private readonly IProjectsService _projectsService;
 
-    public ProjectOrganisationsService(ConfluxContext context, ProjectsService projectsService)
+    public ProjectOrganisationsService(ConfluxContext context, IProjectsService projectsService)
     {
         _context = context;
         _projectsService = projectsService;
@@ -189,7 +189,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             },
             Name = organisation.Name,
             RORId = organisation.RORId ?? string.Empty,
-            Roles = updatedRoles.Select(r => r.Role).ToList()
+            Roles = updatedRoles.Select(r => r.Role).ToList(),
         };
     }
 

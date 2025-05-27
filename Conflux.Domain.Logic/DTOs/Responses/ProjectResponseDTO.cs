@@ -21,7 +21,7 @@ public class ProjectResponseDTO
 
     public List<ContributorResponseDTO> Contributors { get; init; } = [];
 
-    public List<Product> Products { get; init; } = [];
+    public List<ProductResponseDTO> Products { get; init; } = [];
 
     public List<ProjectOrganisationResponseDTO> Organisations { get; init; } = [];
 }

@@ -324,7 +324,16 @@ public class ProjectsService
             StartDate = project.StartDate,
             EndDate = project.EndDate,
             Users = project.Users,
-            Products = project.Products,
+            Products = project.Products.ConvertAll(p => new ProductResponseDTO
+            {
+                Id = p.Id,
+                ProjectId = p.ProjectId,
+                Schema = p.Schema,
+                Url = p.Url,
+                Title = p.Title,
+                Type = p.Type,
+                Categories = p.Categories,
+            }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
                 Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles ?? throw new

@@ -15,7 +15,6 @@ public class Product
     /// <summary>
     /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
     /// </summary>
-
     [Key]
     public Guid Id { get; init; }
 

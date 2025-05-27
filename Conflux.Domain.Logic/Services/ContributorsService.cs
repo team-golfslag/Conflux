@@ -118,8 +118,20 @@ public class ContributorsService : IContributorsService
             Person = persons.TryGetValue(c.PersonId, out Person? person)
                 ? person
                 : throw new PersonNotFoundException(c.PersonId),
-            Roles = c.Roles,
-            Positions = c.Positions,
+            Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO
+            {
+                PersonId = c.PersonId,
+                ProjectId = c.ProjectId,
+                RoleType = r.RoleType,
+            }),
+            Positions = c.Positions.ConvertAll(p => new ContributorPositionResponseDTO
+            {
+                PersonId = c.PersonId,
+                ProjectId = c.ProjectId,
+                Position = p.Position,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+            }),
             Leader = c.Leader,
             Contact = c.Contact,
         }).ToList();
@@ -202,8 +214,20 @@ public class ContributorsService : IContributorsService
         {
             Person = person,
             ProjectId = contributor.ProjectId,
-            Roles = contributor.Roles,
-            Positions = contributor.Positions,
+            Roles = contributor.Roles.ConvertAll(r => new ContributorRoleResponseDTO
+            {
+                PersonId = contributor.PersonId,
+                ProjectId = contributor.ProjectId,
+                RoleType = r.RoleType,
+            }),
+            Positions = contributor.Positions.ConvertAll(p => new ContributorPositionResponseDTO
+            {
+                PersonId = contributor.PersonId,
+                ProjectId = contributor.ProjectId,
+                Position = p.Position,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+            }),
             Leader = contributor.Leader,
             Contact = contributor.Contact,
         };

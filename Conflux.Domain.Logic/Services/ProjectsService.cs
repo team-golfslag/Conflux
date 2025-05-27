@@ -338,8 +338,20 @@ public class ProjectsService
                     out Person? person)
                     ? person
                     : throw new PersonNotFoundException(c.PersonId),
-                Roles = c.Roles,
-                Positions = c.Positions,
+                Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO
+                {
+                    PersonId = c.PersonId,
+                    ProjectId = c.ProjectId,
+                    RoleType = r.RoleType,
+                }),
+                Positions = c.Positions.ConvertAll(p => new ContributorPositionResponseDTO
+                {
+                    PersonId = c.PersonId,
+                    ProjectId = c.ProjectId,
+                    Position = p.Position,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                }),
                 Leader = c.Leader,
                 Contact = c.Contact,
                 ProjectId = c.ProjectId,

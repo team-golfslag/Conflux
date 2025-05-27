@@ -100,7 +100,7 @@ public class Program
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))
-            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
+            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>(provider =>
             {
                 IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
                     .GetSection("Authentication:Orcid");
@@ -367,7 +367,9 @@ public class Program
                             Error = exception.Message,
                         });
                         break;
-                    case UnauthorizedAccessException:
+                    case UnauthorizedAccessException
+                        or ProjectAlreadyMintedException
+                        or ProjectNotMintedException:
                         context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -381,19 +383,11 @@ public class Program
                             Error = exception.Message,
                         });
                         break;
-                    case ProjectAlreadyMintedException
-                        or ProjectNotMintedException:
-                        context.Response.StatusCode = 403;
-                        await context.Response.WriteAsJsonAsync(new ErrorResponse
-                        {
-                            Error = exception.Message,
-                        });
-                        break;
                     default:
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            Error = "An unexpected error occurred.",
+                            Error = exception!.Message,
                         });
                         break;
                 }

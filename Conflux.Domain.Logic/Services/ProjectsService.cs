@@ -18,7 +18,7 @@ namespace Conflux.Domain.Logic.Services;
 /// <summary>
 /// The service for <see cref="Project" />.
 /// </summary>
-public class ProjectsService
+public class ProjectsService : IProjectsService
 {
     // Compiled query to get project by ID
     private static readonly Func<ConfluxContext, Guid, Task<Project?>> GetProjectByIdQuery =
@@ -44,46 +44,6 @@ public class ProjectsService
     {
         _context = context;
         _userSessionService = userSessionService;
-    }
-
-    /// <summary>
-    /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
-    /// </summary>
-    /// <returns>A list of projects that the current user has access to</returns>
-    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    private async Task<List<ProjectResponseDTO>> GetAvailableProjects()
-    {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
-            throw new UserNotAuthenticatedException();
-
-        List<string> accessibleSramIds = userSession.Collaborations
-            .Select(c => c.CollaborationGroup.SCIMId)
-            .ToList();
-
-        List<Project> projects = await _context.Projects
-            .AsNoTracking()
-            .Where(p => accessibleSramIds.Contains(p.SCIMId))
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Roles)
-            .Include(p => p.Products)
-            .Include(p => p.Organisations)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Roles)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Positions)
-            .ToListAsync();
-
-        // filter roles per project per user
-        foreach (Project project in projects)
-            foreach (User user in project.Users)
-                user.Roles = user.Roles
-                    .Where(r => r.ProjectId == project.Id)
-                    .ToList();
-
-        return projects.Select(MapToProjectDTO).ToList();
     }
 
     /// <summary>
@@ -258,6 +218,46 @@ public class ProjectsService
     }
 
     /// <summary>
+    /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
+    /// </summary>
+    /// <returns>A list of projects that the current user has access to</returns>
+    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
+    private async Task<List<ProjectResponseDTO>> GetAvailableProjects()
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+
+        List<string> accessibleSramIds = userSession.Collaborations
+            .Select(c => c.CollaborationGroup.SCIMId)
+            .ToList();
+
+        List<Project> projects = await _context.Projects
+            .AsNoTracking()
+            .Where(p => accessibleSramIds.Contains(p.SCIMId))
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .ToListAsync();
+
+        // filter roles per project per user
+        foreach (Project project in projects)
+            foreach (User user in project.Users)
+                user.Roles = user.Roles
+                    .Where(r => r.ProjectId == project.Id)
+                    .ToList();
+
+        return projects.Select(MapToProjectDTO).ToList();
+    }
+
+    /// <summary>
     /// Maps a Project entity to a ProjectDTO
     /// </summary>
     private ProjectResponseDTO MapToProjectDTO(Project project)
@@ -270,20 +270,17 @@ public class ProjectsService
             .Where(p => personIds.Contains(p.Id))
             .ToDictionary(p => p.Id);
 
-        List<ProjectTitle> titles = project.Titles;
-        List<ProjectDescription> descriptions = project.Descriptions;
-
         List<Guid> organisationIds =
             project.Organisations.Select(o => o.OrganisationId).Distinct().ToList();
 
         List<Organisation> organisations = _context.Organisations
             .Where(o => organisationIds.Contains(o.Id))
             .ToList();
-        
+
         return new()
         {
             Id = project.Id,
-            Titles = titles.ConvertAll(t => new ProjectTitleResponseDTO
+            Titles = project.Titles.ConvertAll(t => new ProjectTitleResponseDTO
             {
                 Id = t.Id,
                 ProjectId = t.ProjectId,
@@ -312,7 +309,7 @@ public class ProjectsService
                 Url = p.Url,
                 Title = p.Title,
                 Type = p.Type,
-                Categories = p.Categories.Select(c => c.Type).ToHashSet()
+                Categories = p.Categories.Select(c => c.Type).ToHashSet(),
             }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {

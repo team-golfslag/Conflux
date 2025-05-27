@@ -96,7 +96,7 @@ public class Program
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<IRAiDService, RAiDService>();
         builder.Services.AddScoped<IRaidInfoService, RaidInfoService>();
-        builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IProjectsService, ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))

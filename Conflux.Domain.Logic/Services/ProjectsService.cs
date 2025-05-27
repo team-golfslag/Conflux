@@ -317,6 +317,8 @@ public class ProjectsService
                 },
             Descriptions = project.Descriptions.ConvertAll(d => new ProjectDescriptionResponseDTO
             {
+                Id = d.Id,
+                ProjectId = d.ProjectId,
                 Text = d.Text,
                 Type = d.Type,
                 Language = d.Language,

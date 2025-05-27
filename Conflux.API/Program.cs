@@ -5,11 +5,10 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Conflux.API.Filters;
 using Conflux.Data;
-using Conflux.Domain;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
-using Conflux.Domain.Session;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
@@ -24,6 +23,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
+using ORCID.Net.Services;
 using RAiD.Net;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
@@ -93,7 +93,28 @@ public class Program
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
+        builder.Services.AddScoped<IRAiDService, RAiDService>();
+        builder.Services.AddScoped<IRaidInfoService, RaidInfoService>();
         builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+
+        if (await featureManager.IsEnabledAsync("OrcidIntegration"))
+            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
+            {
+                IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
+                    .GetSection("Authentication:Orcid");
+                string? secret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
+                if (string.IsNullOrEmpty(secret))
+                    throw new InvalidOperationException("ORCID_CLIENT_SECRET not set.");
+                PersonRetrievalServiceOptions options = new(
+                    orcidConfig["Origin"],
+                    orcidConfig["ClientId"],
+                    secret);
+                return new(options);
+            });
+
+        // Register the filter factory with scoped lifetime to match its dependencies
+        builder.Services.AddScoped<AccessControlFilterFactory>();
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
@@ -345,8 +366,23 @@ public class Program
                             Error = exception.Message,
                         });
                         break;
+                    case UnauthorizedAccessException:
+                        context.Response.StatusCode = 403;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
+                        });
+                        break;
                     case UserNotAuthenticatedException:
                         context.Response.StatusCode = 401;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            Error = exception.Message,
+                        });
+                        break;
+                    case ProjectAlreadyMintedException
+                        or ProjectNotMintedException:
+                        context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
                             Error = exception.Message,
@@ -395,9 +431,8 @@ public class Program
         TempProjectRetrieverService retriever = services.GetRequiredService<TempProjectRetrieverService>();
         SeedData seedData = retriever.MapProjectsAsync().Result;
 
-        User devUser = UserSession.Development().User!;
-        if (!await context.Users.AnyAsync(u => u.Id == devUser.Id))
-            context.Users.Add(devUser);
+        await context.Users.AddRangeAsync(seedData.Users);
+        await context.UserRoles.AddRangeAsync(seedData.UserRoles);
         await context.Contributors.AddRangeAsync(seedData.Contributors);
         await context.Products.AddRangeAsync(seedData.Products);
         await context.Organisations.AddRangeAsync(seedData.Organisations);

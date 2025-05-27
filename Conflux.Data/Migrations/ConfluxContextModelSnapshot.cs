@@ -281,6 +281,43 @@ namespace Conflux.Data.Migrations
                     b.ToTable("ProjectTitles");
                 });
 
+            modelBuilder.Entity("Conflux.Domain.RAiDInfo", b =>
+                {
+                    b.Property<Guid>("projectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Dirty")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LatestSync")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long?>("OwnerServicePoint")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RAiDId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "raid_id");
+
+                    b.Property<string>("RegistrationAgencyId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("projectId");
+
+                    b.ToTable("RAiDInfos");
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "raid_info");
+                });
+
             modelBuilder.Entity("Conflux.Domain.SRAMGroupIdConnection", b =>
                 {
                     b.Property<string>("Urn")
@@ -481,36 +518,6 @@ namespace Conflux.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Conflux.Domain.Project", b =>
-                {
-                    b.OwnsOne("Conflux.Domain.RAiDInfo", "RAiDInfo", b1 =>
-                        {
-                            b1.Property<Guid>("ProjectId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<bool>("Dirty")
-                                .HasColumnType("boolean");
-
-                            b1.Property<DateTime?>("LatestSync")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<string>("RAiDId")
-                                .HasColumnType("text")
-                                .HasAnnotation("Relational:JsonPropertyName", "raid_id");
-
-                            b1.HasKey("ProjectId");
-
-                            b1.ToTable("Projects");
-
-                            b1.HasAnnotation("Relational:JsonPropertyName", "raid_info");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProjectId");
-                        });
-
-                    b.Navigation("RAiDInfo");
-                });
-
             modelBuilder.Entity("Conflux.Domain.ProjectDescription", b =>
                 {
                     b.OwnsOne("Conflux.Domain.Language", "Language", b1 =>
@@ -564,6 +571,15 @@ namespace Conflux.Data.Migrations
                         });
 
                     b.Navigation("Language");
+                });
+
+            modelBuilder.Entity("Conflux.Domain.RAiDInfo", b =>
+                {
+                    b.HasOne("Conflux.Domain.Project", null)
+                        .WithOne("RAiDInfo")
+                        .HasForeignKey("Conflux.Domain.RAiDInfo", "projectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ProductProject", b =>
@@ -658,6 +674,8 @@ namespace Conflux.Data.Migrations
                     b.Navigation("Contributors");
 
                     b.Navigation("Organisations");
+
+                    b.Navigation("RAiDInfo");
                 });
 
             modelBuilder.Entity("Conflux.Domain.ProjectOrganisation", b =>

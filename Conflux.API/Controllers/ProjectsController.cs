@@ -4,6 +4,8 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Text;
+using Conflux.API.Attributes;
+using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
@@ -18,9 +20,11 @@ namespace Conflux.API.Controllers;
 /// Represents the controller for querying projects
 /// </summary>
 [Route("projects/")]
+[Authorize]
 [ApiController]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ProjectsController : ControllerBase
 {
@@ -45,7 +49,6 @@ public class ProjectsController : ControllerBase
     /// the query
     /// </param>
     /// <returns>Filtered list of projects</returns>
-    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(List<ProjectResponseDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
@@ -79,7 +82,6 @@ public class ProjectsController : ControllerBase
     /// </summary>
     /// <returns>All projects</returns>
     [HttpGet]
-    [Authorize]
     [Route("all")]
     [ProducesResponseType(typeof(List<ProjectResponseDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetAllProjects()
@@ -94,8 +96,9 @@ public class ProjectsController : ControllerBase
     /// Gets a project by its GUID.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectResponseDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectByIdAsync(id);
@@ -108,13 +111,16 @@ public class ProjectsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{id:guid}")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectResponseDTO>> PutProject([FromRoute] Guid id, ProjectRequestDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
 
     [HttpPost]
     [Route("{id:guid}/sync")]
-    [Authorize]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> SyncProject([FromRoute] Guid id)
     {

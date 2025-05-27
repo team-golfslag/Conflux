@@ -40,14 +40,22 @@ public class ContributorsService : IContributorsService
             RoleType = r,
         });
 
-        contributor.Positions = contributorDTO.Positions.ConvertAll(p => new ContributorPosition
-        {
-            PersonId = personId,
-            ProjectId = projectId,
-            Position = p.Type,
-            StartDate = p.StartDate,
-            EndDate = p.EndDate,
-        });
+        ContributorPosition? currentActivePosition = contributor.Positions
+            .FirstOrDefault(p => p.EndDate == null);
+
+        if (currentActivePosition != null)
+            currentActivePosition.EndDate = DateTime.UtcNow.Date;
+        
+        if (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position)
+            contributor.Positions.Add(new()
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                Position = contributorDTO.Position,
+                StartDate = DateTime.UtcNow.Date,
+                EndDate = null,
+            });
+
 
         contributor.Contact = contributorDTO.Contact;
         contributor.Leader = contributorDTO.Leader;
@@ -134,14 +142,14 @@ public class ContributorsService : IContributorsService
                 ProjectId = projectId,
                 RoleType = r,
             }),
-            Positions = contributorDTO.Positions.ConvertAll(p => new ContributorPosition
+            Positions = [new ContributorPosition
             {
                 PersonId = personId,
                 ProjectId = projectId,
-                Position = p.Type,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-            }),
+                Position = contributorDTO.Position,
+                StartDate = DateTime.UtcNow.Date,
+                EndDate = null,
+            }],
             Leader = contributorDTO.Leader,
             Contact = contributorDTO.Contact,
         };

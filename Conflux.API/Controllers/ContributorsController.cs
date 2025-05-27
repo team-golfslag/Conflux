@@ -3,11 +3,13 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Conflux.API.Controllers;
@@ -16,10 +18,13 @@ namespace Conflux.API.Controllers;
 /// Represents the controller for managing contributors
 /// </summary>
 [ApiController]
+[Authorize]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 [Route("projects/{projectId:guid}/contributors")]
+[RouteParamName("projectId")]
 public class ContributorsController : ControllerBase
 {
     private readonly IContributorsService _contributorsService;
@@ -36,6 +41,7 @@ public class ContributorsController : ControllerBase
     /// <param name="query">Optional: The string to search in the title or description</param>
     /// <returns>Filtered list of contributors</returns>
     [HttpGet]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(List<ContributorResponseDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ContributorResponseDTO>>> GetContributorsByQuery(Guid projectId,
         [FromQuery] string? query) =>
@@ -49,6 +55,7 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpGet]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ContributorResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ContributorResponseDTO>> GetContributorByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid personId) =>
@@ -61,6 +68,7 @@ public class ContributorsController : ControllerBase
     /// <param name="personId">The GUID of the person</param>
     [HttpDelete]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
     public async Task<ActionResult> DeleteContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId)
@@ -85,6 +93,7 @@ public class ContributorsController : ControllerBase
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ContributorResponseDTO), StatusCodes.Status201Created)]
     public async Task<ActionResult<ContributorResponseDTO>> CreateContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId,
@@ -100,6 +109,7 @@ public class ContributorsController : ControllerBase
     /// <returns>The request response</returns>
     [HttpPut]
     [Route("{personId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ContributorResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ContributorResponseDTO>> UpdateContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId,

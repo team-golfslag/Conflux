@@ -29,10 +29,10 @@ namespace Conflux.API.Controllers;
 public class ProjectsController : ControllerBase
 {
     private readonly ISRAMProjectSyncService _iSRAMProjectSyncService;
-    private readonly ProjectsService _projectsService;
+    private readonly IProjectsService _projectsService;
     private readonly IUserSessionService _userSessionService;
 
-    public ProjectsController(ProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
+    public ProjectsController(IProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
         IUserSessionService userSessionService)
     {
         _iSRAMProjectSyncService = iSRAMProjectSyncService;

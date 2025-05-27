@@ -93,8 +93,9 @@ public class ContributorsController : ControllerBase
     /// <param name="contributorDTO">The DTO which to convert to a <see cref="Contributor" /></param>
     /// <returns>The request response</returns>
     [HttpPost]
+    [Route("{personId:guid}")]
     [RequireProjectRole(UserRoleType.Admin)]
-    [ProducesResponseType(typeof(ContributorResponseDTO), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ContributorResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ContributorResponseDTO>> CreateContributor([FromRoute] Guid projectId,
         [FromRoute] Guid personId,
         [FromBody] ContributorRequestDTO contributorDTO) =>

@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Conflux.Domain;
+using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Xunit;
 
@@ -123,5 +124,28 @@ public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
         Project[]? projects = await response.Content.ReadFromJsonAsync<Project[]>(JsonOptions);
         Assert.NotNull(projects);
         Assert.Empty(projects);
+    }
+
+    [Fact]
+    public async Task ExportProjectsToCsv_ReturnsCsvFile()
+    {
+        // Arrange
+        ProjectQueryDTO queryDto = new()
+        {
+            Query = "Test",
+            StartDate = DateTime.UtcNow.AddDays(-30),
+            EndDate = DateTime.UtcNow.AddDays(30),
+        };
+
+        // Act
+        HttpResponseMessage response = await _client.GetAsync(
+            $"/projects/export?query={queryDto.Query}&start_date={queryDto.StartDate:yyyy-MM-ddTHH:mm:ssZ}&end_date={queryDto.EndDate:yyyy-MM-ddTHH:mm:ssZ}");
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        string csvContent = await response.Content.ReadAsStringAsync();
+        Assert.NotNull(csvContent);
+        Assert.NotEmpty(csvContent);
+        Assert.Contains("Id", csvContent); // Check if CSV contains header
     }
 }

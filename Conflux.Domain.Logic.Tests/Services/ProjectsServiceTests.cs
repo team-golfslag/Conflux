@@ -4,12 +4,15 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
+using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
 using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using RAiD.Net;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -21,8 +24,9 @@ public class ProjectsServiceTests : IAsyncLifetime
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private readonly IProjectMapperService _projectMapperService = null!;
     private readonly IRAiDService _raidService = null!;
+    private readonly Mock<IUserSessionService> _userSessionServiceMock = new();
     private ConfluxContext _context = null!;
-    private UserSessionService _userSessionService = null!;
+    private ProjectsService _service;
 
     public async Task InitializeAsync()
     {
@@ -34,7 +38,9 @@ public class ProjectsServiceTests : IAsyncLifetime
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
-        _userSessionService = new(null!, null!, null!, null!);
+        _userSessionServiceMock.Setup(s => s.GetUser())
+            .ReturnsAsync(UserSession.Development);
+        _service = new(_context, _userSessionServiceMock.Object, _projectMapperService, _raidService);
     }
 
     public async Task DisposeAsync()
@@ -50,16 +56,103 @@ public class ProjectsServiceTests : IAsyncLifetime
     [Fact]
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
-        // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
         // Act & Assert
-        await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
+        await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await _service.PutProjectAsync(Guid.NewGuid(),
             new()
             {
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
             }));
+    }
+
+    [Fact]
+    public async Task ExportProjectsToCsvAsync_ShouldReturnCsvContent()
+    {
+        // Arrange
+        // insert a test person
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "Test User",
+        };
+
+        // insert a test organisation
+        Guid organisationId = Guid.NewGuid();
+        Organisation organisation = new()
+        {
+            Id = organisationId,
+            RORId = "https://ror.org/00x00x00",
+            Name = "Test Organisation",
+        };
+
+        // Insert a test project
+        Guid projectId = Guid.NewGuid();
+        Project project1 = new()
+        {
+            Id = projectId,
+            SCIMId = "SCIM",
+            Titles =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+            StartDate = DateTime.UtcNow, 
+            EndDate = DateTime.UtcNow.AddDays(1),
+            Organisations =
+            [
+                new()
+                {
+                    OrganisationId = organisationId,
+                    ProjectId = projectId,
+                },
+            ],
+            Contributors =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                },
+            ],
+            Products = [
+            new()
+            {
+               Id = Guid.NewGuid(),
+               Title = "Test Product",
+               Url = "https://example.com/product",
+               Type = ProductType.Software,
+            }],
+        };
+
+        _context.People.Add(person);
+        _context.Organisations.Add(organisation);
+        _context.Projects.Add(project1);
+        await _context.SaveChangesAsync();
+
+        ProjectQueryDTO queryDto = new()
+        {
+            Query = "Test",
+            // StartDate = DateTime.UtcNow.AddDays(-30),
+            // EndDate = DateTime.UtcNow.AddDays(30),
+        };
+
+        // Act
+        string csvContent = await _service.ExportProjectsToCsvAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(csvContent);
+        Assert.NotEmpty(csvContent);
+        Assert.Contains("Id", csvContent);
+        Assert.Contains(projectId.ToString(), csvContent);
+        Assert.Contains("Test User", csvContent);
+        Assert.Contains("Test Organisation", csvContent);
+        Assert.Contains("Test Product", csvContent);
     }
 
     /// <summary>
@@ -71,8 +164,6 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
         Guid projectId = Guid.NewGuid();
 
         // Insert a test project
@@ -126,7 +217,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         };
 
         // Act
-        ProjectResponseDTO updatedProject = await service.PutProjectAsync(originalProject.Id, putRequestDTO);
+        ProjectResponseDTO updatedProject = await _service.PutProjectAsync(originalProject.Id, putRequestDTO);
 
         // Assert
         Assert.NotNull(updatedProject);

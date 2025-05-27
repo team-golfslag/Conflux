@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Text;
 using Conflux.API.Attributes;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Queries;
@@ -53,6 +54,28 @@ public class ProjectsController : ControllerBase
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
+
+    /// <summary>
+    /// Exports projects as a CSV file based on the provided query parameters and returns it as a downloadable file.
+    /// </summary>
+    /// <param name="projectQueryDto">
+    /// The <see cref="ProjectQueryDTO" /> containing the query term and optional filters for
+    /// exporting projects to CSV.
+    /// </param>
+    /// <returns>CSV file containing the exported projects.</returns>
+    [Authorize]
+    [HttpGet]
+    [Route("export")]
+    public async Task<ActionResult> ExportToCsv([FromQuery] ProjectQueryDTO projectQueryDto)
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            return Unauthorized();
+
+        string csv = await _projectsService.ExportProjectsToCsvAsync(projectQueryDto);
+        string fileName = $"projects_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        return File(Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+    }
 
     /// <summary>
     /// Gets all projects

@@ -296,8 +296,8 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Assert
         Assert.NotNull(updatedContributor);
         Assert.Equal(2, updatedContributor.Roles.Count);
-        Assert.Single(updatedContributor.Positions);
-        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[0].Position);
+        Assert.Equal(2, updatedContributor.Positions.Count);
+        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[1].Position);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Conceptualization);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Methodology);
     }

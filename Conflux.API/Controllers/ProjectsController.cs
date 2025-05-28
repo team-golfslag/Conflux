@@ -31,13 +31,15 @@ public class ProjectsController : ControllerBase
     private readonly ISRAMProjectSyncService _iSRAMProjectSyncService;
     private readonly IProjectsService _projectsService;
     private readonly IUserSessionService _userSessionService;
+    private readonly ITimelineService _timelineService;
 
     public ProjectsController(IProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
-        IUserSessionService userSessionService)
+        IUserSessionService userSessionService, ITimelineService timelineService)
     {
         _iSRAMProjectSyncService = iSRAMProjectSyncService;
         _projectsService = projectsService;
         _userSessionService = userSessionService;
+        _timelineService = timelineService;
     }
 
     /// <summary>
@@ -54,6 +56,26 @@ public class ProjectsController : ControllerBase
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
+    
+    /// <summary>
+    /// Gets the timeline items for a specific project by its GUID.
+    /// </summary>
+    /// <param name="id">The GUID of the project.</param>
+    /// <returns>
+    /// A list of <see cref="TimelineItemResponseDTO"/> representing the timeline items for the project.
+    /// </returns>
+    [HttpGet]
+    [Route("timeline")]
+    [ProducesResponseType(typeof(List<TimelineItemResponseDTO>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<TimelineItemResponseDTO>>> GetProjectTimeline([FromQuery] Guid id)
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            return Unauthorized();
+
+        return await _timelineService.GetTimelineItemsAsync(id);
+    }
+    
 
     /// <summary>
     /// Exports projects as a CSV file based on the provided query parameters and returns it as a downloadable file.
@@ -102,7 +124,7 @@ public class ProjectsController : ControllerBase
     [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectResponseDTO>> GetProjectById([FromRoute] Guid id) =>
-        await _projectsService.GetProjectByIdAsync(id);
+        await _projectsService.GetProjectDTOByIdAsync(id);
 
     /// <summary>
     /// Puts a project by its GUID

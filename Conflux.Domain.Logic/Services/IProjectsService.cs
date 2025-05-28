@@ -13,7 +13,8 @@ public interface IProjectsService
 {
     public Task<List<UserRole>?> GetRolesFromProject(Project project);
 
-    public Task<ProjectResponseDTO> GetProjectByIdAsync(Guid id);
+    public Task<ProjectResponseDTO> GetProjectDTOByIdAsync(Guid id);
+    public Task<Project> GetProjectByIdAsync(Guid id);
 
     public Task<List<ProjectResponseDTO>> GetProjectsByQueryAsync(ProjectQueryDTO dto);
 

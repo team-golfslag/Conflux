@@ -40,24 +40,21 @@ public class ContributorsService : IContributorsService
             RoleType = r,
         });
 
-        if (contributorDTO.Position.HasValue)
-        {
-            ContributorPosition? currentActivePosition = contributor.Positions
-                .FirstOrDefault(p => p.EndDate == null);
+        ContributorPosition? currentActivePosition = contributor.Positions
+            .FirstOrDefault(p => p.EndDate == null);
 
-            if (currentActivePosition != null)
-                currentActivePosition.EndDate = DateTime.UtcNow.Date;
+        if (currentActivePosition != null)
+            currentActivePosition.EndDate = DateTime.UtcNow.Date;
 
-            if (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position)
-                contributor.Positions.Add(new()
-                {
-                    PersonId = personId,
-                    ProjectId = projectId,
-                    Position = contributorDTO.Position.Value,
-                    StartDate = DateTime.UtcNow.Date,
-                    EndDate = null,
-                });
-        }
+        if (contributorDTO.Position.HasValue && (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position))
+            contributor.Positions.Add(new()
+            {
+                PersonId = personId,
+                ProjectId = projectId,
+                Position = contributorDTO.Position.Value,
+                StartDate = DateTime.UtcNow.Date,
+                EndDate = null,
+            });
 
         contributor.Contact = contributorDTO.Contact;
         contributor.Leader = contributorDTO.Leader;

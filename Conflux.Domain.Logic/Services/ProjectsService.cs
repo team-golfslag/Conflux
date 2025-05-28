@@ -32,6 +32,8 @@ public class ProjectsService : IProjectsService
                 .Include(p => p.Products)
                 .Include(p => p.Organisations)
                 .Include(p => p.Contributors)
+                .ThenInclude(c => c.Person)
+                .Include(p => p.Contributors)
                 .ThenInclude(c => c.Roles)
                 .Include(p => p.Contributors)
                 .ThenInclude(c => c.Positions)
@@ -77,7 +79,21 @@ public class ProjectsService : IProjectsService
     /// <param name="id">The GUID of the project</param>
     /// <returns>The project DTO</returns>
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
-    public async Task<ProjectResponseDTO> GetProjectByIdAsync(Guid id)
+    public async Task<ProjectResponseDTO> GetProjectDTOByIdAsync(Guid id)
+    {
+        Project project = await GetProjectByIdAsync(id)
+            ?? throw new ProjectNotFoundException(id);
+
+        return MapToProjectDTO(project);
+    }
+    
+    /// <summary>
+    /// Gets a project by its GUID.
+    /// </summary>
+    /// <param name="id">The GUID of the project</param>
+    /// <returns>The project DTO</returns>
+    /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
+    public async Task<Project> GetProjectByIdAsync(Guid id)
     {
         Project project = await GetProjectByIdQuery(_context, id)
             ?? throw new ProjectNotFoundException(id);
@@ -97,7 +113,7 @@ public class ProjectsService : IProjectsService
         if (!accessibleSramIds.Contains(project.SCIMId))
             throw new ProjectNotFoundException(id);
 
-        return MapToProjectDTO(project);
+        return project;
     }
 
     /// <summary>

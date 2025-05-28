@@ -34,9 +34,9 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Create a mock for an interface instead of the concrete class
         _projectsServiceMock = new();
 
-        // Setup the mock to return a project response when GetProjectByIdAsync is called
+        // Setup the mock to return a project response when GetProjectDTOByIdAsync is called
         _projectsServiceMock
-            .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
+            .Setup(m => m.GetProjectDTOByIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new ProjectResponseDTO
             {
                 Id = Guid.NewGuid(),
@@ -150,7 +150,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             StartDate = DateTime.UtcNow,
             EndDate = null,
         };
-        _projectsServiceMock.Setup(p => p.GetProjectByIdAsync(projectId))
+        _projectsServiceMock.Setup(p => p.GetProjectDTOByIdAsync(projectId))
             .ReturnsAsync(projectResponseDTO);
 
         // Act
@@ -215,7 +215,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             StartDate = DateTime.UtcNow,
             EndDate = null,
         };
-        _projectsServiceMock.Setup(p => p.GetProjectByIdAsync(projectId))
+        _projectsServiceMock.Setup(p => p.GetProjectDTOByIdAsync(projectId))
             .ReturnsAsync(projectResponseDTO);
 
         // Act

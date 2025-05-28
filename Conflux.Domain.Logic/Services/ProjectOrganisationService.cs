@@ -44,7 +44,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             .ToDictionaryAsync(o => o.Id);
 
         // Get project for consistent loading
-        ProjectResponseDTO project = await _projectsService.GetProjectByIdAsync(projectId);
+        ProjectResponseDTO project = await _projectsService.GetProjectDTOByIdAsync(projectId);
 
         return projectOrganisations.Select(po =>
         {
@@ -81,7 +81,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectByIdAsync(projectId),
+            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
             Organisation = new()
             {
                 Id = organisation.Id,
@@ -137,7 +137,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectByIdAsync(projectId),
+            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
             Organisation = new()
             {
                 Id = organisation.Id,
@@ -180,7 +180,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectByIdAsync(projectId),
+            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
             Organisation = new()
             {
                 Id = organisation.Id,

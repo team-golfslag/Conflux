@@ -20,7 +20,6 @@ public interface IConfluxContext
     DbSet<ContributorRole> ContributorRoles { get; }
     DbSet<ContributorPosition> ContributorPositions { get; }
     DbSet<Product> Products { get; }
-    DbSet<ProductCategory> ProductCategories { get; }
     DbSet<Project> Projects { get; }
     DbSet<ProjectTitle> ProjectTitles { get; }
     DbSet<Organisation> Organisations { get; }

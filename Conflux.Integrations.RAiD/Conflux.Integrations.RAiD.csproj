@@ -15,4 +15,10 @@
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Reference Include="Conflux.Domain.Logic">
+            <HintPath>..\Conflux.API.Tests\bin\Debug\net9.0\Conflux.Domain.Logic.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
 </Project>

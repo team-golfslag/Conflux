@@ -4,8 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Domain;
-using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,7 +53,7 @@ public class PeopleController : ControllerBase
     /// <returns>The created person</returns>
     [HttpPost]
     [ProducesResponseType(typeof(Person), StatusCodes.Status201Created)]
-    public async Task<ActionResult<Person>> CreatePerson([FromBody] PersonDTO personDTO)
+    public async Task<ActionResult<Person>> CreatePerson([FromBody] PersonRequestDTO personDTO)
     {
         Person person = await _peopleService.CreatePersonAsync(personDTO);
         return CreatedAtAction(nameof(GetPersonById), new
@@ -71,20 +70,8 @@ public class PeopleController : ControllerBase
     /// <returns>The updated person</returns>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(Person), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Person>> UpdatePerson([FromRoute] Guid id, [FromBody] PersonDTO personDTO) =>
+    public async Task<ActionResult<Person>> UpdatePerson([FromRoute] Guid id, [FromBody] PersonRequestDTO personDTO) =>
         await _peopleService.UpdatePersonAsync(id, personDTO);
-
-    /// <summary>
-    /// Updates a person via PATCH
-    /// </summary>
-    /// <param name="id">The GUID of the person</param>
-    /// <param name="personPatchDTO">The partial person data to update</param>
-    /// <returns>The updated person</returns>
-    [HttpPatch("{id:guid}")]
-    [ProducesResponseType(typeof(Person), StatusCodes.Status200OK)]
-    public async Task<ActionResult<Person>>
-        PatchPerson([FromRoute] Guid id, [FromBody] PersonPatchDTO personPatchDTO) =>
-        await _peopleService.PatchPersonAsync(id, personPatchDTO);
 
     /// <summary>
     /// Deletes a person

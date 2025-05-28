@@ -35,13 +35,11 @@ public enum ContributorRoleType
 [PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(RoleType))]
 public class ContributorRole
 {
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 0)]
     public required Guid PersonId { get; init; }
-
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 1)]
+    
     public required Guid ProjectId { get; init; }
+    
+    public Contributor? Contributor { get; init; }
 
     [Key] public required ContributorRoleType RoleType { get; init; }
 

@@ -15,9 +15,9 @@ public class Project
 {
     [Key] public Guid Id { get; init; }
 
-    [JsonPropertyName("scim_id")] public string? SCIMId { get; set; }
+    [JsonPropertyName("scim_id")] public string? SCIMId { get; init; }
 
-    [JsonPropertyName("raid_info")] public RAiDInfo? RAiDInfo { get; init; }
+    [JsonPropertyName("raid_info")] public RAiDInfo? RAiDInfo { get; set; }
 
     public DateTime StartDate { get; set; }
 
@@ -29,7 +29,7 @@ public class Project
 
     public List<Product> Products { get; set; } = [];
 
-    public List<Organisation> Organisations { get; set; } = [];
+    public List<ProjectOrganisation> Organisations { get; set; } = [];
 
     public List<ProjectTitle> Titles { get; set; } = [];
 

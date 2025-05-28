@@ -9,6 +9,7 @@ using Conflux.API.Controllers;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -482,7 +483,7 @@ public class OrcidControllerTests
             ORCiD = ExampleOrcid
         };
         
-        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()))
+        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()))
             .ReturnsAsync(newPerson);
 
         // Act
@@ -552,7 +553,7 @@ public class OrcidControllerTests
             FamilyName = "Doe",
             ORCiD = ExampleOrcid
         };
-        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()))
+        _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()))
             .ReturnsAsync(newPerson);
 
         // Act
@@ -563,7 +564,7 @@ public class OrcidControllerTests
         Assert.Equal(newPerson, actionResult.Value);
         Assert.Equal(ExampleOrcid, actionResult.Value!.ORCiD);
         Assert.Equal("John Doe", actionResult.Value.Name);
-        _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonDTO>()), Times.Once);
+        _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()), Times.Once);
     }
 
     // --- OrcidUnlink Tests ---

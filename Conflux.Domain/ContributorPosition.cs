@@ -23,13 +23,11 @@ public enum ContributorPositionType
 [PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(Position))]
 public class ContributorPosition
 {
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 0)]
     public required Guid PersonId { get; init; }
-
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 1)]
+    
     public required Guid ProjectId { get; init; }
+    
+    public Contributor? Contributor { get; init; }
 
     public required ContributorPositionType Position { get; init; }
     public string SchemaUri => "https://vocabulary.raid.org/contributor.position.schema/305";

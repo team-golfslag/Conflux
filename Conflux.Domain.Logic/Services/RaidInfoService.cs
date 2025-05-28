@@ -17,9 +17,10 @@ public class RaidInfoService : IRaidInfoService
 {
     private readonly ConfluxContext _context;
     private readonly IProjectMapperService _projectMapperService;
-    private readonly IRAiDService _raidService;
+    private readonly IRAiDService? _raidService;
 
-    public RaidInfoService(ConfluxContext context, IRAiDService raidService, IProjectMapperService projectMapperService)
+    public RaidInfoService(ConfluxContext context, IRAiDService? raidService,
+        IProjectMapperService projectMapperService)
     {
         _context = context;
         _raidService = raidService;
@@ -47,6 +48,9 @@ public class RaidInfoService : IRaidInfoService
 
     public async Task<RAiDInfoResponseDTO> MintRAiDAsync(Guid projectId)
     {
+        if (_raidService == null)
+            throw new RAiDDisabledException();
+
         await VerifyProjectExists(projectId);
 
         RAiDInfo? raidInfo = await GetEntityAsync(projectId);
@@ -71,6 +75,9 @@ public class RaidInfoService : IRaidInfoService
 
     public async Task<RAiDInfoResponseDTO> SyncRAiDAsync(Guid projectId)
     {
+        if (_raidService == null)
+            throw new RAiDDisabledException();
+        
         await VerifyProjectExists(projectId);
 
         RAiDInfo? info = await GetEntityAsync(projectId);
@@ -94,7 +101,7 @@ public class RaidInfoService : IRaidInfoService
 
     private static (string, string) GetRAiDPartsFromId(string raidId)
     {
-        // We parse a string of the form
+        // We parse a string of the form "https://raid.org/10.25.10.1234/a1b2c"
         string[] parts = raidId.Split('/');
         int n = parts.Length;
         if (parts.Last().Length == 0)

@@ -7,8 +7,8 @@ namespace Conflux.Domain.Logic.DTOs.Requests;
 
 public class ProductRequestDTO
 {
-    public ProductSchema? Schema { get; init; }
-    public string? Url { get; init; }
+    public required ProductSchema Schema { get; init; }
+    public required string Url { get; init; }
     public required string Title { get; init; }
     public required ProductType Type { get; init; }
     public List<ProductCategoryType> Categories { get; init; } = [];

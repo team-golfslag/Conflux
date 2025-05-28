@@ -94,6 +94,8 @@ public class Program
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
+        builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IProductsService, ProductsService>();
         builder.Services.AddScoped<IRAiDService, RAiDService>();
         builder.Services.AddScoped<IRaidInfoService, RaidInfoService>();
         builder.Services.AddScoped<IProjectsService, ProjectsService>();
@@ -352,6 +354,7 @@ public class Program
                         or ProjectDescriptionNotFoundException
                         or ProjectTitleNotFoundException
                         or ContributorNotFoundException
+                        or ProductNotFoundException
                         or PersonNotFoundException
                         or OrganisationNotFoundException
                         or ProjectOrganisationNotFoundException:
@@ -389,7 +392,7 @@ public class Program
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
-                            Error = exception!.Message,
+                            Error = "An unexpected error occurred.",
                         });
                         break;
                 }

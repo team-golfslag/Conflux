@@ -309,7 +309,7 @@ public class ProjectsService : IProjectsService
                 Url = p.Url,
                 Title = p.Title,
                 Type = p.Type,
-                Categories = p.Categories.Select(c => c.Type).ToHashSet(),
+                Categories = p.Categories,
             }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
@@ -360,7 +360,6 @@ public class ProjectsService : IProjectsService
             .Include(p => p.Organisations)
             .ThenInclude(o => o.Roles)
             .Include(p => p.Products)
-            .ThenInclude(p => p.Categories)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
             .Include(p => p.Contributors)

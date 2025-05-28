@@ -5,6 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain;
+using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using RAiD.Net.Domain;
 
@@ -143,7 +144,7 @@ public class ProjectMapperService : IProjectMapperService
                 ObjectId = c.PersonId,
             }));
 
-        // Constraints: contributors must have one and only one position at any given time (contributors may also be flagged as a ‘leader’ or ‘contact’ separately)
+        // Constraints: contributors must have one and only one position at any given time (contributors may also be flagged as a 'leader' or 'contact' separately)
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-position
         incompatibilities.AddRange(project.Contributors
             .Where(c =>
@@ -190,7 +191,7 @@ public class ProjectMapperService : IProjectMapperService
                 Type = RAiDIncompatibilityType.NoProjectContact,
             });
 
-        // Note: An organisation’s role may change over time, but each organisation may have one and only one role at any given time.
+        // Note: An organisation's role may change over time, but each organisation may have one and only one role at any given time.
         // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role
         incompatibilities.AddRange(project.Organisations
             .Where(c =>
@@ -221,7 +222,7 @@ public class ProjectMapperService : IProjectMapperService
                 ObjectId = o.OrganisationId,
             }));
 
-        // Constraints: one (and only one) Organisation must be designated as ‘Lead Research Organisation’
+        // Constraints: one (and only one) Organisation must be designated as 'Lead Research Organisation'
         // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role-id
         List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
                 o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
@@ -255,12 +256,11 @@ public class ProjectMapperService : IProjectMapperService
                 last = leadOrganisationsRole.EndDate;
             }
 
-            if (last != null)
-                if (last != project.EndDate)
-                    incompatibilities.Add(new()
-                    {
-                        Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
-                    });
+            if (last != null && last != project.EndDate)
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                });
         }
 
         incompatibilities.AddRange(project.Products
@@ -271,28 +271,7 @@ public class ProjectMapperService : IProjectMapperService
                 ObjectId = p.Id,
             }));
 
-
         return incompatibilities;
-    }
-
-    private async Task<Project> GetProject(Guid projectId)
-    {
-        Project? project = await _context.Projects.Where(p => p.Id == projectId)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Positions)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Roles)
-            .Include(p => p.Descriptions)
-            .Include(p => p.Titles)
-            .Include(p => p.Organisations)
-            .Include(p => p.Products)
-            .Include(p => p.RAiDInfo)
-            .FirstOrDefaultAsync();
-
-        if (project == null)
-            throw new($"Project with id {projectId} does not exist.");
-
-        return project;
     }
 
     public async Task<RAiDUpdateRequest> MapProjectUpdateRequest(Guid projectId)
@@ -337,6 +316,26 @@ public class ProjectMapperService : IProjectMapperService
             ],
             SpatialCoverage = null, // Not implemented for now
         };
+    }
+
+    private async Task<Project> GetProject(Guid projectId)
+    {
+        Project? project = await _context.Projects.Where(p => p.Id == projectId)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Titles)
+            .Include(p => p.Organisations)
+            .Include(p => p.Products)
+            .Include(p => p.RAiDInfo)
+            .FirstOrDefaultAsync();
+
+        if (project == null)
+            throw new ProjectNotFoundException(projectId);
+
+        return project;
     }
 
     private static RAiDId MapRAiDInfo(RAiDInfo raidInfo) =>
@@ -460,12 +459,12 @@ public class ProjectMapperService : IProjectMapperService
             Type = new()
             {
                 Id = product.GetTypeUri,
-                SchemaUri = product.TypeSchemaUri,
+                SchemaUri = Product.TypeSchemaUri,
             },
             Category = product.Categories.ToList().ConvertAll(p => new RAiDRelatedObjectCategory
             {
-                Id = p.GetUri,
-                SchemaUri = p.SchemaUri,
+                Id = Product.GetCategoryUri(p),
+                SchemaUri = Product.CategorySchemaUri,
             }),
         };
 }

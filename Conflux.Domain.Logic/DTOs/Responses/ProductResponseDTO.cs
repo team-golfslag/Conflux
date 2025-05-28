@@ -7,9 +7,8 @@ namespace Conflux.Domain.Logic.DTOs.Responses;
 
 public class ProductResponseDTO
 {
-    public Guid Id { get; init; }
-
     public Guid ProjectId { get; init; }
+    public Guid Id { get; init; }
 
     public ProductSchema Schema { get; init; }
 
@@ -19,5 +18,5 @@ public class ProductResponseDTO
 
     public required ProductType Type { get; init; }
 
-    public HashSet<ProductCategoryType> Categories { get; init; } = [];
+    public List<ProductCategoryType> Categories { get; init; } = [];
 }

@@ -123,10 +123,7 @@ public static class NwOpenMapper
     /// <param name="product">The NWOpen product to map</param>
     private static void MapProduct(Project project, NwOpenProduct product)
     {
-        if (string.IsNullOrEmpty(product.UrlOpenAccess))
-        {
-            return;
-        }
+        if (string.IsNullOrEmpty(product.UrlOpenAccess)) return;
         List<Product> products = Products.Where(p => p.Url == product.UrlOpenAccess).ToList();
         if (products.Count != 0)
         {
@@ -145,11 +142,7 @@ public static class NwOpenMapper
             Type = ProductType.DataPaper,
             Categories =
             [
-                new()
-                {
-                    ProductId = productId,
-                    Type = ProductCategoryType.Input,
-                },
+                ProductCategoryType.Input,
             ],
         };
 

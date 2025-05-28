@@ -12,11 +12,7 @@ namespace Conflux.Domain;
 /// </summary>
 public class Product
 {
-    /// <summary>
-    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
-    /// </summary>
-    [Key]
-    public Guid Id { get; init; }
+    [Key] public Guid Id { get; init; }
 
     public Guid ProjectId { get; init; }
     public Project? Project { get; init; }
@@ -28,8 +24,12 @@ public class Product
 
     public required string Title { get; set; }
 
-    public required ProductType Type { get; init; }
-    public string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
+    public required ProductType Type { get; set; }
+
+    /// <summary>
+    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
+    /// </summary>
+    public static string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
 
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>
     public string GetTypeUri => $"https://vocabulary.raid.org/relatedObject.type.schema/{(int)Type}";
@@ -46,5 +46,9 @@ public class Product
             _                     => throw new ArgumentOutOfRangeException(),
         };
 
-    public HashSet<ProductCategory> Categories { get; set; } = [];
+    public List<ProductCategoryType> Categories { get; set; } = [];
+    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
+
+    public static string GetCategoryUri(ProductCategoryType t) =>
+        $"https://vocabulary.raid.org/relatedObject.category.schema/{(int)t}";
 }

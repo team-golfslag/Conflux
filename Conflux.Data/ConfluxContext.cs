@@ -6,6 +6,7 @@
 using Conflux.Domain;
 using Conflux.Domain.Session;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Conflux.Data;
 
@@ -35,7 +36,6 @@ public class ConfluxContext : DbContext, IConfluxContext
     public DbSet<ContributorRole> ContributorRoles { get; set; }
     public DbSet<ContributorPosition> ContributorPositions { get; set; }
     public DbSet<Product> Products { get; set; }
-    public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<ProjectTitle> ProjectTitles { get; set; }
     public DbSet<Organisation> Organisations { get; set; }
@@ -76,7 +76,7 @@ public class ConfluxContext : DbContext, IConfluxContext
         modelBuilder.Entity<Project>() //TODO: make this better
             .HasMany(p => p.Users)
             .WithMany();
-        
+
         modelBuilder.Entity<Person>()
             .HasMany(p => p.Contributors)
             .WithOne(c => c.Person)
@@ -109,13 +109,21 @@ public class ConfluxContext : DbContext, IConfluxContext
             .HasMany(o => o.Projects)
             .WithOne(p => p.Organisation)
             .HasForeignKey(p => p.OrganisationId);
-        modelBuilder.Entity<Product>()
-            .HasMany(p => p.Categories)
-            .WithOne(c => c.Product)
-            .HasForeignKey(c => c.ProductId);
         modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();
+
+        // Configuration for Product.Categories
+        modelBuilder.Entity<Product>(entity =>
+        {
+            // For PostgreSQL, Npgsql can map List<ProductCategoryType> to an integer[] column.
+            // However, providing a ValueComparer is still needed for correct change tracking.
+            entity.Property(p => p.Categories)
+                .Metadata.SetValueComparer(new ValueComparer<List<ProductCategoryType>>(
+                    (c1, c2) => c1 == null && c2 == null || c1 != null && c2 != null && c1.SequenceEqual(c2),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToList()));
+        });
 
         base.OnModelCreating(modelBuilder);
     }

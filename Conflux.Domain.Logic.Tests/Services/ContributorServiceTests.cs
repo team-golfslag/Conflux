@@ -267,7 +267,7 @@ public class ContributorsServiceTests : IAsyncLifetime
                     ProjectId = projectId,
                     Position = ContributorPositionType.CoInvestigator,
                     StartDate = DateTime.UtcNow,
-                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    EndDate = null,
                 },
             ],
             Leader = true,
@@ -297,7 +297,8 @@ public class ContributorsServiceTests : IAsyncLifetime
         Assert.NotNull(updatedContributor);
         Assert.Equal(2, updatedContributor.Roles.Count);
         Assert.Equal(2, updatedContributor.Positions.Count);
-        Assert.Equal(ContributorPositionType.Consultant, updatedContributor.Positions[1].Position);
+        Assert.Contains(updatedContributor.Positions, p => p.Position == ContributorPositionType.CoInvestigator);
+        Assert.Contains(updatedContributor.Positions, p => p.Position == ContributorPositionType.Consultant);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Conceptualization);
         Assert.Contains(updatedContributor.Roles, r => r.RoleType == ContributorRoleType.Methodology);
     }

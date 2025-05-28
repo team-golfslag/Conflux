@@ -15,13 +15,10 @@ public interface IProjectTitlesService
 
     Task<ProjectTitleResponseDTO?> GetCurrentTitleByTitleType(Guid projectId, TitleType titleType);
 
-    Task<List<ProjectTitleResponseDTO>> CreateTitleAsync(Guid projectId,
+    Task<List<ProjectTitleResponseDTO>> UpdateTitleAsync(Guid projectId,
         ProjectTitleRequestDTO titleDTO);
 
     Task<ProjectTitleResponseDTO> EndTitleAsync(Guid projectId, Guid titleId);
-
-    Task<ProjectTitleResponseDTO> UpdateTitleAsync(Guid projectId, Guid titleId,
-        ProjectTitleRequestDTO titleDTO);
 
     Task DeleteTitleAsync(Guid projectId, Guid titleId);
 }

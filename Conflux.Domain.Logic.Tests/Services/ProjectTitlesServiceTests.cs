@@ -144,7 +144,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
             Type = TitleType.Acronym,
         };
 
-        List<ProjectTitleResponseDTO> response = await _service.CreateTitleAsync(project.Id, dto);
+        List<ProjectTitleResponseDTO> response = await _service.UpdateTitleAsync(project.Id, dto);
 
         Assert.Equal(6, response.Count);
         foreach (ProjectTitle originalTitle in project.Titles)

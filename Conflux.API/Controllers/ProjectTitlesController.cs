@@ -47,11 +47,10 @@ public class ProjectTitlesController : ControllerBase
         await _titlesService.GetTitleByIdAsync(projectId, titleId);
 
     [HttpPost]
-    [Route("")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ProjectTitleResponseDTO>>> CreateTitle([FromRoute] Guid projectId,
+    public async Task<ActionResult<List<ProjectTitleResponseDTO>>> UpdateTitle([FromRoute] Guid projectId,
         [FromBody] ProjectTitleRequestDTO titleDTO) =>
-        await _titlesService.CreateTitleAsync(projectId, titleDTO);
+        await _titlesService.UpdateTitleAsync(projectId, titleDTO);
 
     [HttpPost]
     [Route("{titleId:guid}/end")]
@@ -59,13 +58,7 @@ public class ProjectTitlesController : ControllerBase
     public async Task<ActionResult<ProjectTitleResponseDTO>> EndTitle([FromRoute] Guid projectId,
         [FromRoute] Guid titleId) =>
         await _titlesService.EndTitleAsync(projectId, titleId);
-
-    [HttpPut]
-    [Route("{titleId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProjectTitleResponseDTO>> UpdateTitle([FromRoute] Guid projectId,
-        [FromRoute] Guid titleId, [FromBody] ProjectTitleRequestDTO titleDTO) =>
-        await _titlesService.UpdateTitleAsync(projectId, titleId, titleDTO);
+    
 
     [HttpDelete]
     [Route("{titleId:guid}")]

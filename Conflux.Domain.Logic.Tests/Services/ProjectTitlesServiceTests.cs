@@ -262,4 +262,153 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
         _context.ChangeTracker.Clear();
         return project;
     }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldThrow_WhenProjectDoesNotExist()
+    {
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = "New Title",
+            Language = new()
+            {
+                Id = "eng",
+            },
+            Type = TitleType.Primary,
+        };
+
+        await Assert.ThrowsAsync<ProjectNotFoundException>(async () =>
+            await _service.UpdateTitleAsync(Guid.Empty, dto));
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldUpdateExistingTitle_WhenCreatedToday()
+    {
+        // Setup project with titles
+        Project project = await SetupDatabase();
+
+        // Add a title created today
+        ProjectTitle todayTitle = new()
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = project.Id,
+            Text = "Today's title",
+            Language = new()
+            {
+                Id = "eng",
+            },
+            Type = TitleType.Primary,
+            StartDate = DateTime.UtcNow.AddDays(-1).Date,
+            EndDate = null,
+        };
+
+        _context.ProjectTitles.Add(todayTitle);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        // Create update DTO
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = "Updated Today's Title",
+            Language = new()
+            {
+                Id = "fra",
+            }, // Changed language
+            Type = TitleType.Primary,
+        };
+
+        // Call update
+        List<ProjectTitleResponseDTO> response = await _service.UpdateTitleAsync(project.Id, dto);
+
+        Assert.Equal(7, response.Count);
+
+        // Find the updated title
+        ProjectTitleResponseDTO updatedTitle = response.Single(t => t.StartDate.Date == DateTime.UtcNow.Date);
+        Assert.Equal(dto.Text, updatedTitle.Text);
+        Assert.Equal(dto.Language.Id, updatedTitle.Language!.Id);
+        Assert.Equal(DateTime.UtcNow.Date, updatedTitle.StartDate);
+        Assert.Null(updatedTitle.EndDate);
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldEndCurrentAndCreateNew_WhenCurrentTitleIsOlder()
+    {
+        Project project = await SetupDatabase();
+
+        // Find the current short title from the setup
+        ProjectTitle oldTitle = await _context.ProjectTitles
+            .SingleAsync(t => t.ProjectId == project.Id && t.Type == TitleType.Short && t.EndDate == null);
+
+        // Create update DTO
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = "New Short Title",
+            Language = new()
+            {
+                Id = "eng",
+            },
+            Type = TitleType.Short,
+        };
+
+        // Call update
+        List<ProjectTitleResponseDTO> response = await _service.UpdateTitleAsync(project.Id, dto);
+
+        // Should have 6 titles now (5 original + 1 new)
+        Assert.Equal(6, response.Count);
+
+        // Verify old title was ended
+        ProjectTitleResponseDTO endedTitle = response.Single(t => t.Id == oldTitle.Id);
+        Assert.NotNull(endedTitle.EndDate);
+        Assert.Equal(DateTime.UtcNow.Date, endedTitle.EndDate);
+
+        // Verify new title was created
+        ProjectTitleResponseDTO newTitle = response.Single(t => t.Type == TitleType.Short && t.EndDate == null);
+        Assert.NotEqual(oldTitle.Id, newTitle.Id);
+        Assert.Equal(dto.Text, newTitle.Text);
+        Assert.Equal(dto.Language.Id, newTitle.Language.Id);
+        Assert.Equal(DateTime.UtcNow.Date, newTitle.StartDate);
+        Assert.Null(newTitle.EndDate);
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldMaintainMultipleTitleTypes()
+    {
+        Project project = await SetupDatabase();
+
+        // Create new title of a different type
+        ProjectTitleRequestDTO dto1 = new()
+        {
+            Text = "New Primary Title",
+            Language = new()
+            {
+                Id = "eng",
+            },
+            Type = TitleType.Primary,
+        };
+
+        await _service.UpdateTitleAsync(project.Id, dto1);
+
+        // Create new title of another type
+        ProjectTitleRequestDTO dto2 = new()
+        {
+            Text = "New Short Title",
+            Language = new()
+            {
+                Id = "eng",
+            },
+            Type = TitleType.Short,
+        };
+
+        List<ProjectTitleResponseDTO> response = await _service.UpdateTitleAsync(project.Id, dto2);
+
+        // Should have 7 titles now (5 original + 2 new)
+        Assert.Equal(7, response.Count);
+
+        // Verify we have current titles of different types
+        ProjectTitleResponseDTO currentPrimary = response.Single(t => t.Type == TitleType.Primary && t.EndDate == null);
+        ProjectTitleResponseDTO currentShort = response.Single(t => t.Type == TitleType.Short && t.EndDate == null);
+
+        Assert.Equal(dto1.Text, currentPrimary.Text);
+        Assert.Equal(dto2.Text, currentShort.Text);
+        Assert.NotEqual(currentPrimary.Id, currentShort.Id);
+    }
 }

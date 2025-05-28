@@ -59,10 +59,10 @@ public class ProjectTitlesService : IProjectTitlesService
                 await _context.SaveChangesAsync();
                 return await GetTitlesByProjectIdAsync(projectId);
             }
-            
+
             currentTitle.EndDate = today;
         }
-        
+
         ProjectTitle newTitle = new()
         {
             Id = Guid.NewGuid(),
@@ -85,11 +85,11 @@ public class ProjectTitlesService : IProjectTitlesService
     {
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
-        if (title.Type == TitleType.Primary) throw new("Can't end primary title.");
+        if (title.Type == TitleType.Primary) throw new CantEndPrimaryTitleException(titleId);
 
-        if (title.EndDate != null) throw new("End date was already set.");
+        if (title.EndDate != null) throw new CantEndEndedTitleException(titleId);
 
-        title.EndDate = DateTime.Today;
+        title.EndDate = DateTime.UtcNow.Date;
         await _context.SaveChangesAsync();
         return MapToTitleResponseDTO(title);
     }
@@ -99,11 +99,9 @@ public class ProjectTitlesService : IProjectTitlesService
     {
         ProjectTitle title = await GetTitleEntityAsync(projectId, titleId);
 
-        DateTime today = DateTime.Today;
+        DateTime today = DateTime.UtcNow.Date;
         DateTime yesterday = today.Subtract(TimeSpan.FromDays(1));
-        if (title.StartDate < yesterday) throw new("Can't delete a title that was made more than 1 day ago.");
-
-        if (title.EndDate != null) throw new("Can't delete a title that has already been succeeded.");
+        if (title.StartDate < yesterday || title.EndDate != null) throw new CantDeleteTitleException(projectId);
 
         ProjectTitle? oldTitle = await _context.ProjectTitles
             .Where(o => o.EndDate == title.StartDate && o.Type == title.Type)
@@ -112,7 +110,7 @@ public class ProjectTitlesService : IProjectTitlesService
 
         if (oldTitle != null)
             oldTitle.EndDate = null;
-        else if (title.Type == TitleType.Primary) throw new("Can't delete primary title if there is no previous one.");
+        else if (title.Type == TitleType.Primary) throw new CantDeleteTitleException(titleId);
 
         _context.ProjectTitles.Remove(title);
         await _context.SaveChangesAsync();

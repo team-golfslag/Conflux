@@ -411,4 +411,218 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
         Assert.Equal(dto2.Text, currentShort.Text);
         Assert.NotEqual(currentPrimary.Id, currentShort.Id);
     }
+
+    [Fact]
+    public async Task EndTitleAsync_EndsTitle_IfNotPrimary()
+    {
+        Project project = await SetupDatabase();
+
+        ProjectTitle oldShortTitle = project.Titles.First(t => t is { Type: TitleType.Short, EndDate: null });
+
+        await _service.EndTitleAsync(project.Id, oldShortTitle.Id);
+
+        ProjectTitle? newTitle = await _context.ProjectTitles.FindAsync(oldShortTitle.Id);
+
+        Assert.NotNull(newTitle);
+        Assert.NotNull(newTitle.EndDate);
+        Assert.Equal(DateTime.UtcNow.Date, newTitle.EndDate);
+    }
+
+
+    [Fact]
+    public async Task EndTitleAsync_ThrowsException_WhenTitleIsPrimary()
+    {
+        Project project = await SetupDatabase();
+
+        ProjectTitle primaryTitle = project.Titles.First(t => t is { Type: TitleType.Primary, EndDate: null });
+
+        await Assert.ThrowsAsync<CantEndPrimaryTitleException>(async () =>
+            await _service.EndTitleAsync(project.Id, primaryTitle.Id));
+    }
+
+    [Fact]
+    public async Task EndTitleAsync_ThrowsException_WhenTitleHasAlreadyEnded()
+    {
+        Project project = await SetupDatabase();
+
+        ProjectTitle endedTitle = project.Titles.First(t => t is { Type: TitleType.Short, EndDate: not null });
+
+        await Assert.ThrowsAsync<CantEndEndedTitleException>(async () =>
+            await _service.EndTitleAsync(project.Id, endedTitle.Id));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ThrowsException_WhenOnlyPrimaryTitle()
+    {
+        Project project = new()
+        {
+            Id = Guid.NewGuid(),
+            SCIMId = null,
+            RAiDInfo = null,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = null,
+            Users = null,
+            Contributors = null,
+            Products = null,
+            Organisations = null,
+            Titles =
+            [
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "Test",
+                    Language = new()
+                    {
+                        Id = "eng",
+                    },
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow.Date,
+                    EndDate = null,
+                },
+            ],
+            Descriptions = null,
+            LastestEdit = default,
+        };
+
+        _context.Add(project);
+        await _context.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<CantDeleteTitleException>(() =>
+            _service.DeleteTitleAsync(project.Id, project.Titles[0].Id));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ThrowsException_WhenTitleSucceeded()
+    {
+        Project project = new()
+        {
+            Id = Guid.NewGuid(),
+            SCIMId = null,
+            RAiDInfo = null,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = null,
+            Users = null,
+            Contributors = null,
+            Products = null,
+            Organisations = null,
+            Titles =
+            [
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "Test",
+                    Language = new()
+                    {
+                        Id = "eng",
+                    },
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow.Date,
+                    EndDate = null,
+                },
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "TeST",
+                    Language = new()
+                    {
+                        Id = "nld",
+                    },
+                    Type = TitleType.Acronym,
+                    StartDate = DateTime.UtcNow.Date.Subtract(TimeSpan.FromDays(-1)),
+                    EndDate = DateTime.UtcNow.Date,
+                },
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "T.E.S.T.",
+                    Language = new()
+                    {
+                        Id = "nld",
+                    },
+                    Type = TitleType.Acronym,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = null,
+                },
+            ],
+            Descriptions = null,
+            LastestEdit = default,
+        };
+        
+        
+        _context.Add(project);
+        await _context.SaveChangesAsync();
+
+        ProjectTitle title = project.Titles.First(t => t is { Type: TitleType.Acronym, EndDate: not null });
+
+        await Assert.ThrowsAsync<CantDeleteTitleException>(() =>
+            _service.DeleteTitleAsync(project.Id, title.Id));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_Succeeds_WhenTitleCreatedToday()
+    {
+        Project project = new()
+        {
+            Id = Guid.NewGuid(),
+            SCIMId = null,
+            RAiDInfo = null,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = null,
+            Users = null,
+            Contributors = null,
+            Products = null,
+            Organisations = null,
+            Titles =
+            [
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "Test",
+                    Language = new()
+                    {
+                        Id = "eng",
+                    },
+                    Type = TitleType.Primary,
+                    StartDate = DateTime.UtcNow.Date,
+                    EndDate = null,
+                },
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "TeST",
+                    Language = new()
+                    {
+                        Id = "nld",
+                    },
+                    Type = TitleType.Acronym,
+                    StartDate = DateTime.UtcNow.Date.Subtract(TimeSpan.FromDays(-1)),
+                    EndDate = DateTime.UtcNow.Date,
+                },
+                new ProjectTitle
+                {
+                    Id = Guid.NewGuid(),
+                    Text = "T.E.S.T.",
+                    Language = new()
+                    {
+                        Id = "nld",
+                    },
+                    Type = TitleType.Acronym,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = null,
+                },
+            ],
+            Descriptions = null,
+            LastestEdit = default,
+        };
+        
+        
+        _context.Add(project);
+        await _context.SaveChangesAsync();
+
+        ProjectTitle title = project.Titles.First(t => t is { Type: TitleType.Acronym, EndDate: null });
+
+        await _service.DeleteTitleAsync(project.Id, title.Id);
+        
+        Assert.Null(await _context.ProjectTitles.FindAsync(title.Id));
+    }
 }

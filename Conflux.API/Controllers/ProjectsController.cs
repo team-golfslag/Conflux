@@ -66,6 +66,7 @@ public class ProjectsController : ControllerBase
     [Authorize]
     [HttpGet]
     [Route("export")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
     public async Task<ActionResult> ExportToCsv([FromQuery] ProjectQueryDTO projectQueryDto)
     {
         UserSession? userSession = await _userSessionService.GetUser();

@@ -5,7 +5,6 @@
 
 using Conflux.Data;
 using Conflux.Domain;
-using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using RAiD.Net.Domain;
 
@@ -333,7 +332,7 @@ public class ProjectMapperService : IProjectMapperService
             .FirstOrDefaultAsync();
 
         if (project == null)
-            throw new ProjectNotFoundException(projectId);
+            throw new ArgumentException($"Project with Id {projectId} could not be found.");
 
         return project;
     }

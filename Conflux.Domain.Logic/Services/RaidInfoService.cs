@@ -66,7 +66,7 @@ public class RaidInfoService : IRaidInfoService
         if (result == null) throw new RAiDException("An unexpected error occured. :(");
 
         RAiDInfo newRAiDInfo = GetNewRAiDInfo(projectId, result);
-        _context.RAiDInfos.Update(newRAiDInfo);
+        _context.RAiDInfos.Add(newRAiDInfo);
         await _context.SaveChangesAsync();
 
         return MapRAiDInfo(newRAiDInfo);
@@ -77,7 +77,7 @@ public class RaidInfoService : IRaidInfoService
     {
         if (_raidService == null)
             throw new RAiDDisabledException();
-        
+
         await VerifyProjectExists(projectId);
 
         RAiDInfo? info = await GetEntityAsync(projectId);
@@ -92,11 +92,10 @@ public class RaidInfoService : IRaidInfoService
         RAiDDto? result = await _raidService.UpdateRaidAsync(prefix, suffix, dto);
         if (result == null) throw new RAiDException("An unexpected error occured. :(");
 
-        RAiDInfo newRaidInfo = GetNewRAiDInfo(projectId, result);
-        _context.RAiDInfos.Update(newRaidInfo);
+        _context.RAiDInfos.Entry(info).CurrentValues.SetValues(GetNewRAiDInfo(projectId, result));
         await _context.SaveChangesAsync();
 
-        return MapRAiDInfo(newRaidInfo);
+        return MapRAiDInfo(info);
     }
 
     private static (string, string) GetRAiDPartsFromId(string raidId)

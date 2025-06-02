@@ -27,7 +27,8 @@ public class UserSession
             Name = "Development User",
             GivenName = "Development",
             FamilyName = "User",
-            Email = "development@sram.surf.nl"
+            Email = "development@sram.surf.nl",
+            UserId = DevelopmentUserId,
         };
         
         User developmentUser = new()

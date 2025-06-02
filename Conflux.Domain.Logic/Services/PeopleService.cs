@@ -66,6 +66,8 @@ public class PeopleService : IPeopleService
     public async Task<Person> UpdatePersonAsync(Guid id, PersonRequestDTO personDTO)
     {
         Person person = await GetPersonByIdAsync(id);
+        if (person.UserId != null)
+            throw new PersonIsAssociatedWithUserException();
 
         person.Name = personDTO.Name;
         person.GivenName = personDTO.GivenName;
@@ -79,6 +81,8 @@ public class PeopleService : IPeopleService
     public async Task DeletePersonAsync(Guid id)
     {
         Person person = await GetPersonByIdAsync(id);
+        if (person.UserId != null)
+            throw new PersonIsAssociatedWithUserException();
 
         // Check if person is associated with any contributors
         bool hasContributors = await _context.Contributors

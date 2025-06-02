@@ -3,9 +3,9 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-namespace Conflux.Domain.Logic.DTOs.Requests;
+namespace Conflux.Domain.Logic.DTOs.Responses;
 
-public class OrganisationRoleRequestDTO
+public class OrganisationRoleResponseDTO
 {
     public required OrganisationRoleType Role { get; init; }
     public DateTime StartDate { get; init; }

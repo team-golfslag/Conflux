@@ -7,9 +7,6 @@ namespace Conflux.Domain.Logic.DTOs.Responses;
 
 public class ProjectOrganisationResponseDTO
 {
-    public ProjectResponseDTO Project { get; init; }
+    public Guid ProjectId { get; init; }
     public OrganisationResponseDTO Organisation { get; init; }
-    public List<OrganisationRoleType> Roles { get; init; } = [];
-    public string RORId { get; init; }
-    public required string Name { get; init; }
 }

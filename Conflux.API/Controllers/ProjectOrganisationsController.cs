@@ -32,7 +32,7 @@ public class ProjectOrganisationsController : ControllerBase
     /// <returns>A list of organisations for the project</returns>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(typeof(List<OrganisationResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<ProjectOrganisationResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ProjectOrganisationResponseDTO>>> GetOrganisations(Guid projectId) =>
         await _projectOrganisationsService.GetOrganisationsByProjectIdAsync(projectId);
@@ -45,7 +45,7 @@ public class ProjectOrganisationsController : ControllerBase
     /// <returns>The organisation details</returns>
     [HttpGet("{organisationId:guid}")]
     [Authorize]
-    [ProducesResponseType(typeof(OrganisationResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProjectOrganisationResponseDTO>>
         GetOrganisationById(Guid projectId, Guid organisationId) =>
@@ -59,7 +59,7 @@ public class ProjectOrganisationsController : ControllerBase
     /// <returns>The created organisation</returns>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(typeof(OrganisationResponseDTO), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<OrganisationResponseDTO>> CreateOrganisation(
         Guid projectId,
@@ -87,7 +87,7 @@ public class ProjectOrganisationsController : ControllerBase
     /// <returns>The updated organisation</returns>
     [HttpPut("{organisationId:guid}")]
     [Authorize]
-    [ProducesResponseType(typeof(OrganisationResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProjectOrganisationResponseDTO>> UpdateOrganisation(
         Guid projectId,

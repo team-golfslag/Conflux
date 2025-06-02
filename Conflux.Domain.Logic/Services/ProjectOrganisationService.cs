@@ -56,16 +56,19 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
             return new ProjectOrganisationResponseDTO
             {
-                Project = project,
+                ProjectId = projectId,
                 Organisation = new()
                 {
                     Id = org.Id,
                     RORId = org.RORId,
                     Name = org.Name,
+                    Roles = po.Roles.Select(r => new OrganisationRoleResponseDTO
+                    {
+                        Role = r.Role,
+                        StartDate = r.StartDate,
+                        EndDate = r.EndDate,
+                    }).ToList(),
                 },
-                Name = org.Name,
-                RORId = org.RORId,
-                Roles = po.Roles.Select(r => r.Role).ToList(),
             };
         }).ToList();
     }
@@ -81,16 +84,19 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
+            ProjectId = projectId,
             Organisation = new()
             {
                 Id = organisation.Id,
                 RORId = organisation.RORId,
                 Name = organisation.Name,
+                Roles = projectOrganisation.Roles.Select(r => new OrganisationRoleResponseDTO
+                {
+                    Role = r.Role,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                }).ToList(),
             },
-            Name = organisation.Name,
-            RORId = organisation.RORId,
-            Roles = projectOrganisation.Roles.Select(r => r.Role).ToList(),
         };
     }
 
@@ -137,16 +143,19 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
+            ProjectId = projectId,
             Organisation = new()
             {
                 Id = organisation.Id,
                 RORId = organisation.RORId,
                 Name = organisation.Name,
+                Roles = projectOrganisation.Roles.Select(r => new OrganisationRoleResponseDTO
+                {
+                    Role = r.Role,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                }).ToList(),
             },
-            Name = organisation.Name,
-            RORId = organisation.RORId,
-            Roles = projectOrganisation.Roles.Select(r => r.Role).ToList(),
         };
     }
 
@@ -180,16 +189,19 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new()
         {
-            Project = await _projectsService.GetProjectDTOByIdAsync(projectId),
+            ProjectId = projectId,
             Organisation = new()
             {
                 Id = organisation.Id,
                 RORId = organisation.RORId ?? string.Empty,
                 Name = organisation.Name,
+                Roles = updatedRoles.Select(r => new OrganisationRoleResponseDTO
+                {
+                    Role = r.Role,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                }).ToList(),
             },
-            Name = organisation.Name,
-            RORId = organisation.RORId ?? string.Empty,
-            Roles = updatedRoles.Select(r => r.Role).ToList(),
         };
     }
 

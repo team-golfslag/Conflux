@@ -86,7 +86,7 @@ public class ProjectsService : IProjectsService
 
         return MapToProjectDTO(project);
     }
-    
+
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
@@ -162,11 +162,11 @@ public class ProjectsService : IProjectsService
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
             OrderByType.TitleDesc => projects.OrderByDescending(project =>
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
-            OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
+            OrderByType.StartDateAsc => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
-            OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
-            OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
-            _                         => projects,
+            OrderByType.EndDateAsc => projects.OrderBy(project => project.EndDate),
+            OrderByType.EndDateDesc => projects.OrderByDescending(project => project.EndDate),
+            _ => projects,
         };
 
         return projects.ToList();
@@ -186,7 +186,7 @@ public class ProjectsService : IProjectsService
             p.Id,
             StartDate = p.StartDate.ToString("yyyy MMMM dd"),
             EndDate = p.EndDate?.ToString("yyyy MMMM dd") ?? string.Empty,
-            OrganisationNames = string.Join("; ", p.Organisations.Select(o => o.Name)),
+            OrganisationNames = string.Join("; ", p.Organisations.Select(o => o.Organisation.Name)),
             Contributors = string.Join("; ", p.Contributors.Select(c => c.Person.Name)),
             Products = string.Join("; ", p.Products.Select(pr => pr.Title)),
         });
@@ -329,11 +329,20 @@ public class ProjectsService : IProjectsService
             }),
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
-                Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(r => r.Role)
-                    .ToList() ?? throw new
-                    OrganisationNotFoundException(o.Id),
-                RORId = o.RORId,
-                Name = o.Name,
+                ProjectId = project.Id,
+                Organisation = new OrganisationResponseDTO
+                {
+                    Name = o.Name,
+                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(
+                            r => new OrganisationRoleResponseDTO
+                            {
+                                Role = r.Role,
+                                StartDate = r.StartDate,
+                                EndDate = r.EndDate,
+                            }
+                            ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
+                    RORId = o.RORId,
+                }
             }),
             Contributors = project.Contributors.Select(c => new ContributorResponseDTO
             {

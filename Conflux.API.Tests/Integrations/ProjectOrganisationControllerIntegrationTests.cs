@@ -107,10 +107,10 @@ public class ProjectOrganisationsControllerIntegrationTests
         Assert.NotNull(organisations);
         Assert.Single(organisations);
         Assert.Equal(orgId, organisations[0].Organisation.Id);
-        Assert.Equal("Test Organisation", organisations[0].Name);
-        Assert.Equal("https://ror.org/test", organisations[0].RORId);
-        Assert.Single(organisations[0].Roles);
-        Assert.Equal(OrganisationRoleType.Contractor, organisations[0].Roles[0]);
+        Assert.Equal("Test Organisation", organisations[0].Organisation.Name);
+        Assert.Equal("https://ror.org/test", organisations[0].Organisation.RORId);
+        Assert.Single(organisations[0].Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Contractor, organisations[0].Organisation.Roles[0].Role);
     }
 
     [Fact]
@@ -186,10 +186,10 @@ public class ProjectOrganisationsControllerIntegrationTests
 
         Assert.NotNull(organisation);
         Assert.Equal(orgId, organisation.Organisation.Id);
-        Assert.Equal("Test Organisation", organisation.Name);
-        Assert.Equal("https://ror.org/test", organisation.RORId);
-        Assert.Single(organisation.Roles);
-        Assert.Equal(OrganisationRoleType.Funder, organisation.Roles[0]);
+        Assert.Equal("Test Organisation", organisation.Organisation.Name);
+        Assert.Equal("https://ror.org/test", organisation.Organisation.RORId);
+        Assert.Single(organisation.Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Funder, organisation.Organisation.Roles[0].Role);
     }
 
     [Fact]
@@ -276,10 +276,10 @@ public class ProjectOrganisationsControllerIntegrationTests
             await response.Content.ReadFromJsonAsync<ProjectOrganisationResponseDTO>(_jsonOptions);
 
         Assert.NotNull(createdOrg);
-        Assert.Equal("New Organisation", createdOrg.Name);
-        Assert.Equal("https://ror.org/new", createdOrg.RORId);
-        Assert.Single(createdOrg.Roles);
-        Assert.Equal(OrganisationRoleType.Contractor, createdOrg.Roles[0]);
+        Assert.Equal("New Organisation", createdOrg.Organisation.Name);
+        Assert.Equal("https://ror.org/new", createdOrg.Organisation.RORId);
+        Assert.Single(createdOrg.Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Contractor, createdOrg.Organisation.Roles[0].Role);
 
         // Check the organization was added to the database
         bool orgExists = await context.Organisations.AnyAsync(o => o.Name == "New Organisation");
@@ -383,10 +383,10 @@ public class ProjectOrganisationsControllerIntegrationTests
             await response.Content.ReadFromJsonAsync<ProjectOrganisationResponseDTO>(_jsonOptions);
 
         Assert.NotNull(updatedOrg);
-        Assert.Equal("Updated Name", updatedOrg.Name);
-        Assert.Equal("https://ror.org/updated", updatedOrg.RORId);
-        Assert.Single(updatedOrg.Roles);
-        Assert.Equal(OrganisationRoleType.Funder, updatedOrg.Roles[0]);
+        Assert.Equal("Updated Name", updatedOrg.Organisation.Name);
+        Assert.Equal("https://ror.org/updated", updatedOrg.Organisation.RORId);
+        Assert.Single(updatedOrg.Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Funder, updatedOrg.Organisation.Roles[0].Role);
     }
 
     [Fact]

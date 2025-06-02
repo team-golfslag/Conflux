@@ -158,11 +158,11 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
         // Assert
         Assert.Equal(orgId, result.Organisation.Id);
-        Assert.Equal("Test Organisation", result.Name);
-        Assert.Equal("https://ror.org/test", result.RORId);
-        Assert.Single(result.Roles);
-        Assert.Equal(OrganisationRoleType.Funder, result.Roles[0]);
-        Assert.Equal(projectId, result.Project.Id);
+        Assert.Equal("Test Organisation", result.Organisation.Name);
+        Assert.Equal("https://ror.org/test", result.Organisation.RORId);
+        Assert.Single(result.Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Funder, result.Organisation.Roles[0].Role);
+        Assert.Equal(projectId, result.ProjectId);
     }
 
     [Fact]
@@ -222,11 +222,11 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         ProjectOrganisationResponseDTO result = await _service.CreateOrganisationAsync(projectId, dto);
 
         // Assert
-        Assert.Equal("Test Org", result.Name);
-        Assert.Equal("https://ror.org/test", result.RORId);
-        Assert.Single(result.Roles);
-        Assert.Equal(OrganisationRoleType.Funder, result.Roles[0]);
-        Assert.Equal(projectId, result.Project.Id);
+        Assert.Equal("Test Org", result.Organisation.Name);
+        Assert.Equal("https://ror.org/test", result.Organisation.RORId);
+        Assert.Single(result.Organisation.Roles);
+        Assert.Equal(OrganisationRoleType.Funder, result.Organisation.Roles[0].Role);
+        Assert.Equal(projectId, result.ProjectId);
 
         // Verify organization was created in the database
         Assert.Single(await _context.Organisations.Where(o => o.Name == "Test Org").ToListAsync());

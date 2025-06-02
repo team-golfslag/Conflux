@@ -3,6 +3,8 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
+using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
@@ -14,7 +16,9 @@ namespace Conflux.API.Controllers;
 /// <summary>
 /// Controller for managing project organisations
 /// </summary>
+[Authorize]
 [ApiController]
+[RouteParamName("projectId")]
 [Route("projects/{projectId:guid}/organisations")]
 public class ProjectOrganisationsController : ControllerBase
 {
@@ -31,9 +35,9 @@ public class ProjectOrganisationsController : ControllerBase
     /// <param name="projectId">The GUID of the project</param>
     /// <returns>A list of organisations for the project</returns>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(typeof(List<ProjectOrganisationResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequireProjectRole(UserRoleType.User)]
     public async Task<ActionResult<List<ProjectOrganisationResponseDTO>>> GetOrganisations(Guid projectId) =>
         await _projectOrganisationsService.GetOrganisationsByProjectIdAsync(projectId);
 
@@ -47,6 +51,7 @@ public class ProjectOrganisationsController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequireProjectRole(UserRoleType.User)]
     public async Task<ActionResult<ProjectOrganisationResponseDTO>>
         GetOrganisationById(Guid projectId, Guid organisationId) =>
         await _projectOrganisationsService.GetOrganisationByIdAsync(projectId, organisationId);
@@ -61,6 +66,7 @@ public class ProjectOrganisationsController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequireProjectRole(UserRoleType.Admin)]
     public async Task<ActionResult<OrganisationResponseDTO>> CreateOrganisation(
         Guid projectId,
         OrganisationRequestDTO organisationDto)
@@ -89,6 +95,7 @@ public class ProjectOrganisationsController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequireProjectRole(UserRoleType.Admin)]
     public async Task<ActionResult<ProjectOrganisationResponseDTO>> UpdateOrganisation(
         Guid projectId,
         Guid organisationId,
@@ -105,6 +112,7 @@ public class ProjectOrganisationsController : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequireProjectRole(UserRoleType.Admin)]
     public async Task<IActionResult> DeleteOrganisation(Guid projectId, Guid organisationId)
     {
         await _projectOrganisationsService.DeleteOrganisationAsync(projectId, organisationId);

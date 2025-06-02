@@ -30,3 +30,4 @@ If something is not possible, please leave a comment explaining why.
 - [ ] Any decisions or changes to the requirements have been added to the task description in YouTrack
 - [ ] Docs have been updated/created for altered/added code
 - [ ] Code is well-commented
+- [ ] All endpoints have the proper access control attributes

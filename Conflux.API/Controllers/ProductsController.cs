@@ -3,12 +3,14 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.API.Controllers;
 
@@ -16,6 +18,8 @@ namespace Conflux.API.Controllers;
 /// Controller responsible for handling product-related operations.
 /// </summary>
 [ApiController]
+[Authorize]
+[RouteParamName("projectId")]
 [Route("projects/{projectId:guid}/products")]
 public class ProductsController : ControllerBase
 {
@@ -34,6 +38,7 @@ public class ProductsController : ControllerBase
     /// <returns>A <see cref="ProductResponseDTO" /> object representing the product with the specified ID.</returns>
     [HttpGet]
     [Route("{productId:guid}")]
+    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> GetProductByIdAsync([FromRoute] Guid projectId,
         [FromRoute] Guid productId) =>
@@ -52,6 +57,7 @@ public class ProductsController : ControllerBase
     /// unique identifier.
     /// </returns>
     [HttpPost]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status201Created)]
     public async Task<ActionResult<ProductResponseDTO>> CreateProductAsync([FromRoute] Guid projectId,
         [FromBody] ProductRequestDTO productDTO) =>
@@ -66,6 +72,7 @@ public class ProductsController : ControllerBase
     /// <returns>A <see cref="ProductResponseDTO" /> object representing the updated product.</returns>
     [HttpPut]
     [Route("{productId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> UpdateProductAsync([FromRoute] Guid projectId,
         [FromRoute] Guid productId,
@@ -80,6 +87,7 @@ public class ProductsController : ControllerBase
     /// <returns>The request response. Returns a 404 status if the product is not found or a 200 status on successful deletion.</returns>
     [HttpDelete]
     [Route("{productId:guid}")]
+    [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
     public async Task<ActionResult> DeleteProductAsync([FromRoute] Guid projectId, [FromRoute] Guid productId)
     {

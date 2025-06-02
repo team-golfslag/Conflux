@@ -3,6 +3,8 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.API.Attributes;
+using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Integrations.RAiD;
@@ -18,6 +20,7 @@ namespace Conflux.API.Controllers;
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+[RouteParamName("projectId")]
 public class RaidInfoController : ControllerBase
 {
     private readonly IRaidInfoService _service;
@@ -29,24 +32,28 @@ public class RaidInfoController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequireProjectRole(UserRoleType.User)]
     public async Task<RAiDInfoResponseDTO> GetRaidInfoByProjectId([FromRoute] Guid projectId) =>
         await _service.GetRAiDInfoByProjectId(projectId);
 
     [HttpGet]
     [Route("incompatibilities")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequireProjectRole(UserRoleType.User)]
     public async Task<List<RAiDIncompatibility>> GetRaidIncompatibilities([FromRoute] Guid projectId) =>
         await _service.GetRAiDIncompatibilities(projectId);
 
     [HttpPost]
     [Route("mint")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequireProjectRole(UserRoleType.Admin)]
     public async Task<RAiDInfoResponseDTO> MintRaid([FromRoute] Guid projectId) =>
         await _service.MintRAiDAsync(projectId);
 
     [HttpPost]
     [Route("update")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequireProjectRole(UserRoleType.Admin)]
     public async Task<RAiDInfoResponseDTO> SyncRaid([FromRoute] Guid projectId) =>
         await _service.SyncRAiDAsync(projectId);
 }

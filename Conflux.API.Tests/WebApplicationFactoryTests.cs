@@ -17,6 +17,33 @@ namespace Conflux.API.Tests;
 
 public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 {
+    private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
+    {
+        var personId = Guid.NewGuid();
+        
+        // Create the person first
+        var person = new Person
+        {
+            Id = personId,
+            Name = name,
+            ORCiD = orcid,
+            User = null
+        };
+        
+        // Then create the user with a reference to the person
+        var user = new User
+        {
+            Id = userId,
+            SCIMId = scimId,
+            PersonId = personId,
+            Person = person
+        };
+        
+        // Set the bidirectional reference
+        person.User = user;
+        return user;
+    }
+
     // This is a unique name for the in-memory database to avoid conflicts between tests
     private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.NewGuid()}";
 
@@ -148,12 +175,8 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             // Add a test user with admin roles for all test projects
             Guid testUserId = new("00000000-0000-0000-0000-000000000001");
-            User testUser = new()
-            {
-                Id = testUserId,
-                Name = "Test Admin",
-                SCIMId = "test-admin-scim-id",
-            };
+            User testUser = CreateUserWithPerson(testUserId, "Test Admin", "test-admin-scim-id");
+            db.People.Add(testUser.Person);
             db.Users.Add(testUser);
 
             // Add roles for the test user

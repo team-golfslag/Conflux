@@ -117,7 +117,7 @@ public class NwOpenMapperTests
         // Check for development user
         Assert.NotEmpty(result.Users);
         User devUser = result.Users.Single(u => u.Id == UserSession.DevelopmentUserId);
-        Assert.Equal("Development User", devUser.Name);
+        Assert.Equal("Development User", devUser.Person.Name);
 
         // Check for user roles
         Assert.Equal(2, result.UserRoles.Count);

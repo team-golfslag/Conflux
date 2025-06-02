@@ -46,21 +46,36 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         Group projectGroup = CollaborationMapper.MapSCIMGroup("", apiProject);
 
         // Add new members
-        var newUsers = projectGroup.Members
-            .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId))
-            .Select(m => new User
+        List<User> newUsers = [];
+        List<Person> newPeople = [];
+
+        foreach (GroupMember user in projectGroup.Members
+            .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId)))
+        {
+            Person person = new()
             {
                 Id = Guid.NewGuid(),
-                SRAMId = null,
-                SCIMId = m.SCIMId,
-                ORCiD = null,
-                Name = m.DisplayName,
+                Name = user.DisplayName,
+            };
+            
+            User newUser = new()
+            {
+                Id = Guid.NewGuid(),
+                SCIMId = user.SCIMId,
+                PersonId = person.Id,
+                Person = person,
                 Roles = [],
-                GivenName = null,
-                FamilyName = null,
-                Email = null,
-            });
-
+            };
+            
+            newUsers.Add(newUser);
+            newPeople.Add(person);
+        } 
+        
+        // Add new people to the context
+        _confluxContext.People.AddRange(newPeople);
+        // Add new users to the context
+        _confluxContext.Users.AddRange(newUsers);
+        
         project.Users.AddRange(newUsers);
 
         // Get all roles 

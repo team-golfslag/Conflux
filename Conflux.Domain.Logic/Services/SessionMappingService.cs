@@ -54,8 +54,14 @@ public class SessionMappingService : ISessionMappingService
         await CoupleUsersToProject(userSession);
 
         await CoupleRolesToUsers(userSession);
+        
+        await CollectAndAddContributors(userSession);
 
         await _context.SaveChangesAsync();
+    }
+
+    private async Task CollectAndAddContributors(UserSession userSession)
+    {
     }
 
     /// <summary>
@@ -146,25 +152,34 @@ public class SessionMappingService : ISessionMappingService
         if (scimUser is null)
             return;
 
-        User? existingPerson = await _context.Users.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
+        User? existingPerson = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
         if (existingPerson is not null)
         {
-            if (existingPerson.SRAMId != null || existingPerson.Email != userSession.Email) return;
+            if (existingPerson.SRAMId != null || existingPerson.Person.Email != userSession.Email) return;
             existingPerson.SRAMId = userSession.SRAMId;
             _context.Users.Update(existingPerson);
             return;
         }
-
-        User newUser = new()
+        
+        Person newPerson = new()
         {
-            SCIMId = scimUser.Id,
+            Id = Guid.NewGuid(),
             Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
             GivenName = scimUser.Name?.GivenName,
             FamilyName = scimUser.Name?.FamilyName,
             Email = scimUser.Emails?.FirstOrDefault()?.Value,
         };
 
-        if (newUser.Email == userSession.Email)
+        User newUser = new()
+        {
+            SCIMId = scimUser.Id,
+            Person = newPerson,
+            PersonId = newPerson.Id,
+        };
+
+        if (newUser.Person.Email == userSession.Email)
             newUser.SRAMId = userSession.SRAMId;
 
         _context.Users.Add(newUser);

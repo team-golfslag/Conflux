@@ -89,11 +89,19 @@ public class OrcidController : ControllerBase
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null)
             return NotFound("User not found in database.");
 
-        dbUser.ORCiD = exampleOrcid;
+        // Make sure we can access the Person
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
+        
+        dbUser.Person.ORCiD = exampleOrcid;
         // No need for _context.Users.Update(dbUser) when modifying a tracked entity.
         await _context.SaveChangesAsync();
 
@@ -146,11 +154,13 @@ public class OrcidController : ControllerBase
                 continue; // Skip if ORCID is null
 
             Person? person = await _peopleService.GetPersonByOrcidIdAsync(orcidPerson.Orcid);
+            
             // Check if user with ORCID already exists
             if (person is not null)
             {
+                // if so add it to the return list
                 people.Add(person);
-                continue; // Skip if user already exists
+                continue; // But skip creating a new one in the database
             }
 
             person = await _peopleService.CreatePersonAsync(personDTO);
@@ -218,12 +228,19 @@ public class OrcidController : ControllerBase
             // Handle appropriately - maybe redirect to login?
             return Unauthorized("Primary user session not found or invalid. Please log in again.");
 
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null)
             // User exists in session but not DB? This indicates an inconsistency.
             return NotFound($"User with ID {userSession.User.Id} not found in database.");
 
-        dbUser.ORCiD = orcidId;
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
+        
+        dbUser.Person.ORCiD = orcidId;
         try
         {
             await _context.SaveChangesAsync();
@@ -249,11 +266,18 @@ public class OrcidController : ControllerBase
             return Unauthorized("User not logged in or session invalid.");
 
         // Fetch the corresponding User entity from the database
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null) return NotFound($"User with ID {userSession.User.Id} not found in database.");
+        
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
 
         // Update *only* the ORCiD property
-        dbUser.ORCiD = null;
+        dbUser.Person.ORCiD = null;
 
         // Save changes
         try

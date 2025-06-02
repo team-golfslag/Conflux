@@ -112,7 +112,12 @@ public class ConfluxContext : DbContext, IConfluxContext
         modelBuilder.Entity<User>()
             .HasMany(p => p.Roles)
             .WithMany();
-
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Person)
+            .WithOne(p => p.User)
+            .HasForeignKey<User>(u => u.PersonId);
+        
+        
         // Configuration for Product.Categories
         modelBuilder.Entity<Product>(entity =>
         {

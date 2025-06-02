@@ -8,7 +8,6 @@ using System.Text;
 using Conflux.API.Controllers;
 using Conflux.Data;
 using Conflux.Domain;
-using Conflux.Domain.Logic.DTOs;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
@@ -74,6 +73,8 @@ public class OrcidControllerTests
         _context = new(_dbOptions);
         if (user != null)
         {
+            // Add both User and Person to context
+            _context.People.Add(user.Person);
             _context.Users.Add(user);
             _context.SaveChanges();
         }
@@ -100,6 +101,35 @@ public class OrcidControllerTests
             _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(session);
         else
             _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession?)null);
+    }
+
+    private static User CreateUserWithPerson(string name, string scimId, string? orcid = null, Guid? userId = null, Guid? personId = null)
+    {
+        var actualUserId = userId ?? Guid.NewGuid();
+        var actualPersonId = personId ?? Guid.NewGuid();
+        
+        // First create the person without the User reference
+        var person = new Person
+        {
+            Id = actualPersonId,
+            Name = name,
+            ORCiD = orcid,
+            User = null
+        };
+        
+        // Now create the user with the person reference
+        var user = new User
+        {
+            Id = actualUserId,
+            SCIMId = scimId,
+            PersonId = actualPersonId,
+            Person = person
+        };
+
+        // Set the bidirectional reference
+        person.User = user;
+        
+        return user;
     }
 
     private void SetupAuthentication(string? orcidClaim = null, string? orcidSession = null)
@@ -152,12 +182,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task LinkOrcid_WhenOrcidAuthEnabledAndUserLoggedInAndRedirectValid_ReturnsChallengeResult()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            SCIMId = "scimid",
-            Name = "testuser",
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -176,13 +201,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task LinkOrcid_WhenOrcidAuthDisabledAndUserLoggedIn_UpdatesOrcidAndRedirects()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            ORCiD = null,
-            SCIMId = "scimid",
-            Name = "testuser",
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -196,8 +215,8 @@ public class OrcidControllerTests
         RedirectResult redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(ValidRelativeRedirect, redirectResult.Url);
 
-        User? dbUser = await _context.Users.FindAsync(user.Id);
-        Assert.Equal(ExampleOrcid, dbUser?.ORCiD);                       // Check if hardcoded ORCID was saved
+        User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
+        Assert.Equal(ExampleOrcid, dbUser?.Person?.ORCiD);                       // Check if hardcoded ORCID was saved
         _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
     }
 
@@ -233,13 +252,7 @@ public class OrcidControllerTests
     public async Task LinkOrcid_WhenUserNotInDb_ReturnsNotFound()
     {
         // User exists in session but not in DB (inconsistent state)
-        User sessionUser = new()
-        {
-            Id = Guid.NewGuid(),
-            ORCiD = null,
-            SCIMId = null,
-            Name = "ghost",
-        };
+        User sessionUser = CreateUserWithPerson("ghost", "scimid");
         UserSession session = new()
         {
             User = sessionUser,
@@ -256,12 +269,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task LinkOrcid_WhenRedirectUrlInvalid_UsesDefaultRedirectInChallenge()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -280,12 +288,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task LinkOrcid_WhenRedirectUrlRelative_UsesRelativeUrlInChallenge()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -306,12 +309,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task OrcidFinalize_WhenAuthenticationFails_ReturnsBadRequest()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -357,12 +355,7 @@ public class OrcidControllerTests
     public async Task OrcidFinalize_WhenUserNotInDb_ReturnsNotFound()
     {
         // User exists in session but not in DB (inconsistent state)
-        User sessionUser = new()
-        {
-            Id = Guid.NewGuid(),
-            SCIMId = "scimid",
-            Name = "ghost",
-        };
+        User sessionUser = CreateUserWithPerson("ghost", "scimid");
         UserSession session = new()
         {
             User = sessionUser,
@@ -378,13 +371,7 @@ public class OrcidControllerTests
     [Fact]
     public async Task OrcidFinalize_WhenSuccessful_UpdatesOrcidAndRedirects()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-            ORCiD = null,
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -397,22 +384,16 @@ public class OrcidControllerTests
         RedirectResult redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(ValidAbsoluteRedirect, redirectResult.Url);
 
-        User? dbUser = await _context.Users.FindAsync(user.Id);
+        User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Equal(ExampleOrcid, dbUser!.ORCiD);                       // Check ORCID update
+        Assert.Equal(ExampleOrcid, dbUser!.Person?.ORCiD);                       // Check ORCID update
         _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
     }
 
     [Fact]
     public async Task OrcidFinalize_WithSessionOrcid_UpdatesOrcidAndRedirects()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-            ORCiD = null,
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
             User = user,
@@ -426,9 +407,9 @@ public class OrcidControllerTests
         RedirectResult redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(ValidRelativeRedirect, redirectResult.Url);
 
-        User? dbUser = await _context.Users.FindAsync(user.Id);
+        User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Equal(ExampleOrcid, dbUser!.ORCiD);                       // Check ORCID update
+        Assert.Equal(ExampleOrcid, dbUser!.Person?.ORCiD);                       // Check ORCID update
         _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
     }
 
@@ -495,6 +476,44 @@ public class OrcidControllerTests
         Assert.Single(returnValue.Value);
         Assert.Equal("John Doe", returnValue.Value[0].Name);
         Assert.Equal(ExampleOrcid, returnValue.Value[0].ORCiD);
+    }
+
+    [Fact]
+    public async Task GetPersonByQuery_WhenPersonAlreadyExists_SkipsCreation()
+    {
+        // Arrange
+        InitializeController();
+        _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
+            .ReturnsAsync(true);
+        var orcidPerson = new OrcidPerson("John", "Doe", "John Doe", "", ExampleOrcid);
+
+        _mockPersonRetrievalService.Setup(s => s.FindPeopleByNameFast(It.IsAny<string>()))
+            .ReturnsAsync(new List<OrcidPerson>
+            {
+                orcidPerson
+            });
+
+        // Setup that person already exists
+        var existingPerson = new Person
+        {
+            Id = Guid.NewGuid(),
+            Name = "John Doe",
+            ORCiD = ExampleOrcid
+        };
+        
+        _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
+            .ReturnsAsync(existingPerson);
+
+        // Act
+        var result = await _controller.GetPersonByQuery("John");
+
+        // Assert
+        var returnValue = Assert.IsType<ActionResult<List<Person>>>(result);
+        var people = returnValue.Value;
+        Assert.NotNull(people);
+        Assert.Single(people); // Should contain the existing person
+        Assert.Equal(existingPerson, people[0]); // The existing person should be in the result
+        _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()), Times.Never);
     }
 
     // --- GetPersonFromOrcid Tests ---
@@ -573,13 +592,8 @@ public class OrcidControllerTests
     public async Task OrcidUnlink_WhenUserLoggedInAndHasOrcid_RemovesOrcidAndReturnsOk()
     {
         // Create user with ORCID set
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-            ORCiD = ExampleOrcid,
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
+        user.Person!.ORCiD = ExampleOrcid; // Set ORCID on the Person
         UserSession session = new()
         {
             User = user,
@@ -591,22 +605,17 @@ public class OrcidControllerTests
         OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal("ORCID successfully unlinked.", okResult.Value);
 
-        User? dbUser = await _context.Users.FindAsync(user.Id);
+        User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser!.ORCiD);                                             // ORCID should be null after unlinking
+        Assert.Null(dbUser!.Person?.ORCiD);                                             // ORCID should be null after unlinking
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
     [Fact]
     public async Task OrcidUnlink_WhenUserLoggedInAndHasNoOrcid_ReturnsOkButMakesNoChanges()
     {
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "testuser",
-            SCIMId = "scimid",
-            ORCiD = null, // No ORCID
-        };
+        User user = CreateUserWithPerson("testuser", "scimid");
+        // user.Person.ORCiD is already null by default
         UserSession session = new()
         {
             User = user,
@@ -618,9 +627,9 @@ public class OrcidControllerTests
         OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal("ORCID successfully unlinked.", okResult.Value);
 
-        User? dbUser = await _context.Users.FindAsync(user.Id);
+        User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser!.ORCiD);                                             // ORCID should remain null
+        Assert.Null(dbUser!.Person?.ORCiD);                                             // ORCID should remain null
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 
@@ -654,13 +663,8 @@ public class OrcidControllerTests
     public async Task OrcidUnlink_WhenUserNotInDb_ReturnsNotFound()
     {
         // User exists in session but not in DB
-        User sessionUser = new()
-        {
-            Id = Guid.NewGuid(),
-            ORCiD = ExampleOrcid,
-            SCIMId = "scimid",
-            Name = "ghost",
-        };
+        User sessionUser = CreateUserWithPerson("ghost", "scimid");
+        sessionUser.Person!.ORCiD = ExampleOrcid;
         UserSession session = new()
         {
             User = sessionUser,

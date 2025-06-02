@@ -18,14 +18,10 @@ public record User
     [JsonPropertyName("raid_id")] public string? SRAMId { get; set; }
 
     [JsonPropertyName("scim_id")] public required string SCIMId { get; set; }
-
-    [JsonPropertyName("orcid_id")] public string? ORCiD { get; set; }
-
-    [Required] public required string Name { get; set; }
-
+    
     public List<UserRole> Roles { get; set; } = [];
-
-    public string? GivenName { get; set; }
-    public string? FamilyName { get; set; }
-    public string? Email { get; set; }
+    
+    [Required]
+    public Guid PersonId { get; set; }
+    public Person? Person { get; set; }
 }

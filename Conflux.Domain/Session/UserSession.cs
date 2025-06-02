@@ -19,6 +19,29 @@ public class UserSession
     public static UserSession Development()
     {
         string sramId = DevelopmentUserId + "@sram.surf.nl";
+        
+        Person developmentPerson = new()
+        {
+            Id = DevelopmentUserId,
+            ORCiD = null,
+            Name = "Development User",
+            GivenName = "Development",
+            FamilyName = "User",
+            Email = "development@sram.surf.nl"
+        };
+        
+        User developmentUser = new()
+        {
+            Id = DevelopmentUserId,
+            SRAMId = sramId,
+            SCIMId = DevelopmentUserId + "@scim.sram.surf.nl",
+            PersonId = DevelopmentUserId,
+            Person = developmentPerson
+        };
+        
+        // Set bidirectional reference
+        developmentPerson.User = developmentUser;
+        
         return new()
         {
             SRAMId = sramId,
@@ -26,18 +49,7 @@ public class UserSession
             GivenName = "Development",
             FamilyName = "User",
             Email = "development@sram.surf.nl",
-            User = new()
-            {
-                Id = DevelopmentUserId,
-                SRAMId = sramId,
-                SCIMId = DevelopmentUserId + "@scim.sram.surf.nl",
-                ORCiD = null,
-                Name = "Development User",
-                Roles = [],
-                GivenName = "Development",
-                FamilyName = "User",
-                Email = "development@sram.surf.nl",
-            },
+            User = developmentUser,
             Collaborations =
             [
                 new()

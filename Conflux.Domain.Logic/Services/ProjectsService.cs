@@ -29,6 +29,8 @@ public class ProjectsService : IProjectsService
                 .Include(p => p.Descriptions)
                 .Include(p => p.Users)
                 .ThenInclude(user => user.Roles)
+                .Include(p => p.Users)
+                .ThenInclude(user => user.Person)
                 .Include(p => p.Products)
                 .Include(p => p.Organisations)
                 .Include(p => p.Contributors)
@@ -255,14 +257,17 @@ public class ProjectsService : IProjectsService
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
             .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
             .Include(p => p.Products)
             .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions)
             .ToListAsync();
-
         // filter roles per project per user
         foreach (Project project in projects)
             foreach (User user in project.Users)
@@ -316,7 +321,20 @@ public class ProjectsService : IProjectsService
             }),
             StartDate = project.StartDate,
             EndDate = project.EndDate,
-            Users = project.Users,
+            Users = project.Users.ConvertAll(u => new UserResponseDTO
+            {
+                Id = u.Id,
+                SRAMId = u.SRAMId,
+                Person = u.Person != null ? new PersonResponseDTO
+                {
+                    Id = u.Person.Id,
+                    Name = u.Person.Name,
+                    GivenName = u.Person.GivenName,
+                    FamilyName = u.Person.FamilyName,
+                    Email = u.Person.Email,
+                    ORCiD = u.Person.ORCiD,
+                } : null
+            }),
             Products = project.Products.ConvertAll(p => new ProductResponseDTO
             {
                 Id = p.Id,

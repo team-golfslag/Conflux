@@ -34,6 +34,7 @@ public static class NwOpenMapper
     public static SeedData MapProjects(List<NwOpenProject> projects)
     {
         foreach (NwOpenProject project in projects) MapProject(project);
+        
 
         return new()
         {
@@ -276,6 +277,7 @@ public static class NwOpenMapper
             // Create a new development user and add to our list
             devUser = UserSession.Development().User!;
             Users.Add(devUser);
+            People.Add(devUser.Person!);
         }
 
         // Add user to project

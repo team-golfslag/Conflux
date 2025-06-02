@@ -15,7 +15,7 @@ public class ProjectResponseDTO
 
     public DateTime? EndDate { get; init; }
 
-    public List<User> Users { get; init; } = [];
+    public List<UserResponseDTO> Users { get; init; } = [];
 
     public List<ContributorResponseDTO> Contributors { get; init; } = [];
 

@@ -23,8 +23,35 @@ namespace Conflux.API.Tests.Filters;
 /// <summary>
 /// Integration tests for the access control filter system
 /// </summary>
-public class AccessControlIntegrationTests
+public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactoryTests>
 {
+    private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
+    {
+        var personId = Guid.NewGuid();
+        
+        // Create the person first
+        var person = new Person
+        {
+            Id = personId,
+            Name = name,
+            ORCiD = orcid,
+            User = null
+        };
+        
+        // Then create the user with a reference to the person
+        var user = new User
+        {
+            Id = userId,
+            SCIMId = scimId,
+            PersonId = personId,
+            Person = person
+        };
+        
+        // Set the bidirectional reference
+        person.User = user;
+        return user;
+    }
+
     [Fact]
     public async Task Endpoint_WithRequireProjectRoleAttribute_RejectsUnauthorizedUser()
     {
@@ -53,12 +80,7 @@ public class AccessControlIntegrationTests
 
         UserSession userSession = new()
         {
-            User = new()
-            {
-                Id = userId,
-                Name = "Test User",
-                SCIMId = "test-scim-id",
-            },
+            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
             Collaborations = new(),
         };
 
@@ -83,12 +105,7 @@ public class AccessControlIntegrationTests
 
         UserSession userSession = new()
         {
-            User = new()
-            {
-                Id = userId,
-                Name = "Test User",
-                SCIMId = "test-scim-id",
-            },
+            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
             Collaborations = new(),
         };
 
@@ -113,12 +130,7 @@ public class AccessControlIntegrationTests
 
         UserSession userSession = new()
         {
-            User = new()
-            {
-                Id = userId,
-                Name = "Test User",
-                SCIMId = "test-scim-id",
-            },
+            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
             Collaborations = new(),
         };
 
@@ -145,12 +157,7 @@ public class AccessControlIntegrationTests
 
         UserSession userSession = new()
         {
-            User = new()
-            {
-                Id = userId,
-                Name = "Test User",
-                SCIMId = "test-scim-id",
-            },
+            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
             Collaborations = new(),
         };
 

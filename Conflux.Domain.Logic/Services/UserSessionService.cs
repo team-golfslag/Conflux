@@ -11,6 +11,7 @@ using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM;
 using Conflux.Integrations.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
@@ -55,7 +56,9 @@ public class UserSessionService : IUserSessionService
         if (user is null)
             return null;
 
-        User? person = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        User? person = _confluxContext.Users
+            .Include(u => u.Person)
+            .SingleOrDefault(p => p.SRAMId == user.SRAMId);
         if (person is null)
             return user;
 
@@ -97,7 +100,9 @@ public class UserSessionService : IUserSessionService
 
 
         UserSession? user = await GetUserSession(claims);
-        if (user is { User: null }) user.User = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        if (user is { User: null })
+            user.User = _confluxContext.Users.Include(u => u.Person)
+                .SingleOrDefault(p => p.SRAMId == user.SRAMId);
 
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 

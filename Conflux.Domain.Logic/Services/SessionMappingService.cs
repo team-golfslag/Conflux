@@ -62,6 +62,51 @@ public class SessionMappingService : ISessionMappingService
 
     private async Task CollectAndAddContributors(UserSession userSession)
     {
+        foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
+        {
+            Project? project = await _context.Projects
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Person)
+                .ThenInclude(p => p!.User)
+                .Include(project => project.Users)
+                .ThenInclude(user => user.Roles)
+                .Include(project => project.Users)
+                .ThenInclude(user => user.Person)
+                .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
+
+            if (project is null) continue;
+
+            foreach (User user in project.Users)
+            {
+                if (user.Person is null)
+                    continue;
+                
+                if (user.Roles.All(r => r.Type != UserRoleType.Contributor || r.ProjectId != project.Id))
+                    continue;
+                
+                Contributor? existingContributor = project.Contributors
+                    .SingleOrDefault(c => c.Person?.User?.Id == user.Id);
+                if (existingContributor is not null) continue;
+                
+                Contributor newContributor = new()
+                {
+                    PersonId = user.Person.Id,
+                    Person = user.Person,
+                    ProjectId = project.Id,
+                    Project = project,
+                    Roles = [],
+                    Positions = [],
+                    Leader = false,
+                    Contact = false,
+                };
+                
+                _context.Contributors.Add(newContributor);
+                project.Contributors.Add(newContributor);
+                _context.Projects.Update(project);
+
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 
     /// <summary>

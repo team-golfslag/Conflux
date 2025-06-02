@@ -35,6 +35,7 @@ public class ProjectsService : IProjectsService
                 .Include(p => p.Organisations)
                 .Include(p => p.Contributors)
                 .ThenInclude(c => c.Person)
+                .ThenInclude(p => p!.User)
                 .Include(p => p.Contributors)
                 .ThenInclude(c => c.Roles)
                 .Include(p => p.Contributors)
@@ -263,6 +264,7 @@ public class ProjectsService : IProjectsService
             .Include(p => p.Organisations)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)
@@ -325,6 +327,8 @@ public class ProjectsService : IProjectsService
             {
                 Id = u.Id,
                 SRAMId = u.SRAMId,
+                SCIMId = u.SCIMId,
+                Roles = u.Roles,
                 Person = u.Person != null ? new PersonResponseDTO
                 {
                     Id = u.Person.Id,
@@ -399,12 +403,18 @@ public class ProjectsService : IProjectsService
 
     private Task<Project?> GetFullProjectAsync(Guid projectId) =>
         _context.Projects
+            .AsNoTracking()
             .Include(p => p.Titles)
-            .Include(p => p.Organisations)
-            .ThenInclude(o => o.Roles)
-            .Include(p => p.Products)
             .Include(p => p.Descriptions)
             .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)

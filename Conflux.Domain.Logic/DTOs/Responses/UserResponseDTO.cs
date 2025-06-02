@@ -12,6 +12,8 @@ public class UserResponseDTO
     public Guid Id { get; init; }
     
     [JsonPropertyName("sram_id")] public string? SRAMId { get; init; }
+    [JsonPropertyName("scim_id")] public required string SCIMId { get; set; }
+    public List<UserRole> Roles { get; set; } = [];
     
     public PersonResponseDTO? Person { get; init; }
 }

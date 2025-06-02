@@ -15,13 +15,13 @@ public record User
 {
     [Key] public Guid Id { get; set; }
 
-    [JsonPropertyName("raid_id")] public string? SRAMId { get; set; }
+    [JsonPropertyName("sram_id")] public string? SRAMId { get; set; }
 
     [JsonPropertyName("scim_id")] public required string SCIMId { get; set; }
     
     public List<UserRole> Roles { get; set; } = [];
     
     [Required]
-    public Guid PersonId { get; set; }
+    public required Guid PersonId { get; set; }
     public Person? Person { get; set; }
 }

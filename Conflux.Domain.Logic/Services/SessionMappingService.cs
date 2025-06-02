@@ -208,17 +208,22 @@ public class SessionMappingService : ISessionMappingService
             return;
         }
         
+        Guid personId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        
         Person newPerson = new()
         {
-            Id = Guid.NewGuid(),
+            Id = personId,
             Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
             GivenName = scimUser.Name?.GivenName,
             FamilyName = scimUser.Name?.FamilyName,
             Email = scimUser.Emails?.FirstOrDefault()?.Value,
+            UserId = userId,
         };
 
         User newUser = new()
         {
+            Id = userId,
             SCIMId = scimUser.Id,
             Person = newPerson,
             PersonId = newPerson.Id,

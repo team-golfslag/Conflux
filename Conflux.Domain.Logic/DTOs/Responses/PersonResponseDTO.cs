@@ -16,4 +16,5 @@ public class PersonResponseDTO
     public string? GivenName { get; set; }
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
+    public Guid? UserId { get; set; }
 }

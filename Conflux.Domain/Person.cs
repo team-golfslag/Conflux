@@ -20,6 +20,7 @@ public class Person
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
     
+    public Guid? UserId { get; set; }
     [JsonIgnore]
     public User? User { get; set; }
 

@@ -58,20 +58,25 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         foreach (GroupMember user in projectGroup.Members
             .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId)))
         {
+            Guid personId = Guid.NewGuid();
+            Guid userId = Guid.NewGuid();
+            
             Person person = new()
             {
-                Id = Guid.NewGuid(),
+                Id = personId,
                 Name = user.DisplayName,
             };
             
             User newUser = new()
             {
-                Id = Guid.NewGuid(),
+                Id = userId,
                 SCIMId = user.SCIMId,
-                PersonId = person.Id,
+                PersonId = personId,
                 Person = person,
                 Roles = [],
             };
+         
+            
             
             newUsers.Add(newUser);
             newPeople.Add(person);

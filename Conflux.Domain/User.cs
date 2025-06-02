@@ -23,5 +23,6 @@ public record User
     
     [Required]
     public required Guid PersonId { get; set; }
+    [JsonIgnore]
     public Person? Person { get; set; }
 }

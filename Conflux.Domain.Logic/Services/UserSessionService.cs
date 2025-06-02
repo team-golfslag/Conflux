@@ -44,10 +44,16 @@ public class UserSessionService : IUserSessionService
         if (_httpContextAccessor.HttpContext.Session is null ||
             !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
-        if (userSession != null)
+        if (userSession == null) 
+            return await SetUser(null);
+        
+        // Before returning the user session, we need to populate the person
+        if (userSession.User is null || userSession.User.Person != null) 
             return userSession;
-
-        return await SetUser(null);
+        
+        Person? person = await _confluxContext.People.FindAsync(userSession.User.PersonId);
+        if (person != null) userSession.User.Person = person;
+        return userSession;
     }
 
     public async Task<UserSession?> UpdateUser()

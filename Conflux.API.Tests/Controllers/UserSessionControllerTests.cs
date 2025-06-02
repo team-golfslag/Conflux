@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.API.Controllers;
+using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -314,8 +315,8 @@ public class UserSessionControllerTests
         var result = await controller.UserSession();
 
         // Assert
-        var actionResult = Assert.IsType<ActionResult<UserSession>>(result);
-        UserSession returnedSession = Assert.IsType<UserSession>(actionResult.Value);
+        var actionResult = Assert.IsType<ActionResult<UserSessionResponseDTO>>(result);
+        UserSessionResponseDTO returnedSession = Assert.IsType<UserSessionResponseDTO>(actionResult.Value);
         Assert.Equal("test@example.com", returnedSession.Email);
         Assert.Equal("Test User", returnedSession.Name);
     }

@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -91,8 +92,40 @@ public class UserSessionController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<UserSession>> UserSession() =>
-        await _userSessionService.GetUser() ?? throw new InvalidOperationException();
+    public async Task<ActionResult<UserSessionResponseDTO>> UserSession()
+    {
+        UserSession userSession = await _userSessionService.GetUser() ?? throw new InvalidOperationException();
+        return new UserSessionResponseDTO
+        {
+            SRAMId = userSession.SRAMId,
+            Name = userSession.Name,
+            GivenName = userSession.GivenName,
+            FamilyName = userSession.FamilyName,
+            Email = userSession.Email,
+            User = userSession.User != null
+                ? new UserResponseDTO
+                {
+                    Id = userSession.User.Id,
+                    SRAMId = userSession.User.SRAMId,
+                    SCIMId = userSession.User.SCIMId,
+                    Roles = userSession.User.Roles,
+                    Person = userSession.User.Person != null
+                        ? new PersonResponseDTO
+                        {
+                            Id = userSession.User.Person.Id,
+                            ORCiD = userSession.User.Person.ORCiD,
+                            Name = userSession.User.Person.Name,
+                            GivenName = userSession.User.Person.GivenName,
+                            FamilyName = userSession.User.Person.FamilyName,
+                            Email = userSession.User.Person.Email,
+                        }
+                        : null,
+                }
+                : null,
+            Collaborations = userSession.Collaborations
+        };
+    }
+    
 
     private bool IsValidRedirectUrl(string url)
     {

@@ -131,7 +131,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             throw new ProjectAlreadyHasOrganisationException(projectId, organisation.Id);
         
         if (organisationDto.Role == null)
-            throw new Exception("Role cannot be null");
+            throw new ProjectOrganisationException("Role cannot be null");
 
         // Create the project organisation
         ProjectOrganisation projectOrganisation = new()
@@ -186,7 +186,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         if (currentRole == null)
         {
-            throw new Exception("role not found");
+            throw new ProjectOrganisationException("role not found");
         }
 
         if (organisationDto.Role == null)

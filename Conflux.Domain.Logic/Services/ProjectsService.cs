@@ -33,6 +33,9 @@ public class ProjectsService : IProjectsService
                 .ThenInclude(user => user.Person)
                 .Include(p => p.Products)
                 .Include(p => p.Organisations)
+                .ThenInclude(o => o.Roles)
+                .Include(p => p.Organisations)
+                .ThenInclude(o => o.Organisation)
                 .Include(p => p.Contributors)
                 .ThenInclude(c => c.Person)
                 .ThenInclude(p => p!.User)
@@ -262,6 +265,9 @@ public class ProjectsService : IProjectsService
             .ThenInclude(user => user.Person)
             .Include(p => p.Products)
             .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Person)
             .ThenInclude(p => p!.User)
@@ -354,6 +360,7 @@ public class ProjectsService : IProjectsService
                 ProjectId = project.Id,
                 Organisation = new OrganisationResponseDTO
                 {
+                    Id = o.Id,
                     Name = o.Name,
                     Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(
                             r => new OrganisationRoleResponseDTO

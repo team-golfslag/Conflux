@@ -226,5 +226,9 @@ public class ProjectDescriptionsControllerTests
 
         _mockService.Setup(s => s.DeleteDescriptionAsync(projectId, descriptionId))
             .Returns(Task.CompletedTask);
+
+        IActionResult result = await _controller.DeleteDescription(projectId, descriptionId);
+        
+        Assert.IsType<NoContentResult>(result);
     }
 }

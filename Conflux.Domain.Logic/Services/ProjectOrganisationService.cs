@@ -185,11 +185,6 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             .Where(r => r.ProjectId == projectId && r.OrganisationId == organisationId && r.EndDate == null)
             .SingleOrDefaultAsync();
 
-        if (currentRole == null)
-        {
-            throw new ProjectOrganisationException("role not found");
-        }
-
         if (currentRole != null && organisationDto.Role.HasValue && currentRole.Role != organisationDto.Role.Value)
         {
             // Set the end date for the current role

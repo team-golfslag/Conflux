@@ -49,7 +49,7 @@ public class TimelineService(IProjectsService projectsService) : ITimelineServic
             IsMilestone = false,
             Date = title.StartDate,
             ShortDescription = "Title updated",
-            Description = $"The project {title.Type}-{title.Language} title was updated to '{title.Text}' on {title.StartDate:dd MMMM yyyy}.",
+            Description = $"The project {title.Type}-{title.Language?.Id} title was updated to '{title.Text}' on {title.StartDate:dd MMMM yyyy}.",
         }));
 
         return timelineItems;

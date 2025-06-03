@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    [Migration("20250603130433_Initial")]
+    [Migration("20250603134956_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -101,7 +101,6 @@ namespace Conflux.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("RORId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");

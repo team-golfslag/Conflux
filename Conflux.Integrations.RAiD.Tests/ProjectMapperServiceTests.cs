@@ -482,6 +482,22 @@ public class ProjectMapperServiceTests
                         },
                     ],
                 },
+                new ProjectOrganisation
+                {
+                    Organisation = new()
+                    {
+                        RORId = null,
+                        Name = "Broodje Ben",
+                    },
+                    Roles = [
+                        new()
+                        {
+                            Role = OrganisationRoleType.Funder,
+                            StartDate = start,
+                            EndDate = null,
+                        },
+                    ],
+                },
             ],
             Titles =
             [
@@ -537,6 +553,7 @@ public class ProjectMapperServiceTests
             i => Assert.Equal(RAiDIncompatibilityType.OverlappingContributorPositions, i.Type),
             i => Assert.Equal(RAiDIncompatibilityType.NoProjectLeader, i.Type),
             i => Assert.Equal(RAiDIncompatibilityType.NoProjectContact, i.Type),
+            i => Assert.Equal(RAiDIncompatibilityType.OrganisationWithoutRor, i.Type),
             i => Assert.Equal(RAiDIncompatibilityType.OverlappingOrganisationRoles, i.Type),
             i => Assert.Equal(RAiDIncompatibilityType.NoLeadResearchOrganisation, i.Type),
             i => Assert.Equal(RAiDIncompatibilityType.NoProductCategory, i.Type),

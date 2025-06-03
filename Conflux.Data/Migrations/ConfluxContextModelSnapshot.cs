@@ -98,7 +98,6 @@ namespace Conflux.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("RORId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");

@@ -18,6 +18,7 @@ public enum RAiDIncompatibilityType
     OverlappingContributorPositions,
     NoProjectLeader,
     NoProjectContact,
+    OrganisationWithoutRor,
     OverlappingOrganisationRoles,
     NoLeadResearchOrganisation,
     MultipleLeadResearchOrganisation,

@@ -136,7 +136,7 @@ public class ProjectMapperService : IProjectMapperService
 
         // In Conflux people are not required to have an ORCiD
         incompatibilities.AddRange(project.Contributors
-            .Where(c => _context.People.Find(c.PersonId)!.ORCiD == null)
+            .Where(c => string.IsNullOrEmpty(_context.People.Find(c.PersonId)!.ORCiD))
             .Select(c => new RAiDIncompatibility
             {
                 Type = RAiDIncompatibilityType.ContributorWithoutOrcid,
@@ -190,6 +190,14 @@ public class ProjectMapperService : IProjectMapperService
                 Type = RAiDIncompatibilityType.NoProjectContact,
             });
 
+        // RAiD requires a ROR to be set for all Organisations
+        incompatibilities.AddRange(project.Organisations.Where(p => string.IsNullOrEmpty(p.Organisation!.RORId))
+            .Select(o => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OrganisationWithoutRor,
+                ObjectId = o.OrganisationId,
+            }));
+        
         // Note: An organisation's role may change over time, but each organisation may have one and only one role at any given time.
         // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role
         incompatibilities.AddRange(project.Organisations
@@ -327,6 +335,7 @@ public class ProjectMapperService : IProjectMapperService
             .Include(p => p.Descriptions)
             .Include(p => p.Titles)
             .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
             .Include(p => p.Products)
             .Include(p => p.RAiDInfo)
             .FirstOrDefaultAsync();
@@ -432,13 +441,10 @@ public class ProjectMapperService : IProjectMapperService
 
     private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
     {
-        Organisation organisation = _context.Organisations
-                .FirstOrDefault(o => o.Id == projectOrganisation.OrganisationId)
-            ?? throw new ArgumentNullException(nameof(projectOrganisation));
         return new()
         {
-            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
-            SchemaUri = organisation.SchemaUri,
+            Id = projectOrganisation.Organisation!.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
+            SchemaUri = projectOrganisation.Organisation!.SchemaUri,
             Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
         };
     }

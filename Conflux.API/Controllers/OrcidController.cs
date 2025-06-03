@@ -135,6 +135,9 @@ public class OrcidController : ControllerBase
         if (!await _featureManager.IsEnabledAsync("OrcidIntegration"))
             return BadRequest("ORCID integration is not enabled.");
 
+        if (query == null)
+            return BadRequest("No query string given.");
+        
         List<OrcidPerson> orcidPeople = await _personRetrievalService!.FindPeopleByNameFast(query);
         if (orcidPeople.Count == 0)
             return Ok(new List<Person>());

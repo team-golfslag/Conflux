@@ -35,9 +35,9 @@ public enum ContributorRoleType
 [PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(RoleType))]
 public class ContributorRole
 {
-    public required Guid PersonId { get; init; }
+    public Guid PersonId { get; init; }
     
-    public required Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
     
     public Contributor? Contributor { get; init; }
 

@@ -34,7 +34,7 @@ public class Product
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>
     public string GetTypeUri => $"https://vocabulary.raid.org/relatedObject.type.schema/{(int)Type}";
 
-    public string? SchemaUri =>
+    public string SchemaUri =>
         Schema switch
         {
             ProductSchema.Ark     => "https://arks.org/",

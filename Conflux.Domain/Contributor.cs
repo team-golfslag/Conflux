@@ -13,7 +13,7 @@ public record Contributor
     public Guid PersonId { get; init; }
     public Person? Person { get; init; }
 
-    public required Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
     public Project? Project { get; init; }
 
     public List<ContributorRole> Roles { get; set; } = [];

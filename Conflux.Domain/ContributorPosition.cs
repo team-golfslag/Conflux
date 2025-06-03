@@ -23,9 +23,9 @@ public enum ContributorPositionType
 [PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(Position))]
 public class ContributorPosition
 {
-    public required Guid PersonId { get; init; }
+    public Guid PersonId { get; init; }
     
-    public required Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
     
     public Contributor? Contributor { get; init; }
 

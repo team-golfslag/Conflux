@@ -45,22 +45,28 @@ namespace Conflux.Data.Migrations
 
             modelBuilder.Entity("Conflux.Domain.ContributorPosition", b =>
                 {
-                    b.Property<Guid>("PersonId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProjectId")
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PersonId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Position")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("PersonId", "ProjectId", "Position");
+                    b.HasKey("Id");
+
+                    b.HasIndex("PersonId", "ProjectId");
 
                     b.ToTable("ContributorPositions");
                 });

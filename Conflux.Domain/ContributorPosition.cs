@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,9 +21,10 @@ public enum ContributorPositionType
     Other = 311,
 }
 
-[PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(Position))]
 public class ContributorPosition
 {
+    [Key] public Guid Id { get; init; }
+    
     public Guid PersonId { get; init; }
     
     public Guid ProjectId { get; init; }

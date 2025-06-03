@@ -226,8 +226,7 @@ public class ProjectMapperServiceTests
     private async Task<Project> CreateProject()
     {
         DateTime start = DateTime.UtcNow.Date.Subtract(TimeSpan.FromDays(10));
-
-        Guid projectId = Guid.NewGuid();
+        
         Project project = new()
         {
             SCIMId = null,

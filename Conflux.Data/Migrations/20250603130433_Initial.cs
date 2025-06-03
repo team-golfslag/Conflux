@@ -33,7 +33,8 @@ namespace Conflux.Data.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     GivenName = table.Column<string>(type: "text", nullable: true),
                     FamilyName = table.Column<string>(type: "text", nullable: true),
-                    Email = table.Column<string>(type: "text", nullable: true)
+                    Email = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -89,15 +90,17 @@ namespace Conflux.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SRAMId = table.Column<string>(type: "text", nullable: true),
                     SCIMId = table.Column<string>(type: "text", nullable: false),
-                    ORCiD = table.Column<string>(type: "text", nullable: true),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    GivenName = table.Column<string>(type: "text", nullable: true),
-                    FamilyName = table.Column<string>(type: "text", nullable: true),
-                    Email = table.Column<string>(type: "text", nullable: true)
+                    PersonId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Users_People_PersonId",
+                        column: x => x.PersonId,
+                        principalTable: "People",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -293,6 +296,7 @@ namespace Conflux.Data.Migrations
                 name: "ContributorPositions",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     PersonId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProjectId = table.Column<Guid>(type: "uuid", nullable: false),
                     Position = table.Column<int>(type: "integer", nullable: false),
@@ -301,7 +305,7 @@ namespace Conflux.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ContributorPositions", x => new { x.PersonId, x.ProjectId, x.Position });
+                    table.PrimaryKey("PK_ContributorPositions", x => x.Id);
                     table.ForeignKey(
                         name: "FK_ContributorPositions_Contributors_PersonId_ProjectId",
                         columns: x => new { x.PersonId, x.ProjectId },
@@ -351,6 +355,11 @@ namespace Conflux.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ContributorPositions_PersonId_ProjectId",
+                table: "ContributorPositions",
+                columns: new[] { "PersonId", "ProjectId" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Contributors_ProjectId",
                 table: "Contributors",
                 column: "ProjectId");
@@ -379,6 +388,12 @@ namespace Conflux.Data.Migrations
                 name: "IX_ProjectUser_UsersId",
                 table: "ProjectUser",
                 column: "UsersId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_PersonId",
+                table: "Users",
+                column: "PersonId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserUserRole_UserId",
@@ -432,13 +447,13 @@ namespace Conflux.Data.Migrations
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "People");
-
-            migrationBuilder.DropTable(
                 name: "Organisations");
 
             migrationBuilder.DropTable(
                 name: "Projects");
+
+            migrationBuilder.DropTable(
+                name: "People");
         }
     }
 }

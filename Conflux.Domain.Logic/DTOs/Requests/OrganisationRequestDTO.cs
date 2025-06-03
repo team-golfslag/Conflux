@@ -7,7 +7,7 @@ namespace Conflux.Domain.Logic.DTOs.Requests;
 
 public class OrganisationRequestDTO
 {
-    public List<OrganisationRole> Roles { get; init; } = [];
+    public OrganisationRoleType? Role { get; init; }
     public string? RORId { get; init; }
     public required string Name { get; init; }
 }

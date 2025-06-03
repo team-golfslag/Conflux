@@ -174,7 +174,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "New Organisation",
             RORId = "https://ror.org/test123",
-            Roles = [],
+            Role = null,
         };
 
         // Act & Assert
@@ -199,14 +199,9 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "Test Org",
             RORId = "https://ror.org/test",
-            Roles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Role = OrganisationRoleType.Funder,
-                },
-            ],
+            Role =
+               
+                    OrganisationRoleType.Funder,
         };
 
         ProjectResponseDTO projectResponseDTO = new()
@@ -252,7 +247,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "Updated Name",              // Name might be updated
             RORId = "https://ror.org/existing", // But ROR ID stays the same
-            Roles = [],
+            Role = OrganisationRoleType.Contractor,
         };
 
         // Act
@@ -279,7 +274,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = existingOrg.Name,
             RORId = existingOrg.RORId,
-            Roles = [],
+            Role = null,
         };
 
         // Act & Assert
@@ -297,7 +292,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "Updated Organisation",
             RORId = "https://ror.org/updated",
-            Roles = [],
+            Role = null,
         };
 
         // Act & Assert

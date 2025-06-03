@@ -256,14 +256,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         {
             Name = "New Organisation",
             RORId = "https://ror.org/new",
-            Roles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Role = OrganisationRoleType.Contractor,
-                },
-            ],
+            Role = OrganisationRoleType.Contractor,
         };
 
         // Act
@@ -294,7 +287,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         {
             Name = "New Organisation",
             RORId = "https://ror.org/new",
-            Roles = [],
+            Role = null,
         };
 
         // Act
@@ -362,15 +355,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         {
             Name = "Updated Name",
             RORId = "https://ror.org/updated",
-            Roles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    OrganisationId = orgId,
-                    Role = OrganisationRoleType.Funder,
-                },
-            ],
+            Role = OrganisationRoleType.Funder,
         };
 
         // Act
@@ -419,7 +404,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         {
             Name = "Updated Name",
             RORId = "https://ror.org/updated",
-            Roles = [],
+            Role = null,
         };
 
         // Act

@@ -129,13 +129,20 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             .AnyAsync(po => po.ProjectId == projectId && po.OrganisationId == organisation.Id);
         if (alreadyExists)
             throw new ProjectAlreadyHasOrganisationException(projectId, organisation.Id);
+        
+        if (organisationDto.Role == null)
+            throw new Exception("Role cannot be null");
 
         // Create the project organisation
         ProjectOrganisation projectOrganisation = new()
         {
             ProjectId = projectId,
             OrganisationId = organisation.Id,
-            Roles = organisationDto.Roles,
+            Roles = [new OrganisationRole
+            {
+                Role = (OrganisationRoleType)organisationDto.Role,
+                StartDate = DateTime.UtcNow.Date,
+            }],
         };
 
         _context.ProjectOrganisations.Add(projectOrganisation);
@@ -173,12 +180,38 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
         organisation.RORId = organisationDto.RORId ?? string.Empty;
 
         // Update roles - first remove existing ones
-        await _context.OrganisationRoles
-            .Where(r => r.ProjectId == projectId && r.OrganisationId == organisationId)
-            .ExecuteDeleteAsync();
+        OrganisationRole? currentRole = await _context.OrganisationRoles
+            .Where(r => r.ProjectId == projectId && r.OrganisationId == organisationId && r.EndDate == null)
+            .SingleOrDefaultAsync();
 
-        // Add new roles
-        _context.OrganisationRoles.AddRange(organisationDto.Roles);
+        if (currentRole == null)
+        {
+            throw new Exception("role not found");
+        }
+
+        if (organisationDto.Role == null)
+        {
+            // Set the end date for the current role
+            currentRole.EndDate = DateTime.UtcNow.Date;
+            _context.OrganisationRoles.Update(currentRole);
+        }
+
+        else if (currentRole.Role != organisationDto.Role)
+        {
+            // If the role is changing, set the end date for the current role
+            currentRole.EndDate = DateTime.UtcNow.Date;
+            _context.OrganisationRoles.Update(currentRole);
+
+            // Create a new role with the new role type
+            OrganisationRole newRole = new()
+            {
+                ProjectId = projectId,
+                OrganisationId = organisationId,
+                Role = (OrganisationRoleType)organisationDto.Role,
+                StartDate = DateTime.UtcNow.Date,
+            };
+            _context.OrganisationRoles.Add(newRole);
+        }
 
         await _context.SaveChangesAsync();
 

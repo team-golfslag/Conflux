@@ -54,8 +54,59 @@ public class SessionMappingService : ISessionMappingService
         await CoupleUsersToProject(userSession);
 
         await CoupleRolesToUsers(userSession);
+        
+        await CollectAndAddContributors(userSession);
 
         await _context.SaveChangesAsync();
+    }
+
+    private async Task CollectAndAddContributors(UserSession userSession)
+    {
+        foreach (Group group in userSession.Collaborations.Select(collaboration => collaboration.CollaborationGroup))
+        {
+            Project? project = await _context.Projects
+                .Include(p => p.Contributors)
+                .ThenInclude(c => c.Person)
+                .ThenInclude(p => p!.User)
+                .Include(project => project.Users)
+                .ThenInclude(user => user.Roles)
+                .Include(project => project.Users)
+                .ThenInclude(user => user.Person)
+                .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
+
+            if (project is null) continue;
+
+            foreach (User user in project.Users)
+            {
+                if (user.Person is null)
+                    continue;
+                
+                if (user.Roles.All(r => r.Type != UserRoleType.Contributor || r.ProjectId != project.Id))
+                    continue;
+                
+                Contributor? existingContributor = project.Contributors
+                    .SingleOrDefault(c => c.Person?.User?.Id == user.Id);
+                if (existingContributor is not null) continue;
+                
+                Contributor newContributor = new()
+                {
+                    PersonId = user.Person.Id,
+                    Person = user.Person,
+                    ProjectId = project.Id,
+                    Project = project,
+                    Roles = [],
+                    Positions = [],
+                    Leader = false,
+                    Contact = false,
+                };
+                
+                _context.Contributors.Add(newContributor);
+                project.Contributors.Add(newContributor);
+                _context.Projects.Update(project);
+
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 
     /// <summary>
@@ -146,25 +197,39 @@ public class SessionMappingService : ISessionMappingService
         if (scimUser is null)
             return;
 
-        User? existingPerson = await _context.Users.SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
+        User? existingPerson = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
         if (existingPerson is not null)
         {
-            if (existingPerson.SRAMId != null || existingPerson.Email != userSession.Email) return;
+            if (existingPerson.SRAMId != null || existingPerson.Person.Email != userSession.Email) return;
             existingPerson.SRAMId = userSession.SRAMId;
             _context.Users.Update(existingPerson);
             return;
         }
-
-        User newUser = new()
+        
+        Guid personId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        
+        Person newPerson = new()
         {
-            SCIMId = scimUser.Id,
+            Id = personId,
             Name = scimUser.DisplayName ?? scimUser.UserName ?? string.Empty,
             GivenName = scimUser.Name?.GivenName,
             FamilyName = scimUser.Name?.FamilyName,
             Email = scimUser.Emails?.FirstOrDefault()?.Value,
+            UserId = userId,
         };
 
-        if (newUser.Email == userSession.Email)
+        User newUser = new()
+        {
+            Id = userId,
+            SCIMId = scimUser.Id,
+            Person = newPerson,
+            PersonId = newPerson.Id,
+        };
+
+        if (newUser.Person.Email == userSession.Email)
             newUser.SRAMId = userSession.SRAMId;
 
         _context.Users.Add(newUser);

@@ -12,26 +12,29 @@ namespace Conflux.Domain;
 /// </summary>
 public class Product
 {
-    /// <summary>
-    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
-    /// </summary>
-
     [Key] public Guid Id { get; init; }
 
-    public ProductSchema? Schema { get; set; }
-    
+    public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
+
+    public ProductSchema Schema { get; set; }
+
     // TODO: Kijk of de identifier wel echt aan het schema voldoet.
-    public string? Url { get; set; }
+    public string Url { get; set; }
 
     public required string Title { get; set; }
 
-    public required ProductType Type { get; init; }
-    public string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
+    public required ProductType Type { get; set; }
+
+    /// <summary>
+    /// Base URI for this controlled list (matches RAiD vocabulary “relatedObject.type.schema”).
+    /// </summary>
+    public static string TypeSchemaUri => "https://vocabulary.raid.org/relatedObject.type.schema/329";
 
     /// <summary>Fully-qualified URI for the selected <see cref="Type" />.</summary>
     public string GetTypeUri => $"https://vocabulary.raid.org/relatedObject.type.schema/{(int)Type}";
 
-    public string? SchemaUri =>
+    public string SchemaUri =>
         Schema switch
         {
             ProductSchema.Ark     => "https://arks.org/",
@@ -40,9 +43,12 @@ public class Product
             ProductSchema.Isbn    => "https://www.isbn-international.org/",
             ProductSchema.Rrid    => "https://scicrunch.org/resolver/",
             ProductSchema.Archive => "https://archive.org/",
-            null                  => null,
             _                     => throw new ArgumentOutOfRangeException(),
         };
 
-    public HashSet<ProductCategory> Categories { get; set; } = [];
+    public List<ProductCategoryType> Categories { get; set; } = [];
+    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
+
+    public static string GetCategoryUri(ProductCategoryType t) =>
+        $"https://vocabulary.raid.org/relatedObject.category.schema/{(int)t}";
 }

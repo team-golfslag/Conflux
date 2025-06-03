@@ -131,19 +131,33 @@ public class UserSessionServiceTests
         mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
             .ReturnsAsync(true);
 
-        User user = new()
+        // Create the person first with user's personal info
+        Person person = new()
         {
             Id = Guid.NewGuid(),
             Name = "Database User",
             Email = "db@example.com",
+        };
+        
+        // Then create the user with reference to the person
+        User user = new()
+        {
+            Id = Guid.NewGuid(),
             SRAMId = "sram-id-1",
             SCIMId = "scim-id-1",
+            PersonId = person.Id,
+            Person = person
         };
+        
+        // Set bidirectional reference
+        person.User = user;
 
         var options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
         ConfluxContext context = new(options);
+        // Add both person and user
+        context.People.Add(person);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -177,7 +191,7 @@ public class UserSessionServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.NotNull(result.User);
-        Assert.Equal("Database User", result.User.Name);
+        Assert.Equal("Database User", result.User.Person?.Name);
     }
 
     [Fact]

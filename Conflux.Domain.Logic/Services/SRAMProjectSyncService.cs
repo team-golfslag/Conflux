@@ -37,6 +37,12 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         Project project = await _confluxContext.Projects
             .Include(p => p.Users)
             .ThenInclude(p => p.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .Include(p => p.Users)
+            .ThenInclude(u => u.Person)
             .SingleOrDefaultAsync(p => p.Id == projectId) ?? throw new ProjectNotFoundException(projectId);
 
         // Retrieve the project from the API
@@ -46,21 +52,41 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         Group projectGroup = CollaborationMapper.MapSCIMGroup("", apiProject);
 
         // Add new members
-        var newUsers = projectGroup.Members
-            .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId))
-            .Select(m => new User
-            {
-                Id = Guid.NewGuid(),
-                SRAMId = null,
-                SCIMId = m.SCIMId,
-                ORCiD = null,
-                Name = m.DisplayName,
-                Roles = [],
-                GivenName = null,
-                FamilyName = null,
-                Email = null,
-            });
+        List<User> newUsers = [];
+        List<Person> newPeople = [];
 
+        foreach (GroupMember user in projectGroup.Members
+            .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId)))
+        {
+            Guid personId = Guid.NewGuid();
+            Guid userId = Guid.NewGuid();
+            
+            Person person = new()
+            {
+                Id = personId,
+                Name = user.DisplayName,
+            };
+            
+            User newUser = new()
+            {
+                Id = userId,
+                SCIMId = user.SCIMId,
+                PersonId = personId,
+                Person = person,
+                Roles = [],
+            };
+         
+            
+            
+            newUsers.Add(newUser);
+            newPeople.Add(person);
+        } 
+        
+        // Add new people to the context
+        _confluxContext.People.AddRange(newPeople);
+        // Add new users to the context
+        _confluxContext.Users.AddRange(newUsers);
+        
         project.Users.AddRange(newUsers);
 
         // Get all roles 
@@ -81,7 +107,7 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         if (updatedScimGroup == null) throw new GroupNotFoundException(userRole.Urn);
 
         Group updatedGroup = CollaborationMapper.MapSCIMGroup(userRole.Urn, updatedScimGroup);
-
+        
         // remove role from all users
         foreach (User user in project.Users)
             user.Roles.RemoveAll(r => r.ProjectId == project.Id && r.Type == userRole.Type);
@@ -103,5 +129,44 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         // Then associate it with users
         foreach (User user in project.Users.Where(u => updatedGroup.Members.Any(m => m.SCIMId == u.SCIMId)))
             user.Roles.Add(newUserRole);
+        
+        // if the role is contributor, check if there are any contributors that need to be created
+        if (newUserRole.Type != UserRoleType.Contributor) return;
+        
+        // Create contributors for each user that has the contributor role
+        foreach (User user in project.Users.Where(u => u.Roles.Any(r => r.Type == UserRoleType.Contributor && r.ProjectId == project.Id)))
+        {
+            Contributor? contributor = await _confluxContext.Contributors
+                .SingleOrDefaultAsync(c => c.PersonId == user.PersonId && c.ProjectId == project.Id);
+            
+            if (contributor != null) continue;
+
+            contributor = new()
+            {
+                PersonId = user.PersonId,
+                ProjectId = project.Id,
+                Roles = [],
+                Positions = [],
+            };
+            _confluxContext.Contributors.Add(contributor);
+            project.Contributors.Add(contributor);
+            _confluxContext.Projects.Update(project);
+        }
+        
+        // For each contributor with a user associated, check if they have the contributor role
+        foreach (Contributor contributor in project.Contributors
+                     .Where(c => c.Person?.User != null))
+        {
+            // if they no longer have the contributor role, end all their positions 
+            if (contributor.Person!.User!.Roles.Any(r => r.Type == UserRoleType.Contributor && r.ProjectId == project.Id))
+                continue;
+            
+            // End all positions
+            foreach (ContributorPosition position in contributor.Positions.Where(p => p.EndDate == null))
+            {
+                position.EndDate = DateTime.UtcNow;
+                _confluxContext.ContributorPositions.Update(position);
+            }
+        }
     }
 }

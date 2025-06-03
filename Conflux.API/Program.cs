@@ -85,17 +85,25 @@ public class Program
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddScoped<IContributorsService, ContributorsService>();
+        builder.Services.AddScoped<IProjectDescriptionsService, ProjectDescriptionsService>();
+        builder.Services.AddScoped<IProjectTitlesService, ProjectTitlesService>();
         builder.Services.AddScoped<IPeopleService, PeopleService>();
+        builder.Services.AddScoped<IProjectOrganisationsService, ProjectOrganisationsService>();
         builder.Services.AddScoped<ICollaborationMapper, CollaborationMapper>();
         builder.Services.AddScoped<IUserSessionService, UserSessionService>();
         builder.Services.AddScoped<ISessionMappingService, SessionMappingService>();
         builder.Services.AddScoped<ISRAMProjectSyncService, SRAMProjectSyncService>();
         builder.Services.AddScoped<IProjectMapperService, ProjectMapperService>();
         builder.Services.AddScoped<ProjectsService>();
+        builder.Services.AddScoped<IProductsService, ProductsService>();
+        builder.Services.AddScoped<IRAiDService, RAiDService>();
+        builder.Services.AddScoped<IRaidInfoService, RaidInfoService>();
+        builder.Services.AddScoped<IProjectsService, ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+        builder.Services.AddScoped<ITimelineService, TimelineService>();
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))
-            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>((provider) =>
+            builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>(provider =>
             {
                 IConfigurationSection orcidConfig = provider.GetRequiredService<IConfiguration>()
                     .GetSection("Authentication:Orcid");
@@ -186,8 +194,8 @@ public class Program
         {
             HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>()
                 .CreateClient("RAiD");
-            var optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
-            var logger = provider.GetRequiredService<ILogger<RAiDService>>();
+            IOptions<RAiDServiceOptions> optionsAccessor = provider.GetRequiredService<IOptions<RAiDServiceOptions>>();
+            ILogger<RAiDService> logger = provider.GetRequiredService<ILogger<RAiDService>>();
 
             RAiDService raidSvc = new(httpClient, optionsAccessor, logger);
 
@@ -344,8 +352,13 @@ public class Program
                 switch (exception)
                 {
                     case ProjectNotFoundException
-                         or ContributorNotFoundException
-                         or PersonNotFoundException:
+                        or ProjectDescriptionNotFoundException
+                        or ProjectTitleNotFoundException
+                        or ContributorNotFoundException
+                        or ProductNotFoundException
+                        or PersonNotFoundException
+                        or OrganisationNotFoundException
+                        or ProjectOrganisationNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -353,14 +366,16 @@ public class Program
                         });
                         break;
                     case PersonHasContributorsException
-                         or ContributorAlreadyAddedToProjectException:
+                        or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
                             Error = exception.Message,
                         });
                         break;
-                    case UnauthorizedAccessException:
+                    case UnauthorizedAccessException
+                        or ProjectAlreadyMintedException
+                        or ProjectNotMintedException:
                         context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -486,14 +501,15 @@ public class Program
         options.SaveTokens = true;
         options.GetClaimsFromUserInfoEndpoint = true;
 
-        var scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+        List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
         if (scopes != null)
             foreach (string scope in scopes)
                 options.Scope.Add(scope);
 
-        var claimMappings = oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
+        Dictionary<string, string>? claimMappings =
+            oidcConfig.GetSection("ClaimMappings").Get<Dictionary<string, string>>();
         if (claimMappings != null)
-            foreach (var mapping in claimMappings)
+            foreach (KeyValuePair<string, string> mapping in claimMappings)
                 options.ClaimActions.MapJsonKey(mapping.Key, mapping.Value);
 
         options.Events.OnRedirectToIdentityProvider = context =>

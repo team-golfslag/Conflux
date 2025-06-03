@@ -3,12 +3,14 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.Domain;
 using RAiD.Net.Domain;
 
 namespace Conflux.Integrations.RAiD;
 
 public interface IProjectMapperService
 {
-    public RAiDCreateRequest MapProjectCreationRequest(Project project);
+    public Task<RAiDCreateRequest> MapProjectCreationRequest(Guid projectId);
+
+    public Task<RAiDUpdateRequest> MapProjectUpdateRequest(Guid projectId);
+    public Task<List<RAiDIncompatibility>> CheckProjectCompatibility(Guid projectId);
 }

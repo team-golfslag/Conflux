@@ -31,7 +31,7 @@ public class NwOpenMapperTests
     public void MapProjects_EmptyList_ReturnsEmptySeedData()
     {
         // Arrange
-        var emptyProjects = new List<NwOpenProject>();
+        List<NwOpenProject> emptyProjects = [];
 
         // Act
         SeedData seedData = NwOpenMapper.MapProjects(emptyProjects);
@@ -94,7 +94,8 @@ public class NwOpenMapperTests
         Assert.Single(result.Projects);
         Project mappedProject = result.Projects[0];
         Assert.Equal("Test Project", mappedProject.Titles[0].Text);
-        var dutchDescriptions = mappedProject.Descriptions.Where(d => d.Language!.Id == "nld").ToList();
+        List<ProjectDescription> dutchDescriptions =
+            mappedProject.Descriptions.Where(d => d.Language!.Id == "nld").ToList();
         Assert.Single(dutchDescriptions);
         Assert.Equal("Summary", dutchDescriptions[0].Text);
         Assert.Equal(new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc), mappedProject.StartDate);
@@ -116,7 +117,7 @@ public class NwOpenMapperTests
         // Check for development user
         Assert.NotEmpty(result.Users);
         User devUser = result.Users.Single(u => u.Id == UserSession.DevelopmentUserId);
-        Assert.Equal("Development User", devUser.Name);
+        Assert.Equal("Development User", devUser.Person.Name);
 
         // Check for user roles
         Assert.Equal(2, result.UserRoles.Count);
@@ -138,8 +139,8 @@ public class NwOpenMapperTests
     public void MapProjects_MultipleProjectsWithSameProductUrl_OnlyOneProductCreated()
     {
         // Arrange
-        var projectList = new List<NwOpenProject>
-        {
+        List<NwOpenProject> projectList =
+        [
             new()
             {
                 Products =
@@ -158,6 +159,7 @@ public class NwOpenMapperTests
                 SummaryNl = "",
                 SummaryEn = "",
             },
+
             new()
             {
                 Products =
@@ -176,7 +178,7 @@ public class NwOpenMapperTests
                 SummaryNl = "",
                 SummaryEn = "",
             },
-        };
+        ];
 
         // Act
         SeedData seedData = NwOpenMapper.MapProjects(projectList);
@@ -245,7 +247,7 @@ public class NwOpenMapperTests
 
         if (propInfo is null) return;
 
-        var listRef = propInfo.GetValue(null) as IList<T>;
+        IList<T>? listRef = propInfo.GetValue(null) as IList<T>;
         listRef?.Clear();
     }
 }

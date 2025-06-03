@@ -6,7 +6,7 @@
 using System.Security.Claims;
 using Conflux.Data;
 using Conflux.Domain;
-using Conflux.Domain.Logic.DTOs;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -32,9 +32,9 @@ public class OrcidController : ControllerBase
     private readonly string[] _allowedRedirects;
     private readonly ConfluxContext _context;
     private readonly IVariantFeatureManager _featureManager;
-    private readonly IUserSessionService _userSessionService;
-    private readonly IPersonRetrievalService _personRetrievalService;
     private readonly IPeopleService _peopleService;
+    private readonly IPersonRetrievalService _personRetrievalService;
+    private readonly IUserSessionService _userSessionService;
 
     public OrcidController(ConfluxContext context, IVariantFeatureManager featureManager,
         IUserSessionService userSessionService, IConfiguration configuration, IPeopleService peopleService,
@@ -89,11 +89,19 @@ public class OrcidController : ControllerBase
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null)
             return NotFound("User not found in database.");
 
-        dbUser.ORCiD = exampleOrcid;
+        // Make sure we can access the Person
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
+        
+        dbUser.Person.ORCiD = exampleOrcid;
         // No need for _context.Users.Update(dbUser) when modifying a tracked entity.
         await _context.SaveChangesAsync();
 
@@ -127,31 +135,37 @@ public class OrcidController : ControllerBase
         if (!await _featureManager.IsEnabledAsync("OrcidIntegration"))
             return BadRequest("ORCID integration is not enabled.");
 
-        var orcidPeople = await _personRetrievalService!.FindPeopleByNameFast(query);
+        if (query == null)
+            return BadRequest("No query string given.");
+        
+        List<OrcidPerson> orcidPeople = await _personRetrievalService!.FindPeopleByNameFast(query);
         if (orcidPeople.Count == 0)
             return Ok(new List<Person>());
 
-        var people = new List<Person>();
+        List<Person> people = new();
         foreach (OrcidPerson orcidPerson in orcidPeople)
         {
-            PersonDTO personDTO = new PersonDTO
+            PersonRequestDTO personDTO = new()
             {
                 Name = orcidPerson.CreditName ?? orcidPerson.FirstName + " " + orcidPerson.LastName,
                 GivenName = orcidPerson.FirstName,
                 FamilyName = orcidPerson.LastName,
                 Email = null,
-                ORCiD = orcidPerson.Orcid
+                ORCiD = orcidPerson.Orcid,
             };
             if (orcidPerson.Orcid == null)
                 continue; // Skip if ORCID is null
 
             Person? person = await _peopleService.GetPersonByOrcidIdAsync(orcidPerson.Orcid);
+            
             // Check if user with ORCID already exists
             if (person is not null)
             {
+                // if so add it to the return list
                 people.Add(person);
-                continue; // Skip if user already exists
+                continue; // But skip creating a new one in the database
             }
+
             person = await _peopleService.CreatePersonAsync(personDTO);
             people.Add(person);
         }
@@ -182,13 +196,13 @@ public class OrcidController : ControllerBase
             return BadRequest($"Error retrieving ORCID data: {ex.Message}");
         }
 
-        PersonDTO newPersonDTO = new PersonDTO
+        PersonRequestDTO newPersonDTO = new()
         {
             Name = orcidPerson.CreditName ?? orcidPerson.FirstName + " " + orcidPerson.LastName,
             GivenName = orcidPerson.FirstName,
             FamilyName = orcidPerson.LastName,
             Email = null,
-            ORCiD = orcidPerson.Orcid
+            ORCiD = orcidPerson.Orcid,
         };
 
         Person newPerson = await _peopleService.CreatePersonAsync(newPersonDTO);
@@ -217,12 +231,19 @@ public class OrcidController : ControllerBase
             // Handle appropriately - maybe redirect to login?
             return Unauthorized("Primary user session not found or invalid. Please log in again.");
 
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null)
             // User exists in session but not DB? This indicates an inconsistency.
             return NotFound($"User with ID {userSession.User.Id} not found in database.");
 
-        dbUser.ORCiD = orcidId;
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
+        
+        dbUser.Person.ORCiD = orcidId;
         try
         {
             await _context.SaveChangesAsync();
@@ -248,11 +269,18 @@ public class OrcidController : ControllerBase
             return Unauthorized("User not logged in or session invalid.");
 
         // Fetch the corresponding User entity from the database
-        User? dbUser = await _context.Users.FindAsync(userSession.User.Id);
+        User? dbUser = await _context.Users
+            .Include(user => user.Person)
+            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
         if (dbUser == null) return NotFound($"User with ID {userSession.User.Id} not found in database.");
+        
+        if (dbUser.Person == null)
+        {
+            return NotFound("User does not have an associated Person record.");
+        }
 
         // Update *only* the ORCiD property
-        dbUser.ORCiD = null;
+        dbUser.Person.ORCiD = null;
 
         // Save changes
         try

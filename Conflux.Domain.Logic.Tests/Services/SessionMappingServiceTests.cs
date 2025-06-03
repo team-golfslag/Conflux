@@ -231,11 +231,12 @@ public class SessionMappingServiceTests
         Assert.Equal("Test Group", project.Titles[0].Text);
 
         Assert.Single(context.Users);
-        User user = await context.Users.FirstAsync();
-        Assert.Equal("Test User", user.Name);
-        Assert.Equal("Test", user.GivenName);
-        Assert.Equal("User", user.FamilyName);
-        Assert.Equal("test@example.com", user.Email);
+        User user = await context.Users.Include(u => u.Person).FirstAsync();
+        Assert.NotNull(user.Person);
+        Assert.Equal("Test User", user.Person.Name);
+        Assert.Equal("Test", user.Person.GivenName);
+        Assert.Equal("User", user.Person.FamilyName);
+        Assert.Equal("test@example.com", user.Person.Email);
         Assert.Equal("sram-id-1", user.SRAMId);
 
         Assert.Empty(context.UserRoles);
@@ -560,11 +561,17 @@ public class SessionMappingServiceTests
         ConfluxContext context = new(options);
 
         // Add existing user without SRAM ID
+        Person person = new()
+        {
+            Name = "Existing User",
+            Email = "test@example.com",
+        };
+        context.People.Add(person);
         context.Users.Add(new()
         {
             SCIMId = "user-id-1",
-            Name = "Existing User",
-            Email = "test@example.com",
+            PersonId = person.Id,
+            Person = person
         });
         await context.SaveChangesAsync();
 
@@ -651,11 +658,17 @@ public class SessionMappingServiceTests
         ConfluxContext context = new(options);
 
         // Add existing user with different email
+        Person person = new()
+        {
+            Name = "Existing User",
+            Email = "different@example.com",
+        };
+        context.People.Add(person);
         context.Users.Add(new()
         {
             SCIMId = "user-id-1",
-            Name = "Existing User",
-            Email = "different@example.com",
+            PersonId = person.Id,
+            Person = person
         });
         await context.SaveChangesAsync();
 

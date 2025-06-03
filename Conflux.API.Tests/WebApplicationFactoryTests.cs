@@ -17,6 +17,33 @@ namespace Conflux.API.Tests;
 
 public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 {
+    private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
+    {
+        var personId = Guid.NewGuid();
+        
+        // Create the person first
+        var person = new Person
+        {
+            Id = personId,
+            Name = name,
+            ORCiD = orcid,
+            User = null
+        };
+        
+        // Then create the user with a reference to the person
+        var user = new User
+        {
+            Id = userId,
+            SCIMId = scimId,
+            PersonId = personId,
+            Person = person
+        };
+        
+        // Set the bidirectional reference
+        person.User = user;
+        return user;
+    }
+
     // This is a unique name for the in-memory database to avoid conflicts between tests
     private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.NewGuid()}";
 
@@ -148,12 +175,8 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             // Add a test user with admin roles for all test projects
             Guid testUserId = new("00000000-0000-0000-0000-000000000001");
-            User testUser = new()
-            {
-                Id = testUserId,
-                Name = "Test Admin",
-                SCIMId = "test-admin-scim-id",
-            };
+            User testUser = CreateUserWithPerson(testUserId, "Test Admin", "test-admin-scim-id");
+            db.People.Add(testUser.Person);
             db.Users.Add(testUser);
 
             // Add roles for the test user
@@ -187,12 +210,12 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
             db.SaveChanges();
 
             // Mock the user session service to return our test admin user
-            var mockUserSessionService = new Mock<IUserSessionService>();
+            Mock<IUserSessionService> mockUserSessionService = new();
             mockUserSessionService.Setup(m => m.GetUser()).ReturnsAsync(new UserSession
             {
                 User = testUser,
-                Collaborations = new()
-                {
+                Collaborations =
+                [
                     new()
                     {
                         Organization = "Test Organization",
@@ -204,8 +227,8 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                             ExternalId = "ext1",
                             SCIMId = "SCIM", // This should match the projects' SCIMId
                         },
-                        Groups = new()
-                        {
+                        Groups =
+                        [
                             new()
                             {
                                 Id = "group1",
@@ -214,16 +237,16 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                                 ExternalId = "ext1",
                                 SCIMId = "SCIM",
                             },
-                        },
+                        ],
                     },
-                },
+                ],
             });
 
             // Replace the actual service with our mock
-            services.AddScoped<IUserSessionService>(sp => mockUserSessionService.Object);
+            services.AddScoped<IUserSessionService>(_ => mockUserSessionService.Object);
 
             // Mock the access control service to allow our test admin user to access all projects with admin role
-            var mockAccessControlService = new Mock<IAccessControlService>();
+            Mock<IAccessControlService> mockAccessControlService = new();
             mockAccessControlService.Setup(m => m.UserHasRoleInProject(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserRoleType>())).ReturnsAsync(true);
 

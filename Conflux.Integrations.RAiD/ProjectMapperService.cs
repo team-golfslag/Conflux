@@ -5,6 +5,7 @@
 
 using Conflux.Data;
 using Conflux.Domain;
+using Microsoft.EntityFrameworkCore;
 using RAiD.Net.Domain;
 
 namespace Conflux.Integrations.RAiD;
@@ -18,8 +19,11 @@ public class ProjectMapperService : IProjectMapperService
         _context = context;
     }
 
-    public RAiDCreateRequest MapProjectCreationRequest(Project project) =>
-        new()
+    public async Task<RAiDCreateRequest> MapProjectCreationRequest(Guid projectId)
+    {
+        Project project = await GetProject(projectId);
+
+        return new()
         {
             Title = project.Titles.ConvertAll(MapProjectTitle),
             Date = new()
@@ -44,45 +48,323 @@ public class ProjectMapperService : IProjectMapperService
             Subject = null,     // Not implemented for now
             RelatedRaid = null, // Not implemented for now
             RelatedObject = project.Products.ConvertAll(MapProduct),
-            AlternateIdentifier = null, // Not implemented for now
-            SpatialCoverage = null,     // Not implemented for now
+            AlternateIdentifier =
+            [
+                new()
+                {
+                    Id = project.Id.ToString(),
+                    Type = "conflux-id",
+                },
+            ],
+            SpatialCoverage = null, // Not implemented for now
         };
+    }
 
-    public RAiDUpdateRequest MapProjectUpdateRequest(Project project) =>
-        new()
+    public async Task<List<RAiDIncompatibility>> CheckProjectCompatibility(Guid projectId)
+    {
+        Project project = await GetProject(projectId);
+
+        List<RAiDIncompatibility> incompatibilities = [];
+
+        List<ProjectTitle> activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
+            && (t.EndDate == null || t.EndDate >= DateTime.Now)
+            && t.Type == TitleType.Primary).ToList();
+
+        // Note: One (and only one) current (as per start-end dates)
+        // Primary Title is mandatory for each Title specified;
+        // additional titles are optional; any previous titles are managed
+        // by start-end dates (title type does not change).
+        //
+        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-type-id
+        if (activeTitles.Count == 0)
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoActivePrimaryTitle,
+            });
+
+        if (activeTitles.Count > 1)
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.MultipleActivePrimaryTitle,
+            });
+
+        // Constraint: Titles have maximum 100 characters
+        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-text
+        incompatibilities.AddRange(project.Titles
+            .Where(t => t.Text.Length > 100)
+            .Select(t => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ProjectTitleTooLong,
+                ObjectId = t.Id,
+            }).ToList());
+
+        // Constraint: Descriptions have maximum 1000 characters
+        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-text
+        incompatibilities.AddRange(project.Descriptions
+            .Where(t => t.Text.Length > 1000)
+            .Select(d => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ProjectDescriptionTooLong,
+                ObjectId = d.Id,
+            }).ToList());
+
+        // Constraints: if a description is provided, one (and only one) primary description is mandatory
+        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-type-id
+        if (project.Descriptions.Count > 0)
+        {
+            List<ProjectDescription> primaryDescriptions =
+                project.Descriptions.Where(d => d.Type == DescriptionType.Primary).ToList();
+            if (primaryDescriptions.Count == 0)
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.NoPrimaryDescription,
+                });
+            if (primaryDescriptions.Count > 1)
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.MultiplePrimaryDescriptions,
+                });
+        }
+
+        // Requirement: at least one contributor is mandatory
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor
+        if (project.Contributors.Count == 0)
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoContributors,
+            });
+
+        // In Conflux people are not required to have an ORCiD
+        incompatibilities.AddRange(project.Contributors
+            .Where(c => string.IsNullOrEmpty(_context.People.Find(c.PersonId)!.ORCiD))
+            .Select(c => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ContributorWithoutOrcid,
+                ObjectId = c.PersonId,
+            }));
+
+        // Constraints: contributors must have one and only one position at any given time (contributors may also be flagged as a 'leader' or 'contact' separately)
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-position
+        incompatibilities.AddRange(project.Contributors
+            .Where(c =>
+            {
+                if (c.Positions.Count == 0)
+                    return false;
+                c.Positions.Sort((p, q) => DateTime.Compare(p.StartDate, q.StartDate));
+                DateTime? last = c.Positions[0].StartDate;
+                foreach (ContributorPosition position in c.Positions)
+                {
+                    // Previous had no end and was not the last
+                    if (last == null)
+                        return true;
+                    // Previous ended after current started
+                    if (last > position.StartDate)
+                        return true;
+                    // Previous ended 
+                    if (last > position.EndDate)
+                        return true;
+                    last = position.EndDate;
+                }
+
+                return false;
+            })
+            .Select(c => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OverlappingContributorPositions,
+                ObjectId = c.PersonId,
+            }));
+
+        // Requirement: at least one contributor must be flagged as a project leader
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-leader
+        if (!project.Contributors.Any(c => c.Leader))
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoProjectLeader,
+            });
+
+        // Requirement: at least one contributor must be flagged as a project contact
+        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-contact
+        if (!project.Contributors.Any(c => c.Contact))
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoProjectContact,
+            });
+
+        // RAiD requires a ROR to be set for all Organisations
+        incompatibilities.AddRange(project.Organisations.Where(p => string.IsNullOrEmpty(p.Organisation!.RORId))
+            .Select(o => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OrganisationWithoutRor,
+                ObjectId = o.OrganisationId,
+            }));
+        
+        // Note: An organisation's role may change over time, but each organisation may have one and only one role at any given time.
+        // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role
+        incompatibilities.AddRange(project.Organisations
+            .Where(c =>
+            {
+                if (c.Roles.Count == 0)
+                    return false;
+                c.Roles.Sort((p, q) => DateTime.Compare(p.StartDate, q.StartDate));
+                DateTime? last = c.Roles[0].StartDate;
+                foreach (OrganisationRole role in c.Roles)
+                {
+                    // Previous had no end and was not the last
+                    if (last == null)
+                        return true;
+                    // Previous ended after current started
+                    if (last > role.StartDate)
+                        return true;
+                    // Previous ended 
+                    if (last > role.EndDate)
+                        return true;
+                    last = role.EndDate;
+                }
+
+                return false;
+            })
+            .Select(o => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.OverlappingOrganisationRoles,
+                ObjectId = o.OrganisationId,
+            }));
+
+        // Constraints: one (and only one) Organisation must be designated as 'Lead Research Organisation'
+        // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role-id
+        List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
+                o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
+            .ToList();
+        if (leadOrganisationsRoles.Count == 0)
+        {
+            incompatibilities.Add(new()
+            {
+                Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+            });
+        }
+        else
+        {
+            leadOrganisationsRoles.Sort((r1, r2) => DateTime.Compare(r1.StartDate, r2.StartDate));
+            DateTime? last = project.StartDate;
+            foreach (OrganisationRole leadOrganisationsRole in leadOrganisationsRoles)
+            {
+                // Last had no end so we have overlap
+                if (last == null)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.MultipleLeadResearchOrganisation,
+                    });
+
+                if (last != leadOrganisationsRole.StartDate)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                    });
+
+                last = leadOrganisationsRole.EndDate;
+            }
+
+            if (last != null && last != project.EndDate)
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                });
+        }
+
+        incompatibilities.AddRange(project.Products
+            .Where(p => p.Categories.Count == 0)
+            .Select(p => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.NoProductCategory,
+                ObjectId = p.Id,
+            }));
+
+        return incompatibilities;
+    }
+
+    public async Task<RAiDUpdateRequest> MapProjectUpdateRequest(Guid projectId)
+    {
+        Project project = await GetProject(projectId);
+
+        return new()
         {
             Metadata = null,
-            Identifier = new()
+            Identifier = MapRAiDInfo(project.RAiDInfo!),
+            Title = project.Titles.ConvertAll(MapProjectTitle),
+            Date = new()
             {
-                IdValue = null,
-                SchemaUri = null,
-                RegistrationAgency = new()
-                {
-                    Id = null,
-                    SchemaUri = null,
-                },
-                Owner = new()
-                {
-                    Id = null,
-                    SchemaUri = null,
-                    ServicePoint = null,
-                },
-                RaidAgencyUrl = null,
-                License = null,
-                Version = 1,
+                StartDate = project.StartDate,
+                EndDate = project.EndDate,
             },
-            Title = null,
-            Date = null,
-            Description = null,
-            Access = null,
+
+            Description = project.Descriptions.ConvertAll(MapProjectDescription),
+            Access = new()
+            {
+                Type = new() // TODO make an enum for this
+                {
+                    Id = "https://vocabularies.coar-repositories.org/access_rights/c_abf2/",
+                    SchemaUri = "https://vocabularies.coar-repositories.org/access_rights/",
+                },
+                EmbargoExpiry = null, // Not implemented for now
+                Statement = null,     // Not implemented for now
+            },
             AlternateUrl = null,
-            Contributor = null,
-            Organisation = null,
-            Subject = null,
-            RelatedRaid = null,
-            RelatedObject = null,
-            AlternateIdentifier = null,
-            SpatialCoverage = null,
+            Contributor = project.Contributors.ConvertAll(MapContributor),
+            Organisation = project.Organisations.ConvertAll(MapOrganisation),
+            Subject = null,     // Not implemented for now
+            RelatedRaid = null, // Not implemented for now
+            RelatedObject = project.Products.ConvertAll(MapProduct),
+            AlternateIdentifier =
+            [
+                new()
+                {
+                    Id = project.Id.ToString(),
+                    Type = "conflux-id",
+                },
+            ],
+            SpatialCoverage = null, // Not implemented for now
+        };
+    }
+
+    private async Task<Project> GetProject(Guid projectId)
+    {
+        Project? project = await _context.Projects.Where(p => p.Id == projectId)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Titles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
+            .Include(p => p.Products)
+            .Include(p => p.RAiDInfo)
+            .FirstOrDefaultAsync();
+
+        if (project == null)
+            throw new ArgumentException($"Project with Id {projectId} could not be found.");
+
+        return project;
+    }
+
+    private static RAiDId MapRAiDInfo(RAiDInfo raidInfo) =>
+        new()
+        {
+            IdValue = raidInfo.RAiDId,
+            SchemaUri = raidInfo.SchemaUri,
+            RegistrationAgency = new()
+            {
+                Id = raidInfo.RegistrationAgencyId,
+                SchemaUri = raidInfo.RegistrationAgencySchemaUri,
+            },
+            Owner = new()
+            {
+                Id = raidInfo.OwnerId,
+                SchemaUri = raidInfo.OwnerSchemaUri,
+                ServicePoint = raidInfo.OwnerServicePoint,
+            },
+            RaidAgencyUrl = raidInfo.RegistrationAgencyId,
+            License = raidInfo.License,
+            Version = raidInfo.Version,
         };
 
     private static RAiDTitle MapProjectTitle(ProjectTitle title) =>
@@ -157,13 +439,15 @@ public class ProjectMapperService : IProjectMapperService
             EndDate = role.EndDate,
         };
 
-    private static RAiDOrganisation MapOrganisation(Organisation organisation) =>
-        new()
+    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
+    {
+        return new()
         {
-            Id = organisation.RORId ?? throw new ArgumentNullException(nameof(organisation.RORId)),
-            SchemaUri = organisation.SchemaUri,
-            Role = organisation.Roles.Select(MapOrganisationRole).ToList(),
+            Id = projectOrganisation.Organisation!.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
+            SchemaUri = projectOrganisation.Organisation!.SchemaUri,
+            Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
         };
+    }
 
     private static RAiDLanguage MapLanguage(Language lang) =>
         new()
@@ -180,106 +464,12 @@ public class ProjectMapperService : IProjectMapperService
             Type = new()
             {
                 Id = product.GetTypeUri,
-                SchemaUri = product.TypeSchemaUri,
+                SchemaUri = Product.TypeSchemaUri,
             },
             Category = product.Categories.ToList().ConvertAll(p => new RAiDRelatedObjectCategory
             {
-                Id = p.GetUri,
-                SchemaUri = p.SchemaUri,
+                Id = Product.GetCategoryUri(p),
+                SchemaUri = Product.CategorySchemaUri,
             }),
         };
-
-    public List<RAiDIncompatibility> CheckProjectCompatibility(Project project)
-    {
-        List<RAiDIncompatibility> incompatibilities = [];
-
-        var activeTitles = project.Titles.Where(t => t.StartDate <= DateTime.Now
-            && (t.EndDate == null || t.EndDate >= DateTime.Now)
-            && t.Type == TitleType.Primary).ToList();
-
-        // Note: One (and only one) current (as per start-end dates)
-        // Primary Title is mandatory for each Title specified;
-        // additional titles are optional; any previous titles are managed
-        // by start-end dates (title type does not change).
-        //
-        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-type-id
-        if (activeTitles.Count == 0)
-            incompatibilities.Add(new()
-            {
-                Type = RAiDIncompatibilityType.NoActivePrimaryTitle,
-            });
-
-        if (activeTitles.Count > 1)
-            incompatibilities.Add(new()
-            {
-                Type = RAiDIncompatibilityType.MultipleActivePrimaryTitle,
-            });
-
-        // Constraint: Titles have maximum 100 characters
-        // Source: https://metadata.raid.org/en/latest/core/titles.html#title-text
-        incompatibilities.AddRange(project.Titles
-            .Where(t => t.Text.Length > 100)
-            .Select(t => new RAiDIncompatibility
-            {
-                Type = RAiDIncompatibilityType.ProjectTitleTooLong,
-                ObjectId = t.Id,
-            }).ToList());
-
-        // Constraint: Descriptions have maximum 1000 characters
-        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-text
-        incompatibilities.AddRange(project.Descriptions
-            .Where(t => t.Text.Length > 1000)
-            .Select(d => new RAiDIncompatibility
-            {
-                Type = RAiDIncompatibilityType.ProjectDescriptionTooLong,
-                ObjectId = d.Id,
-            }).ToList());
-
-        // Constraints: if a description is provided, one (and only one) primary description is mandatory
-        // Source: https://metadata.raid.org/en/latest/core/descriptions.html#description-type-id
-        if (project.Descriptions.Count > 0)
-        {
-            var primaryDescriptions =
-                project.Descriptions.Where(d => d.Type == DescriptionType.Primary).ToList();
-            if (primaryDescriptions.Count == 0)
-                incompatibilities.Add(new()
-                {
-                    Type = RAiDIncompatibilityType.NoPrimaryDescription,
-                });
-            if (primaryDescriptions.Count > 1)
-                incompatibilities.Add(new()
-                {
-                    Type = RAiDIncompatibilityType.MultiplePrimaryDescriptions,
-                });
-        }
-
-        // Requirement: at least one contributor is mandatory
-        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor
-        if (project.Contributors.Count == 0)
-            incompatibilities.Add(new()
-            {
-                Type = RAiDIncompatibilityType.NoContributors,
-            });
-
-        // Requirement: at least one contributor must be flagged as a project leader
-        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-leader
-        if (!project.Contributors.Any(c => c.Leader))
-            incompatibilities.Add(new()
-            {
-                Type = RAiDIncompatibilityType.NoProjectLeader,
-            });
-
-        // Requirement: at least one contributor must be flagged as a project contact
-        // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-contact
-        if (!project.Contributors.Any(c => c.Contact))
-            incompatibilities.Add(new()
-            {
-                Type = RAiDIncompatibilityType.NoProjectContact,
-            });
-
-        // project.Organisations.Any(o => o.Roles.)
-
-
-        return incompatibilities;
-    }
 }

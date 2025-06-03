@@ -4,8 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +20,7 @@ public class PeopleServiceTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Use a new in-memory database for each test run
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
+        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
@@ -70,7 +69,7 @@ public class PeopleServiceTests : IAsyncLifetime
     [Fact]
     public async Task GetPersonsByQueryAsync_WithNullQuery_ReturnsAllPeople()
     {
-        var result = await _service.GetPersonsByQueryAsync(null);
+        List<Person> result = await _service.GetPersonsByQueryAsync(null);
 
         Assert.Equal(3, result.Count);
         Assert.Contains(result, p => p.Name == "John Doe");
@@ -81,14 +80,14 @@ public class PeopleServiceTests : IAsyncLifetime
     [Fact]
     public async Task GetPersonsByQueryAsync_WithEmptyQuery_ReturnsAllPeople()
     {
-        var result = await _service.GetPersonsByQueryAsync(string.Empty);
+        List<Person> result = await _service.GetPersonsByQueryAsync(string.Empty);
         Assert.Equal(3, result.Count);
     }
 
     [Fact]
     public async Task GetPersonsByQueryAsync_WithValidQuery_ReturnsFilteredPeople()
     {
-        var result = await _service.GetPersonsByQueryAsync("John");
+        List<Person> result = await _service.GetPersonsByQueryAsync("John");
 
         // should match both "John Doe" and "Bob Johnson"
         Assert.Equal(2, result.Count);
@@ -116,7 +115,7 @@ public class PeopleServiceTests : IAsyncLifetime
     [Fact]
     public async Task CreatePersonAsync_AddsPersonToDatabase()
     {
-        PersonDTO dto = new()
+        PersonRequestDTO dto = new()
         {
             Name = "Alice Wonderland",
             GivenName = "Alice",
@@ -132,7 +131,7 @@ public class PeopleServiceTests : IAsyncLifetime
         // Verify it persisted
         Person? fetched = await _context.People.FindAsync(created.Id);
         Assert.NotNull(fetched);
-        Assert.Equal("Alice Wonderland", fetched!.Name);
+        Assert.Equal("Alice Wonderland", fetched.Name);
     }
     
     [Fact]
@@ -171,7 +170,7 @@ public class PeopleServiceTests : IAsyncLifetime
     public async Task UpdatePersonAsync_WithValidId_UpdatesPerson()
     {
         Person target = await _context.People.FirstAsync();
-        PersonDTO dto = new()
+        PersonRequestDTO dto = new()
         {
             Name = "Updated",
             GivenName = "Up",
@@ -187,26 +186,6 @@ public class PeopleServiceTests : IAsyncLifetime
         // persisted?
         Person? persisted = await _context.People.FindAsync(target.Id);
         Assert.Equal("Updated", persisted!.Name);
-    }
-
-    [Fact]
-    public async Task PatchPersonAsync_WithValidId_PatchesEmailOnly()
-    {
-        Person target = await _context.People.FirstAsync();
-        string originalName = target.Name;
-
-        PersonPatchDTO patch = new()
-        {
-            Email = "patched@example.com",
-        };
-
-        Person patched = await _service.PatchPersonAsync(target.Id, patch);
-
-        Assert.Equal(originalName, patched.Name);
-        Assert.Equal("patched@example.com", patched.Email);
-
-        Person? persisted = await _context.People.FindAsync(target.Id);
-        Assert.Equal("patched@example.com", persisted!.Email);
     }
 
     [Fact]

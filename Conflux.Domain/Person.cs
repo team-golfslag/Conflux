@@ -19,4 +19,10 @@ public class Person
     public string? GivenName { get; set; }
     public string? FamilyName { get; set; }
     public string? Email { get; set; }
+    
+    public Guid? UserId { get; set; }
+    [JsonIgnore]
+    public User? User { get; set; }
+
+    public List<Contributor>? Contributors { get; init; }
 }

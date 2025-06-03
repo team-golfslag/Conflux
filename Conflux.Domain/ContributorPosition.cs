@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,16 +21,15 @@ public enum ContributorPositionType
     Other = 311,
 }
 
-[PrimaryKey(nameof(PersonId), nameof(ProjectId), nameof(Position))]
 public class ContributorPosition
 {
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 0)]
-    public required Guid PersonId { get; init; }
-
-    [ForeignKey(nameof(Contributor))]
-    [Column(Order = 1)]
-    public required Guid ProjectId { get; init; }
+    [Key] public Guid Id { get; init; }
+    
+    public Guid PersonId { get; init; }
+    
+    public Guid ProjectId { get; init; }
+    
+    public Contributor? Contributor { get; init; }
 
     public required ContributorPositionType Position { get; init; }
     public string SchemaUri => "https://vocabulary.raid.org/contributor.position.schema/305";

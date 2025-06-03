@@ -11,6 +11,7 @@ using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM;
 using Conflux.Integrations.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
@@ -43,10 +44,16 @@ public class UserSessionService : IUserSessionService
         if (_httpContextAccessor.HttpContext.Session is null ||
             !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
-        if (userSession != null)
+        if (userSession == null) 
+            return await SetUser(null);
+        
+        // Before returning the user session, we need to populate the person
+        if (userSession.User is null || userSession.User.Person != null) 
             return userSession;
-
-        return await SetUser(null);
+        
+        Person? person = await _confluxContext.People.FindAsync(userSession.User.PersonId);
+        if (person != null) userSession.User.Person = person;
+        return userSession;
     }
 
     public async Task<UserSession?> UpdateUser()
@@ -55,7 +62,9 @@ public class UserSessionService : IUserSessionService
         if (user is null)
             return null;
 
-        User? person = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        User? person = _confluxContext.Users
+            .Include(u => u.Person)
+            .SingleOrDefault(p => p.SRAMId == user.SRAMId);
         if (person is null)
             return user;
 
@@ -97,7 +106,9 @@ public class UserSessionService : IUserSessionService
 
 
         UserSession? user = await GetUserSession(claims);
-        if (user is { User: null }) user.User = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        if (user is { User: null })
+            user.User = _confluxContext.Users.Include(u => u.Person)
+                .SingleOrDefault(p => p.SRAMId == user.SRAMId);
 
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 

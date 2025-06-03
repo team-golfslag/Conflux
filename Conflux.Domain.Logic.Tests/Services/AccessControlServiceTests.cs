@@ -40,6 +40,14 @@ public class AccessControlServiceTests
         Guid projectId = Guid.NewGuid();
         UserRoleType roleType = UserRoleType.Admin;
 
+        // Create person first
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test User",
+        };
+        
+        // Then create the user with reference to the person
         User user = new()
         {
             Id = userId,
@@ -55,9 +63,15 @@ public class AccessControlServiceTests
                 },
             ],
             SCIMId = "user-scim-id",
-            Name = "Test User",
+            PersonId = person.Id,
+            Person = person
         };
+        
+        // Set bidirectional reference
+        person.User = user;
 
+        // Add both person and user
+        context.People.Add(person);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -80,6 +94,14 @@ public class AccessControlServiceTests
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
 
+        // Create person first
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test User",
+        };
+        
+        // Then create the user with reference to the person
         User user = new()
         {
             Id = userId,
@@ -95,9 +117,15 @@ public class AccessControlServiceTests
                 },
             ],
             SCIMId = "user-scim-id",
-            Name = "Test User",
+            PersonId = person.Id,
+            Person = person
         };
+        
+        // Set bidirectional reference
+        person.User = user;
 
+        // Add both person and user
+        context.People.Add(person);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -121,6 +149,14 @@ public class AccessControlServiceTests
         Guid projectId = Guid.NewGuid();
         Guid differentProjectId = Guid.NewGuid();
 
+        // Create person first
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test User",
+        };
+        
+        // Then create the user with reference to the person
         User user = new()
         {
             Id = userId,
@@ -136,9 +172,15 @@ public class AccessControlServiceTests
                 },
             ],
             SCIMId = "user-scim-id",
-            Name = "Test User",
+            PersonId = person.Id,
+            Person = person
         };
+        
+        // Set bidirectional reference
+        person.User = user;
 
+        // Add both person and user
+        context.People.Add(person);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
@@ -161,14 +203,28 @@ public class AccessControlServiceTests
         Guid userId = Guid.NewGuid();
         Guid projectId = Guid.NewGuid();
 
+        // Create person first
+        Person person = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test User",
+        };
+        
+        // Then create the user with reference to the person
         User user = new()
         {
             Id = userId,
             Roles = [],
             SCIMId = "user-scim-id",
-            Name = "Test User",
+            PersonId = person.Id,
+            Person = person
         };
+        
+        // Set bidirectional reference
+        person.User = user;
 
+        // Add both person and user
+        context.People.Add(person);
         context.Users.Add(user);
         await context.SaveChangesAsync();
 

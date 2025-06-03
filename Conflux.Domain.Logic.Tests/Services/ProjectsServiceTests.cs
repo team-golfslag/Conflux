@@ -4,12 +4,15 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.Data;
-using Conflux.Domain.Logic.DTOs;
-using Conflux.Domain.Logic.DTOs.Patch;
+using Conflux.Domain.Logic.DTOs.Queries;
+using Conflux.Domain.Logic.DTOs.Requests;
+using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Session;
 using Conflux.Integrations.RAiD;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using RAiD.Net;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -19,22 +22,23 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private readonly IProjectMapperService _projectMapperService = null!;
-    private readonly IRAiDService _raidService = null!;
+    private readonly Mock<IUserSessionService> _userSessionServiceMock = new();
     private ConfluxContext _context = null!;
-    private UserSessionService _userSessionService = null!;
+    private ProjectsService _service;
 
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
+        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
-        _userSessionService = new(null!, null!, null!, null!);
+        _userSessionServiceMock.Setup(s => s.GetUser())
+            .ReturnsAsync(UserSession.Development);
+        _service = new(_context, _userSessionServiceMock.Object);
     }
 
     public async Task DisposeAsync()
@@ -50,41 +54,105 @@ public class ProjectsServiceTests : IAsyncLifetime
     [Fact]
     public async Task UpdateProjectAsync_ShouldReturnNull_WhenProjectDoesNotExist()
     {
-        // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
         // Act & Assert
-        await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await service.PutProjectAsync(Guid.NewGuid(),
+        await Assert.ThrowsAsync<ProjectNotFoundException>(async () => await _service.PutProjectAsync(Guid.NewGuid(),
             new()
             {
-                Titles =
-                [
-                    new()
-                    {
-                        Text = "non-existent project",
-                        Type = TitleType.Primary,
-                        StartDate = new(2021,
-                            1,
-                            1,
-                            0,
-                            0,
-                            0,
-                            DateTimeKind.Utc),
-                    },
-                ],
-                Descriptions =
-                [
-                    new()
-                    {
-                        Text = "Will not update",
-                        Language = Language.ENGLISH,
-                        Type = DescriptionType.Primary,
-                    },
-                ],
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(1),
-                Id = Guid.NewGuid(),
             }));
+    }
+
+    [Fact]
+    public async Task ExportProjectsToCsvAsync_ShouldReturnCsvContent()
+    {
+        // Arrange
+        // insert a test person
+        Guid personId = Guid.NewGuid();
+        Person person = new()
+        {
+            Id = personId,
+            Name = "Test User",
+        };
+
+        // insert a test organisation
+        Guid organisationId = Guid.NewGuid();
+        Organisation organisation = new()
+        {
+            Id = organisationId,
+            RORId = "https://ror.org/00x00x00",
+            Name = "Test Organisation",
+        };
+
+        // Insert a test project
+        Guid projectId = Guid.NewGuid();
+        Project project1 = new()
+        {
+            Id = projectId,
+            SCIMId = "SCIM",
+            Titles =
+            [
+                new()
+                {
+                    ProjectId = projectId,
+                    Text = "Test Project",
+                    Type = TitleType.Primary,
+                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                },
+            ],
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(1),
+            Organisations =
+            [
+                new()
+                {
+                    OrganisationId = organisationId,
+                    ProjectId = projectId,
+                },
+            ],
+            Contributors =
+            [
+                new()
+                {
+                    PersonId = personId,
+                    ProjectId = projectId,
+                },
+            ],
+            Products =
+            [
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Test Product",
+                    Url = "https://example.com/product",
+                    Type = ProductType.Software,
+                },
+            ],
+        };
+
+        _context.People.Add(person);
+        _context.Organisations.Add(organisation);
+        _context.Projects.Add(project1);
+        await _context.SaveChangesAsync();
+
+        ProjectQueryDTO queryDto = new()
+        {
+            Query = "Test",
+            // StartDate = DateTime.UtcNow.AddDays(-30),
+            // EndDate = DateTime.UtcNow.AddDays(30),
+        };
+
+        // Act
+        string csvContent = await _service.ExportProjectsToCsvAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(csvContent);
+        Assert.NotEmpty(csvContent);
+        Assert.Contains("Id", csvContent);
+        Assert.Contains(projectId.ToString(), csvContent);
+        Assert.Contains("Test User", csvContent);
+        Assert.Contains("Test Organisation", csvContent);
+        Assert.Contains("Test Product", csvContent);
     }
 
     /// <summary>
@@ -96,8 +164,6 @@ public class ProjectsServiceTests : IAsyncLifetime
     public async Task PutProjectAsync_ShouldUpdateExistingProject()
     {
         // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
         Guid projectId = Guid.NewGuid();
 
         // Insert a test project
@@ -132,32 +198,8 @@ public class ProjectsServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Prepare Put DTO
-        ProjectDTO putDto = new()
+        ProjectRequestDTO putRequestDTO = new()
         {
-            Titles =
-            [
-                new()
-                {
-                    Text = "Updated Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021,
-                        1,
-                        1,
-                        0,
-                        0,
-                        0,
-                        DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    Text = "Updated Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
             StartDate = new(2024,
                 2,
                 1,
@@ -172,18 +214,13 @@ public class ProjectsServiceTests : IAsyncLifetime
                 59,
                 59,
                 DateTimeKind.Utc),
-            Id = projectId,
         };
 
         // Act
-        ProjectDTO updatedProject = await service.PutProjectAsync(originalProject.Id, putDto);
+        ProjectResponseDTO updatedProject = await _service.PutProjectAsync(originalProject.Id, putRequestDTO);
 
         // Assert
         Assert.NotNull(updatedProject);
-        Assert.Single(updatedProject.Titles);
-        Assert.Equal("Updated Title", updatedProject.Titles[0].Text);
-        Assert.Single(updatedProject.Descriptions);
-        Assert.Equal("Updated Description", updatedProject.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
 
@@ -192,106 +229,6 @@ public class ProjectsServiceTests : IAsyncLifetime
             .Include(p => p.Descriptions)
             .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
         Assert.NotNull(reloaded);
-        Assert.Single(reloaded.Titles);
-        Assert.Equal("Updated Title", reloaded.Titles[0].Text);
-        Assert.Single(reloaded.Descriptions);
-        Assert.Equal("Updated Description", reloaded.Descriptions[0].Text);
-        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
-        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
-    }
-
-    /// <summary>
-    /// Given a project service
-    /// When PatchProjectAsync is called with an existing project ID
-    /// Then the project should be patched
-    /// </summary>
-    [Fact]
-    public async Task PatchProjectAsync_ShouldPatchExistingProject()
-    {
-        // Arrange
-        ProjectsService service = new(_context, _userSessionService, _projectMapperService, _raidService);
-
-        Guid projectId = Guid.NewGuid();
-
-        // Insert a test project
-        Project originalProject = new()
-        {
-            Id = projectId,
-            Titles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Text = "Original Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Text = "Original Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
-            StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-        };
-
-        _context.Projects.Add(originalProject);
-        await _context.SaveChangesAsync();
-
-
-        // Prepare patch DTO
-        ProjectPatchDTO patchDto = new()
-        {
-            Titles =
-            [
-                new()
-                {
-                    Text = "Patched Title",
-                    Type = TitleType.Primary,
-                    StartDate = new(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                },
-            ],
-            Descriptions =
-            [
-                new()
-                {
-                    Text = "Patched Description",
-                    Type = DescriptionType.Primary,
-                    Language = Language.ENGLISH,
-                },
-            ],
-            StartDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc),
-        };
-
-        // Act
-        ProjectDTO patchedProject = await service.PatchProjectAsync(originalProject.Id, patchDto);
-
-        // Assert
-        Assert.NotNull(patchedProject);
-        Assert.Single(patchedProject.Titles);
-        Assert.Equal("Patched Title", patchedProject.Titles[0].Text);
-        Assert.Single(patchedProject.Descriptions);
-        Assert.Equal("Patched Description", patchedProject.Descriptions[0].Text);
-        Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), patchedProject.StartDate);
-        Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), patchedProject.EndDate);
-
-        // Double-check by re-querying from the database
-        Project? reloaded = await _context.Projects
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .SingleOrDefaultAsync(p => p.Id == originalProject.Id);
-        Assert.NotNull(reloaded);
-        Assert.Single(reloaded.Titles);
-        Assert.Equal("Patched Title", reloaded.Titles[0].Text);
-        Assert.Single(reloaded.Descriptions);
-        Assert.Equal("Patched Description", reloaded.Descriptions[0].Text);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
     }

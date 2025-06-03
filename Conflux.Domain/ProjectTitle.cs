@@ -4,7 +4,6 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Domain;
 
@@ -34,18 +33,18 @@ public enum TitleType
 public class ProjectTitle
 {
     [Key] public Guid Id { get; init; }
-    [ForeignKey(nameof(Project))] public Guid ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
+    public Project? Project { get; init; }
 
     // TODO: Should have a max length of 100
-    public required string Text { get; init; }
+    public required string Text { get; set; }
 
-    public Language? Language { get; init; }
+    public Language? Language { get; set; }
 
-    // [JsonConverter(typeof(JsonStringEnumConverter))]
     public required TitleType Type { get; init; }
 
     public DateTime StartDate { get; init; }
-    public DateTime? EndDate { get; init; }
+    public DateTime? EndDate { get; set; }
 
     public string TypeSchemaUri => "https://vocabulary.raid.org/title.type.schema/376";
     public string TypeUri => $"https://vocabulary.raid.org/title.type.schema/{(int)Type}";

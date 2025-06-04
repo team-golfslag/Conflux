@@ -152,32 +152,6 @@ public class SessionMappingService : ISessionMappingService
                     StartDate = DateTime.SpecifyKind(group.Created, DateTimeKind.Utc),
                 });
             }
-            else
-            {
-                existingCollaboration.Titles =
-                [
-                    new()
-                    {
-                        ProjectId = existingCollaboration.Id,
-                        Text = group.DisplayName,
-                        Type = TitleType.Primary,
-                        StartDate = existingCollaboration.StartDate,
-                        EndDate = null,
-                    },
-                ];
-                existingCollaboration.Descriptions = group.Description == null
-                    ? []
-                    :
-                    [
-                        new()
-                        {
-                            ProjectId = existingCollaboration.Id,
-                            Text = group.Description,
-                            Type = DescriptionType.Primary,
-                            Language = null,
-                        },
-                    ];
-            }
         }
     }
 

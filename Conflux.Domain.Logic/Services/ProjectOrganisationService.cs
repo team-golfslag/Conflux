@@ -185,7 +185,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             .Where(r => r.ProjectId == projectId && r.OrganisationId == organisationId && r.EndDate == null)
             .SingleOrDefaultAsync();
 
-        if (currentRole != null && organisationDto.Role.HasValue && currentRole.Role != organisationDto.Role.Value)
+        if (currentRole != null && (!organisationDto.Role.HasValue || organisationDto.Role.HasValue && currentRole.Role != organisationDto.Role.Value))
         {
             // Set the end date for the current role
             currentRole.EndDate = DateTime.UtcNow.Date;

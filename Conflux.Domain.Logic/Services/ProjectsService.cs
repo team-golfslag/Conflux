@@ -44,6 +44,32 @@ public class ProjectsService : IProjectsService
                 .ThenInclude(c => c.Positions)
                 .SingleOrDefault(p => p.Id == id));
 
+    private async Task<List<Project>> GetCompleteProjects()
+    {
+        return await _context.Projects
+            .AsNoTracking()
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions)
+            .ToListAsync();
+    }
+            
+    
     private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
 
@@ -167,11 +193,11 @@ public class ProjectsService : IProjectsService
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
             OrderByType.TitleDesc => projects.OrderByDescending(project =>
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
-            OrderByType.StartDateAsc => projects.OrderBy(project => project.StartDate),
+            OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
-            OrderByType.EndDateAsc => projects.OrderBy(project => project.EndDate),
-            OrderByType.EndDateDesc => projects.OrderByDescending(project => project.EndDate),
-            _ => projects,
+            OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
+            OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
+            _                         => projects,
         };
 
         return projects.ToList();
@@ -247,8 +273,21 @@ public class ProjectsService : IProjectsService
     private async Task<List<ProjectResponseDTO>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
+        if (userSession is null || userSession.User is null)
             throw new UserNotAuthenticatedException();
+
+        if (userSession.User.Tier == UserTier.SuperAdmin)
+            return (await GetCompleteProjects())
+                .Select(p => MapToProjectDTO(p))
+                .ToList();
+
+        if (userSession.User.Tier == UserTier.SystemAdmin)
+        {
+            return (await GetCompleteProjects())
+                .Where(p => p.Lectoraat != null && userSession.User.AssignedLectorates.Contains(p.Lectoraat) ||
+                    p.OwnerOrganisation != null && userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation))
+                .Select(MapToProjectDTO).ToList();
+        }
 
         List<string> accessibleSramIds = userSession.Collaborations
             .Select(c => c.CollaborationGroup.SCIMId)
@@ -334,16 +373,18 @@ public class ProjectsService : IProjectsService
                 Id = u.Id,
                 SRAMId = u.SRAMId,
                 SCIMId = u.SCIMId,
-                Roles = u.Roles,
-                Person = u.Person != null ? new PersonResponseDTO
-                {
-                    Id = u.Person.Id,
-                    Name = u.Person.Name,
-                    GivenName = u.Person.GivenName,
-                    FamilyName = u.Person.FamilyName,
-                    Email = u.Person.Email,
-                    ORCiD = u.Person.ORCiD,
-                } : null
+                Roles = u.Roles.Where(r => r.ProjectId == project.Id).ToList(),
+                Person = u.Person != null
+                    ? new PersonResponseDTO
+                    {
+                        Id = u.Person.Id,
+                        Name = u.Person.Name,
+                        GivenName = u.Person.GivenName,
+                        FamilyName = u.Person.FamilyName,
+                        Email = u.Person.Email,
+                        ORCiD = u.Person.ORCiD,
+                    }
+                    : null
             }),
             Products = project.Products.ConvertAll(p => new ProductResponseDTO
             {
@@ -362,14 +403,14 @@ public class ProjectsService : IProjectsService
                 {
                     Id = o.Id,
                     Name = o.Name,
-                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(
-                            r => new OrganisationRoleResponseDTO
-                            {
-                                Role = r.Role,
-                                StartDate = r.StartDate,
-                                EndDate = r.EndDate,
-                            }
-                            ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
+                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(r =>
+                        new OrganisationRoleResponseDTO
+                        {
+                            Role = r.Role,
+                            StartDate = r.StartDate,
+                            EndDate = r.EndDate,
+                        }
+                    ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
                     RORId = o.RORId,
                 }
             }),
@@ -407,6 +448,7 @@ public class ProjectsService : IProjectsService
                 ProjectId = c.ProjectId,
             }).ToList(),
             Lectoraat = project.Lectoraat,
+            OwnerOrganisation = project.OwnerOrganisation,
         };
     }
 

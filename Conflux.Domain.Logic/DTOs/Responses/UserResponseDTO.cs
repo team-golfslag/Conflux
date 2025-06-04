@@ -15,5 +15,9 @@ public class UserResponseDTO
     [JsonPropertyName("scim_id")] public required string SCIMId { get; set; }
     public List<UserRole> Roles { get; set; } = [];
     
+    public UserTier Tier { get; set; } = UserTier.User;
+    public List<string> AssignedLectorates { get; set; } = [];
+    public List<string> AssignedOrganisations { get; set; } = [];
+    
     public PersonResponseDTO? Person { get; init; }
 }

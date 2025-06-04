@@ -38,4 +38,6 @@ public class Project
     public DateTime LastestEdit { get; set; } = DateTime.UtcNow;
 
     public string? Lectoraat { get; set; }
+    
+    public string? OwnerOrganisation { get; set; }
 }

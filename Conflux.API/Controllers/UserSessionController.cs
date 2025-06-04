@@ -109,6 +109,9 @@ public class UserSessionController : ControllerBase
                     SRAMId = userSession.User.SRAMId,
                     SCIMId = userSession.User.SCIMId,
                     Roles = userSession.User.Roles,
+                    Tier = userSession.User.Tier,
+                    AssignedLectorates = userSession.User.AssignedLectorates,
+                    AssignedOrganisations = userSession.User.AssignedOrganisations,
                     Person = userSession.User.Person != null
                         ? new PersonResponseDTO
                         {

@@ -13,6 +13,7 @@ using Conflux.Integrations.SRAM;
 using Conflux.Integrations.SRAM.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using Moq;
 using Xunit;
@@ -36,9 +37,10 @@ public class UserSessionServiceTests
 
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
-
+        var configurationMock = new Mock<IConfiguration>();
+        
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         UserSession? result = await service.GetUser();
@@ -69,9 +71,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => service.GetUser());
@@ -110,9 +113,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         UserSession? result = await service.GetUser();
@@ -181,9 +185,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         UserSession? result = await service.UpdateUser();
@@ -228,9 +233,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         UserSession? result = await service.UpdateUser();
@@ -263,9 +269,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         UserSession userSession = new()
         {
@@ -318,9 +325,10 @@ public class UserSessionServiceTests
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         mockCollaborationMapper.Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
             .ReturnsAsync([]);
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         UserSession? result = await service.SetUser(principal);
@@ -355,9 +363,10 @@ public class UserSessionServiceTests
         mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        var configurationMock = new Mock<IConfiguration>();
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object);
+            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
         // Act
         service.ClearUser();
@@ -366,3 +375,4 @@ public class UserSessionServiceTests
         mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
     }
 }
+

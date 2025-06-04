@@ -101,6 +101,7 @@ public class Program
         builder.Services.AddScoped<IProjectsService, ProjectsService>();
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
         builder.Services.AddScoped<ITimelineService, TimelineService>();
+        builder.Services.AddScoped<IAdminService, AdminService>();
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))
             builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>(provider =>

@@ -127,6 +127,7 @@ public class SessionMappingService : ISessionMappingService
                 {
                     Id = projectId,
                     SCIMId = group.SCIMId,
+                    OwnerOrganisation = group.Urn.Split(":").SkipLast(1).Last(),
                     Titles =
                     [
                         new()

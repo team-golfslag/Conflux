@@ -20,7 +20,6 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService : IProjectsService
 {
-    // Compiled query to get project by ID
     private static readonly Func<ConfluxContext, Guid, Task<Project?>> GetProjectByIdQuery =
         EF.CompileAsyncQuery((ConfluxContext context, Guid id) =>
             context.Projects
@@ -228,6 +227,7 @@ public class ProjectsService : IProjectsService
             ?? throw new ProjectNotFoundException(id);
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
+        project.Lectoraat = dto.Lectoraat;
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -406,6 +406,7 @@ public class ProjectsService : IProjectsService
                 Contact = c.Contact,
                 ProjectId = c.ProjectId,
             }).ToList(),
+            Lectoraat = project.Lectoraat,
         };
     }
 
@@ -441,10 +442,10 @@ public class ProjectsService : IProjectsService
         StringBuilder csv = new();
         PropertyInfo[] properties = typeof(T).GetProperties();
 
-        // Generate header 
+        //  header 
         csv.AppendLine(string.Join(",", properties.Select(p => p.Name)));
 
-        // Generate rows
+        //  rows
         foreach (T item in data)
         {
             IEnumerable<string> values = properties.Select(p =>

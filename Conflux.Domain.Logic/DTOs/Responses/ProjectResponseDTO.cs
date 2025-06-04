@@ -22,4 +22,6 @@ public class ProjectResponseDTO
     public List<ProductResponseDTO> Products { get; init; } = [];
 
     public List<ProjectOrganisationResponseDTO> Organisations { get; init; } = [];
+
+    public string? Lectoraat { get; init; }
 }

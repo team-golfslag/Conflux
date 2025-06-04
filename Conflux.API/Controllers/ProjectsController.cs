@@ -32,14 +32,16 @@ public class ProjectsController : ControllerBase
     private readonly IProjectsService _projectsService;
     private readonly IUserSessionService _userSessionService;
     private readonly ITimelineService _timelineService;
+    private readonly IConfiguration _configuration;
 
     public ProjectsController(IProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
-        IUserSessionService userSessionService, ITimelineService timelineService)
+        IUserSessionService userSessionService, ITimelineService timelineService, IConfiguration configuration)
     {
         _iSRAMProjectSyncService = iSRAMProjectSyncService;
         _projectsService = projectsService;
         _userSessionService = userSessionService;
         _timelineService = timelineService;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -56,7 +58,7 @@ public class ProjectsController : ControllerBase
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
-    
+
     /// <summary>
     /// Gets the timeline items for a specific project by its GUID.
     /// </summary>
@@ -75,7 +77,7 @@ public class ProjectsController : ControllerBase
 
         return await _timelineService.GetTimelineItemsAsync(id);
     }
-    
+
 
     /// <summary>
     /// Exports projects as a CSV file based on the provided query parameters and returns it as a downloadable file.
@@ -149,5 +151,13 @@ public class ProjectsController : ControllerBase
     {
         await _iSRAMProjectSyncService.SyncProjectAsync(id);
         return Ok();
+    }
+
+    [HttpGet]
+    [Route("lectoraten")]
+    [RequireProjectRole(UserRoleType.User)]
+    public List<string> GetLectoraten()
+    {
+        return _configuration.GetSection("Lectoraten").Get<List<string>>() ?? new List<string>();
     }
 }

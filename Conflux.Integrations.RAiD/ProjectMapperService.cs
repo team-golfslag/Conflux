@@ -234,41 +234,14 @@ public class ProjectMapperService : IProjectMapperService
         List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
                 o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
             .ToList();
-        if (leadOrganisationsRoles.Count == 0)
-        {
+        
+        if (!leadOrganisationsRoles.Any(r => r.StartDate <= project.StartDate
+            && (r.EndDate == null || r.EndDate >= project.EndDate)))
             incompatibilities.Add(new()
             {
                 Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
             });
-        }
-        else
-        {
-            leadOrganisationsRoles.Sort((r1, r2) => DateTime.Compare(r1.StartDate, r2.StartDate));
-            DateTime? last = project.StartDate;
-            foreach (OrganisationRole leadOrganisationsRole in leadOrganisationsRoles)
-            {
-                // Last had no end so we have overlap
-                if (last == null)
-                    incompatibilities.Add(new()
-                    {
-                        Type = RAiDIncompatibilityType.MultipleLeadResearchOrganisation,
-                    });
-
-                if (last != leadOrganisationsRole.StartDate)
-                    incompatibilities.Add(new()
-                    {
-                        Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
-                    });
-
-                last = leadOrganisationsRole.EndDate;
-            }
-
-            if (last != null && last != project.EndDate)
-                incompatibilities.Add(new()
-                {
-                    Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
-                });
-        }
+        
 
         incompatibilities.AddRange(project.Products
             .Where(p => p.Categories.Count == 0)
@@ -336,6 +309,8 @@ public class ProjectMapperService : IProjectMapperService
             .Include(p => p.Titles)
             .Include(p => p.Organisations)
             .ThenInclude(o => o.Organisation)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
             .Include(p => p.Products)
             .Include(p => p.RAiDInfo)
             .FirstOrDefaultAsync();

@@ -153,6 +153,9 @@ public class ProjectsController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Gets the list of lectorates from the configuration.
+    /// </summary>
     [HttpGet]
     [Route("lectoraten")]
     [RequireProjectRole(UserRoleType.User)]

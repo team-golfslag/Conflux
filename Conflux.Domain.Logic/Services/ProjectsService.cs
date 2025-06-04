@@ -385,6 +385,7 @@ public class ProjectsService : IProjectsService
                         GivenName = person.GivenName,
                         FamilyName = person.FamilyName,
                         Email = person.Email,
+                        UserId = person.UserId,
                     }
                     : throw new PersonNotFoundException(c.PersonId),
                 Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO

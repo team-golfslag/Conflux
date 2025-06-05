@@ -49,6 +49,7 @@ public class AdminService : IAdminService
         };
     }
 
+    /// <inheritdoc />
     public async Task<List<UserResponseDTO>> GetUsersByQuery(string? query, bool adminsOnly)
     {
         UserSession? userSession = await _userSessionService.GetUser();
@@ -70,6 +71,7 @@ public class AdminService : IAdminService
         return users.Select(MapUserToResponse).ToList();
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDTO> SetUserPermissionLevel(Guid userId, PermissionLevel permissionLevel)
     {
         UserSession? userSession = await _userSessionService.GetUser();
@@ -94,9 +96,11 @@ public class AdminService : IAdminService
         return MapUserToResponse(user);
     }
 
+    /// <inheritdoc />
     public Task<List<string>> GetAvailableLectorates() =>
         Task.FromResult(_configuration.GetSection("Lectorates").Get<List<string>>() ?? []);
 
+    /// <inheritdoc />
     public async Task<List<string>> GetAvailableOrganisations()
     {
         UserSession? userSession = await _userSessionService.GetUser();
@@ -114,6 +118,7 @@ public class AdminService : IAdminService
             .ToListAsync();
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDTO> AssignLectoratesToUser(Guid userId, List<string> lectorates)
     {
         UserSession? userSession = _userSessionService.GetUser().Result;
@@ -136,6 +141,7 @@ public class AdminService : IAdminService
         return MapUserToResponse(user);
     }
 
+    /// <inheritdoc />
     public async Task<UserResponseDTO> AssignOrganisationsToUser(Guid userId, List<string> organisations)
     {
         UserSession? userSession = _userSessionService.GetUser().Result;

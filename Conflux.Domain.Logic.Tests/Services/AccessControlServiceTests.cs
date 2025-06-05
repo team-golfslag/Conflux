@@ -18,18 +18,18 @@ public class AccessControlServiceTests : IDisposable
 
     public AccessControlServiceTests()
     {
-        var serviceProvider = new ServiceCollection()
+        ServiceProvider serviceProvider = new ServiceCollection()
             .AddEntityFrameworkInMemoryDatabase()
             .BuildServiceProvider();
 
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
+        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
             .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}") // Unique name for isolation
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
-        _context = new ConfluxContext(options);
+        _context = new(options);
         _context.Database.EnsureCreated();
-        _service = new AccessControlService(_context);
+        _service = new(_context);
     }
 
     public void Dispose()
@@ -49,8 +49,9 @@ public class AccessControlServiceTests : IDisposable
         List<string>? lectorates = null,
         List<string>? organisations = null)
     {
-        var person = new Person { Id = Guid.NewGuid(), Name = "Test User" };
-        var user = new User
+        Person person = new()
+            { Id = Guid.NewGuid(), Name = "Test User" };
+        User user = new()
         {
             Id = Guid.NewGuid(),
             SCIMId = $"user-scim-id-{Guid.NewGuid()}",
@@ -76,7 +77,7 @@ public class AccessControlServiceTests : IDisposable
     /// </summary>
     private async Task<Project> CreateProjectAsync(string? lectorate = null, string? ownerOrg = null)
     {
-        var project = new Project
+        Project project = new()
         {
             Id = Guid.NewGuid(),
             Lectorate = lectorate,
@@ -92,7 +93,7 @@ public class AccessControlServiceTests : IDisposable
     /// </summary>
     private async Task CreateAndAssignRoleAsync(User user, Project project, UserRoleType roleType)
     {
-        var userRole = new UserRole
+        UserRole userRole = new()
         {
             Id = Guid.NewGuid(),
             ProjectId = project.Id,
@@ -117,8 +118,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_UserWithRoleExists_ReturnsTrue()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var user = await CreateUserAsync();
+        Project project = await CreateProjectAsync();
+        User user = await CreateUserAsync();
         await CreateAndAssignRoleAsync(user, project, UserRoleType.Admin);
 
         // Act
@@ -132,8 +133,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_UserWithDifferentRoleExists_ReturnsFalse()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var user = await CreateUserAsync();
+        Project project = await CreateProjectAsync();
+        User user = await CreateUserAsync();
         await CreateAndAssignRoleAsync(user, project, UserRoleType.User);
 
         // Act
@@ -147,9 +148,9 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_UserWithRoleInDifferentProject_ReturnsFalse()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var differentProject = await CreateProjectAsync();
-        var user = await CreateUserAsync();
+        Project project = await CreateProjectAsync();
+        Project differentProject = await CreateProjectAsync();
+        User user = await CreateUserAsync();
         await CreateAndAssignRoleAsync(user, differentProject, UserRoleType.Admin);
 
         // Act
@@ -163,8 +164,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_UserWithNoRoles_ReturnsFalse()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var user = await CreateUserAsync();
+        Project project = await CreateProjectAsync();
+        User user = await CreateUserAsync();
 
         // Act
         bool result = await _service.UserHasRoleInProject(user.Id, project.Id, UserRoleType.Admin);
@@ -177,8 +178,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_UserDoesNotExist_ReturnsFalse()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var nonExistentUserId = Guid.NewGuid();
+        Project project = await CreateProjectAsync();
+        Guid nonExistentUserId = Guid.NewGuid();
 
         // Act
         bool result = await _service.UserHasRoleInProject(nonExistentUserId, project.Id, UserRoleType.Admin);
@@ -191,8 +192,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_ProjectDoesNotExist_ReturnsFalse()
     {
         // Arrange
-        var user = await CreateUserAsync();
-        var nonExistentProjectId = Guid.NewGuid();
+        User user = await CreateUserAsync();
+        Guid nonExistentProjectId = Guid.NewGuid();
 
         // Act
         bool result = await _service.UserHasRoleInProject(user.Id, nonExistentProjectId, UserRoleType.Admin);
@@ -205,8 +206,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_SuperAdminUser_AlwaysReturnsTrue()
     {
         // Arrange
-        var project = await CreateProjectAsync();
-        var user = await CreateUserAsync(permissionLevel: PermissionLevel.SuperAdmin);
+        Project project = await CreateProjectAsync();
+        User user = await CreateUserAsync(permissionLevel: PermissionLevel.SuperAdmin);
 
         // Act
         bool result = await _service.UserHasRoleInProject(user.Id, project.Id, UserRoleType.Admin);
@@ -219,8 +220,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_SystemAdminWithMatchingLectorate_ReturnsTrue()
     {
         // Arrange
-        var project = await CreateProjectAsync(lectorate: "Computer Science");
-        var user = await CreateUserAsync(
+        Project project = await CreateProjectAsync(lectorate: "Computer Science");
+        User user = await CreateUserAsync(
             permissionLevel: PermissionLevel.SystemAdmin,
             lectorates: ["Computer Science", "Mathematics"]
         );
@@ -236,8 +237,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_SystemAdminWithMatchingOrganisation_ReturnsTrue()
     {
         // Arrange
-        var project = await CreateProjectAsync(ownerOrg: "Utrecht University");
-        var user = await CreateUserAsync(
+        Project project = await CreateProjectAsync(ownerOrg: "Utrecht University");
+        User user = await CreateUserAsync(
             permissionLevel: PermissionLevel.SystemAdmin,
             organisations: ["Utrecht University", "Another University"]
         );
@@ -253,8 +254,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_SystemAdminWithoutMatch_FallsBackToRole_ReturnsTrue()
     {
         // Arrange
-        var project = await CreateProjectAsync(lectorate: "Physics", ownerOrg: "Different University");
-        var user = await CreateUserAsync(
+        Project project = await CreateProjectAsync(lectorate: "Physics", ownerOrg: "Different University");
+        User user = await CreateUserAsync(
             permissionLevel: PermissionLevel.SystemAdmin,
             lectorates: ["Mathematics"],
             organisations: ["Utrecht University"]
@@ -272,8 +273,8 @@ public class AccessControlServiceTests : IDisposable
     public async Task UserHasRoleInProject_SystemAdminWithoutMatchOrRole_ReturnsFalse()
     {
         // Arrange
-        var project = await CreateProjectAsync(lectorate: "Physics", ownerOrg: "Different University");
-        var user = await CreateUserAsync(
+        Project project = await CreateProjectAsync(lectorate: "Physics", ownerOrg: "Different University");
+        User user = await CreateUserAsync(
             permissionLevel: PermissionLevel.SystemAdmin,
             lectorates: ["Mathematics"],
             organisations: ["Utrecht University"]

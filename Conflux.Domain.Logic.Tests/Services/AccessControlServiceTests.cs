@@ -47,21 +47,26 @@ public class AccessControlServiceTests
             Name = "Test User",
         };
         
-        // Then create the user with reference to the person
+        // Create project
+        Project project = new()
+        {
+            Id = projectId,
+        };
+        
+        // Create the UserRole first (without user relationship)
+        UserRole userRole = new()
+        {
+            ProjectId = projectId,
+            Type = roleType,
+            Id = Guid.NewGuid(),
+            Urn = "test-urn",
+            SCIMId = "test-scim-id",
+        };
+        
+        // Create the user without roles initially
         User user = new()
         {
             Id = userId,
-            Roles =
-            [
-                new()
-                {
-                    ProjectId = projectId,
-                    Type = roleType,
-                    Id = Guid.NewGuid(),
-                    Urn = "test-urn",
-                    SCIMId = "test-scim-id",
-                },
-            ],
             SCIMId = "user-scim-id",
             PersonId = person.Id,
             Person = person
@@ -70,11 +75,21 @@ public class AccessControlServiceTests
         // Set bidirectional reference
         person.User = user;
 
-        // Add both person and user
+        // Add entities to context
         context.People.Add(person);
+        context.Projects.Add(project);
         context.Users.Add(user);
+        context.UserRoles.Add(userRole);
+        
+        // Save first to get the entities in the database
+        await context.SaveChangesAsync();
+        
+        // Now establish the many-to-many relationship
+        user.Roles.Add(userRole);
+        context.Users.Update(user);
         await context.SaveChangesAsync();
 
+        // Create the service
         AccessControlService service = new(context);
 
         // Act

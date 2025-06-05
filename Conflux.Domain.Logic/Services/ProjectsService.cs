@@ -253,7 +253,7 @@ public class ProjectsService : IProjectsService
             ?? throw new ProjectNotFoundException(id);
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
-        project.Lectoraat = dto.Lectoraat;
+        project.Lectorate = dto.Lectorate;
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -284,7 +284,7 @@ public class ProjectsService : IProjectsService
         if (userSession.User.Tier == UserTier.SystemAdmin)
         {
             return (await GetCompleteProjects())
-                .Where(p => p.Lectoraat != null && userSession.User.AssignedLectorates.Contains(p.Lectoraat) ||
+                .Where(p => p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate) ||
                     p.OwnerOrganisation != null && userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation))
                 .Select(MapToProjectDTO).ToList();
         }
@@ -447,7 +447,7 @@ public class ProjectsService : IProjectsService
                 Contact = c.Contact,
                 ProjectId = c.ProjectId,
             }).ToList(),
-            Lectoraat = project.Lectoraat,
+            Lectorate = project.Lectorate,
             OwnerOrganisation = project.OwnerOrganisation,
         };
     }

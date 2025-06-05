@@ -24,7 +24,7 @@ public class AccessControlService(ConfluxContext context) : IAccessControlServic
         
         if (user.Tier == UserTier.SystemAdmin)
         {
-            if (project.Lectoraat != null && user.AssignedLectorates.Contains(project.Lectoraat)) 
+            if (project.Lectorate != null && user.AssignedLectorates.Contains(project.Lectorate)) 
                 return true;
             
             if (project.OwnerOrganisation != null && user.AssignedOrganisations.Contains(project.OwnerOrganisation)) 

@@ -11,7 +11,7 @@ namespace Conflux.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "Lectoraat",
+                name: "Lectorate",
                 table: "Projects",
                 type: "text",
                 nullable: true);
@@ -27,7 +27,7 @@ namespace Conflux.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Lectoraat",
+                name: "Lectorate",
                 table: "Projects");
 
             migrationBuilder.DropColumn(

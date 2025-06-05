@@ -39,6 +39,11 @@ public class UserSessionServiceTests
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
         
+        // Setup SuperAdminEmails configuration section with children
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
+        
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
 
@@ -72,6 +77,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section with children
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -114,6 +124,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -186,6 +201,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -234,6 +254,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -270,6 +295,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -326,6 +356,11 @@ public class UserSessionServiceTests
         mockCollaborationMapper.Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
             .ReturnsAsync([]);
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
@@ -364,6 +399,11 @@ public class UserSessionServiceTests
 
         var mockCollaborationMapper = new Mock<ICollaborationMapper>();
         var configurationMock = new Mock<IConfiguration>();
+        
+        // Setup SuperAdminEmails configuration section
+        var superAdminEmailsSection = new Mock<IConfigurationSection>();
+        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
+        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
 
         UserSessionService service = new(context, mockHttpContextAccessor.Object,
             mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);

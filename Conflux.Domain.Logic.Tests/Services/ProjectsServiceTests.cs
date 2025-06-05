@@ -192,7 +192,7 @@ public class ProjectsServiceTests : IAsyncLifetime
             ],
             StartDate = new(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2023, 12, 31, 23, 59, 59, DateTimeKind.Utc),
-            Lectoraat = "Jeugd"
+            Lectorate = "Jeugd"
         };
 
         _context.Projects.Add(originalProject);
@@ -215,7 +215,7 @@ public class ProjectsServiceTests : IAsyncLifetime
                 59,
                 59,
                 DateTimeKind.Utc),
-            Lectoraat = "Wonen en Welzijn"
+            Lectorate = "Wonen en Welzijn"
         };
 
         // Act
@@ -225,7 +225,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(updatedProject);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), updatedProject.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), updatedProject.EndDate);
-        Assert.Equal("Wonen en Welzijn", updatedProject.Lectoraat);
+        Assert.Equal("Wonen en Welzijn", updatedProject.Lectorate);
 
         // Double-check by re-querying from the database
         Project? reloaded = await _context.Projects.Include(p => p.Titles)
@@ -234,6 +234,6 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(reloaded);
         Assert.Equal(new(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), reloaded.StartDate);
         Assert.Equal(new DateTime(2024, 3, 1, 23, 59, 59, DateTimeKind.Utc), reloaded.EndDate);
-        Assert.Equal("Wonen en Welzijn", reloaded.Lectoraat);
+        Assert.Equal("Wonen en Welzijn", reloaded.Lectorate);
     }
 }

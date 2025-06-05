@@ -157,10 +157,9 @@ public class ProjectsController : ControllerBase
     /// Gets the list of lectorates from the configuration.
     /// </summary>
     [HttpGet]
-    [Route("lectoraten")]
-    [RequireProjectRole(UserRoleType.User)]
-    public List<string> GetLectoraten()
+    [Route("lectorates")]
+    public List<string> GetLectorates()
     {
-        return _configuration.GetSection("Lectoraten").Get<List<string>>() ?? new List<string>();
+        return _configuration.GetSection("Lectorates").Get<List<string>>() ?? new List<string>();
     }
 }

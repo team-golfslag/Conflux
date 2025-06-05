@@ -205,7 +205,7 @@ namespace Conflux.Data.Migrations
                     b.Property<DateTime>("LastestEdit")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Lectoraat")
+                    b.Property<string>("Lectorate")
                         .HasColumnType("text");
 
                     b.Property<string>("OwnerOrganisation")

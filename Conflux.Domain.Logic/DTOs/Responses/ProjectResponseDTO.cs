@@ -23,7 +23,7 @@ public class ProjectResponseDTO
 
     public List<ProjectOrganisationResponseDTO> Organisations { get; init; } = [];
 
-    public string? Lectoraat { get; init; }
+    public string? Lectorate { get; init; }
     
     public string? OwnerOrganisation { get; init; }
 }

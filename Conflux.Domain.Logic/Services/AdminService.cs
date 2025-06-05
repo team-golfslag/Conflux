@@ -95,7 +95,7 @@ public class AdminService : IAdminService
     }
 
     public Task<List<string>> GetAvailableLectorates() =>
-        Task.FromResult(_configuration.GetSection("Lectoraten").Get<List<string>>() ?? []);
+        Task.FromResult(_configuration.GetSection("Lectorates").Get<List<string>>() ?? []);
 
     public async Task<List<string>> GetAvailableOrganisations()
     {

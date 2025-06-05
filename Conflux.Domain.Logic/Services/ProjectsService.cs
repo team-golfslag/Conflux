@@ -276,12 +276,12 @@ public class ProjectsService : IProjectsService
         if (userSession is null || userSession.User is null)
             throw new UserNotAuthenticatedException();
 
-        if (userSession.User.Tier == UserTier.SuperAdmin)
+        if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
             return (await GetCompleteProjects())
                 .Select(p => MapToProjectDTO(p))
                 .ToList();
 
-        if (userSession.User.Tier == UserTier.SystemAdmin)
+        if (userSession.User.PermissionLevel == PermissionLevel.SystemAdmin)
         {
             return (await GetCompleteProjects())
                 .Where(p => p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate) ||

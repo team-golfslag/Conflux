@@ -17,12 +17,12 @@ public class AccessControlService(ConfluxContext context) : IAccessControlServic
             .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null) return false;
 
-        if (user.Tier == UserTier.SuperAdmin) return true;
+        if (user.PermissionLevel == PermissionLevel.SuperAdmin) return true;
         
         Project? project = await context.Projects.FindAsync(projectId);
         if (project == null) return false;
         
-        if (user.Tier == UserTier.SystemAdmin)
+        if (user.PermissionLevel == PermissionLevel.SystemAdmin)
         {
             if (project.Lectorate != null && user.AssignedLectorates.Contains(project.Lectorate)) 
                 return true;

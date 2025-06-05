@@ -21,7 +21,7 @@ public record User
     
     public List<UserRole> Roles { get; set; } = [];
     
-    public UserTier Tier { get; set; } = UserTier.User;
+    public PermissionLevel PermissionLevel { get; set; } = PermissionLevel.User;
     public List<string> AssignedLectorates { get; set; } = [];
     public List<string> AssignedOrganisations { get; set; } = [];
     

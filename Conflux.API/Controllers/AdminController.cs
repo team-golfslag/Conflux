@@ -3,11 +3,8 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using Conflux.API.Attributes;
 using Conflux.Domain;
-using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
-using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Conflux.API.Controllers;
 
 /// <summary>
-/// Represents the controller for managing contributors
+/// Represents the controller for admin functionalities.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -37,7 +34,7 @@ public class AdminController : ControllerBase
     /// Gets all users whose name or email contains the query (case-insensitive).
     /// </summary>
     /// <param name="query">Optional: The string to search in the name or email</param>
-    /// <param name="adminsOnly">If true, only returns users with SystemAdmin tier or higher</param>
+    /// <param name="adminsOnly">If true, only returns users with SystemAdmin permission level or higher</param>
     /// <returns>Filtered list of users</returns>
     [HttpGet]
     [Route("users")]
@@ -49,13 +46,13 @@ public class AdminController : ControllerBase
     /// Makes a user a system administrator.
     /// </summary>
     /// <param name="userId">The GUID of the user</param>
-    /// <param name="tier">The tier to set for the user</param>
+    /// <param name="permissionLevel">The permissionLevel to set for the user</param>
     /// <returns>The updated user response</returns>
     [HttpPost]
     [Route("make-admin")]
     [ProducesResponseType(typeof(UserResponseDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<UserResponseDTO>> SetUserTier([FromQuery] Guid userId, [FromBody] UserTier tier) =>
-        await _adminService.SetUserTier(userId, tier);
+    public async Task<ActionResult<UserResponseDTO>> SetUserPermissionLevel([FromQuery] Guid userId, [FromBody] PermissionLevel permissionLevel) =>
+        await _adminService.SetUserPermissionLevel(userId, permissionLevel);
 
     /// <summary>
     /// Gets the list of lectorates that are available for selection in the UI.

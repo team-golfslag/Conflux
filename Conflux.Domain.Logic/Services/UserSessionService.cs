@@ -115,10 +115,10 @@ public class UserSessionService : IUserSessionService
             user.User = _confluxContext.Users.Include(u => u.Person)
                 .SingleOrDefault(p => p.SRAMId == user.SRAMId);
 
-        if (user?.User is { Tier: UserTier.User } &&
+        if (user?.User is { PermissionLevel: PermissionLevel.User } &&
             _superAdminEmails.Contains(user.Email))
         {
-            user.User.Tier = UserTier.SuperAdmin;
+            user.User.PermissionLevel = PermissionLevel.SuperAdmin;
             _confluxContext.Users.Update(user.User);
         }
         

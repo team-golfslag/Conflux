@@ -34,7 +34,7 @@ public class AdminServiceTests
         return context;
     }
 
-    private static User CreateUserWithPerson(Guid userId, string name, string email, UserTier tier = UserTier.User, string scimId = "test-scim")
+    private static User CreateUserWithPerson(Guid userId, string name, string email, PermissionLevel permissionLevel = PermissionLevel.User, string scimId = "test-scim")
     {
         var personId = Guid.NewGuid();
         
@@ -55,7 +55,7 @@ public class AdminServiceTests
             SCIMId = scimId,
             PersonId = personId,
             Person = person,
-            Tier = tier,
+            PermissionLevel = permissionLevel,
             AssignedLectorates = [],
             AssignedOrganisations = [],
             Roles = []
@@ -113,9 +113,9 @@ public class AdminServiceTests
         string dbName = $"GetUsersByQuery_AllUsers_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
-        var systemAdminUser = CreateUserWithPerson(Guid.NewGuid(), "System Admin", "sysadmin@test.com", UserTier.SystemAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
+        var systemAdminUser = CreateUserWithPerson(Guid.NewGuid(), "System Admin", "sysadmin@test.com", PermissionLevel.SystemAdmin);
 
         context.People.AddRange(superAdminUser.Person!, regularUser.Person!, systemAdminUser.Person!);
         context.Users.AddRange(superAdminUser, regularUser, systemAdminUser);
@@ -145,9 +145,9 @@ public class AdminServiceTests
         string dbName = $"GetUsersByQuery_WithQuery_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
-        var johnUser = CreateUserWithPerson(Guid.NewGuid(), "John Doe", "john@test.com", UserTier.User);
-        var janeUser = CreateUserWithPerson(Guid.NewGuid(), "Jane Smith", "jane@test.com", UserTier.User);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
+        var johnUser = CreateUserWithPerson(Guid.NewGuid(), "John Doe", "john@test.com", PermissionLevel.User);
+        var janeUser = CreateUserWithPerson(Guid.NewGuid(), "Jane Smith", "jane@test.com", PermissionLevel.User);
 
         context.People.AddRange(superAdminUser.Person!, johnUser.Person!, janeUser.Person!);
         context.Users.AddRange(superAdminUser, johnUser, janeUser);
@@ -175,9 +175,9 @@ public class AdminServiceTests
         string dbName = $"GetUsersByQuery_AdminsOnly_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
-        var systemAdminUser = CreateUserWithPerson(Guid.NewGuid(), "System Admin", "sysadmin@test.com", UserTier.SystemAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
+        var systemAdminUser = CreateUserWithPerson(Guid.NewGuid(), "System Admin", "sysadmin@test.com", PermissionLevel.SystemAdmin);
 
         context.People.AddRange(superAdminUser.Person!, regularUser.Person!, systemAdminUser.Person!);
         context.Users.AddRange(superAdminUser, regularUser, systemAdminUser);
@@ -207,7 +207,7 @@ public class AdminServiceTests
         string dbName = $"GetUsersByQuery_Unauthorized_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
         context.People.Add(regularUser.Person!);
         context.Users.Add(regularUser);
         await context.SaveChangesAsync();
@@ -243,15 +243,15 @@ public class AdminServiceTests
 
 
     [Fact]
-    public async Task SetUserTier_WithValidUser_UpdatesTierSuccessfully()
+    public async Task SetUserPermissionLevel_WithValidUser_UpdatesPermissionLevelSuccessfully()
     {
         // Arrange
-        string dbName = $"SetUserTier_ValidUser_{Guid.NewGuid()}";
+        string dbName = $"SetUserPermission_ValidUser_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         var targetUserId = Guid.NewGuid();
-        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", UserTier.User);
+        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", PermissionLevel.User);
 
         context.People.AddRange(superAdminUser.Person!, targetUser.Person!);
         context.Users.AddRange(superAdminUser, targetUser);
@@ -265,27 +265,27 @@ public class AdminServiceTests
         AdminService service = new(context, mockConfiguration.Object, mockUserSessionService.Object);
 
         // Act
-        UserResponseDTO result = await service.SetUserTier(targetUserId, UserTier.SystemAdmin);
+        UserResponseDTO result = await service.SetUserPermissionLevel(targetUserId, PermissionLevel.SystemAdmin);
 
         // Assert
-        Assert.Equal(UserTier.SystemAdmin, result.Tier);
+        Assert.Equal(PermissionLevel.SystemAdmin, result.PermissionLevel);
         
         // Verify database was updated
         User? updatedUser = await context.Users.FindAsync(targetUserId);
         Assert.NotNull(updatedUser);
-        Assert.Equal(UserTier.SystemAdmin, updatedUser.Tier);
+        Assert.Equal(PermissionLevel.SystemAdmin, updatedUser.PermissionLevel);
     }
 
     [Fact]
-    public async Task SetUserTier_WithSuperAdminTier_ThrowsArgumentException()
+    public async Task SetPermissionLevel_WithSuperAdminLevel_ThrowsArgumentException()
     {
         // Arrange
-        string dbName = $"SetUserTier_SuperAdmin_{Guid.NewGuid()}";
+        string dbName = $"SetPermissionLevel_SuperAdmin_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         var targetUserId = Guid.NewGuid();
-        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", UserTier.User);
+        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", PermissionLevel.User);
 
         context.People.AddRange(superAdminUser.Person!, targetUser.Person!);
         context.Users.AddRange(superAdminUser, targetUser);
@@ -300,18 +300,18 @@ public class AdminServiceTests
 
         // Act & Assert
         ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(() => 
-            service.SetUserTier(targetUserId, UserTier.SuperAdmin));
-        Assert.Contains("Cannot set user tier to SuperAdmin", exception.Message);
+            service.SetUserPermissionLevel(targetUserId, PermissionLevel.SuperAdmin));
+        Assert.Contains("Cannot set user permission level to SuperAdmin", exception.Message);
     }
 
     [Fact]
-    public async Task SetUserTier_WithNonExistentUser_ThrowsException()
+    public async Task SetPermissionLevel_WithNonExistentUser_ThrowsException()
     {
         // Arrange
-        string dbName = $"SetUserTier_NonExistent_{Guid.NewGuid()}";
+        string dbName = $"SetPermissionLevel_NonExistent_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         context.People.Add(superAdminUser.Person!);
         context.Users.Add(superAdminUser);
         await context.SaveChangesAsync();
@@ -327,18 +327,18 @@ public class AdminServiceTests
 
         // Act & Assert
         Exception exception = await Assert.ThrowsAsync<Exception>(() => 
-            service.SetUserTier(nonExistentUserId, UserTier.SystemAdmin));
+            service.SetUserPermissionLevel(nonExistentUserId, PermissionLevel.SystemAdmin));
         Assert.Contains($"User with ID {nonExistentUserId} not found", exception.Message);
     }
 
     [Fact]
-    public async Task SetUserTier_WithNonSuperAdminUser_ThrowsUnauthorizedAccessException()
+    public async Task SetPermissionLevel_WithNonSuperAdminUser_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        string dbName = $"SetUserTier_Unauthorized_{Guid.NewGuid()}";
+        string dbName = $"SetPermissionLevel_Unauthorized_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
         context.People.Add(regularUser.Person!);
         context.Users.Add(regularUser);
         await context.SaveChangesAsync();
@@ -352,7 +352,7 @@ public class AdminServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => 
-            service.SetUserTier(Guid.NewGuid(), UserTier.SystemAdmin));
+            service.SetUserPermissionLevel(Guid.NewGuid(), PermissionLevel.SystemAdmin));
     }
 
     [Fact]
@@ -426,7 +426,7 @@ public class AdminServiceTests
         string dbName = $"GetAvailableOrganisations_Valid_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         context.People.Add(superAdminUser.Person!);
         context.Users.Add(superAdminUser);
 
@@ -463,7 +463,7 @@ public class AdminServiceTests
         string dbName = $"GetAvailableOrganisations_Unauthorized_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
         context.People.Add(regularUser.Person!);
         context.Users.Add(regularUser);
         await context.SaveChangesAsync();
@@ -504,9 +504,9 @@ public class AdminServiceTests
         string dbName = $"AssignLectoratesToUser_Valid_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         var targetUserId = Guid.NewGuid();
-        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", UserTier.User);
+        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", PermissionLevel.User);
 
         context.People.AddRange(superAdminUser.Person!, targetUser.Person!);
         context.Users.AddRange(superAdminUser, targetUser);
@@ -542,7 +542,7 @@ public class AdminServiceTests
         string dbName = $"AssignLectoratesToUser_NonExistent_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         context.People.Add(superAdminUser.Person!);
         context.Users.Add(superAdminUser);
         await context.SaveChangesAsync();
@@ -570,7 +570,7 @@ public class AdminServiceTests
         string dbName = $"AssignLectoratesToUser_Unauthorized_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
         context.People.Add(regularUser.Person!);
         context.Users.Add(regularUser);
         await context.SaveChangesAsync();
@@ -596,9 +596,9 @@ public class AdminServiceTests
         string dbName = $"AssignOrganisationsToUser_Valid_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         var targetUserId = Guid.NewGuid();
-        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", UserTier.User);
+        var targetUser = CreateUserWithPerson(targetUserId, "Target User", "target@test.com", PermissionLevel.User);
 
         context.People.AddRange(superAdminUser.Person!, targetUser.Person!);
         context.Users.AddRange(superAdminUser, targetUser);
@@ -634,7 +634,7 @@ public class AdminServiceTests
         string dbName = $"AssignOrganisationsToUser_NonExistent_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
         context.People.Add(superAdminUser.Person!);
         context.Users.Add(superAdminUser);
         await context.SaveChangesAsync();
@@ -662,7 +662,7 @@ public class AdminServiceTests
         string dbName = $"AssignOrganisationsToUser_Unauthorized_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", UserTier.User);
+        var regularUser = CreateUserWithPerson(Guid.NewGuid(), "Regular User", "user@test.com", PermissionLevel.User);
         context.People.Add(regularUser.Person!);
         context.Users.Add(regularUser);
         await context.SaveChangesAsync();
@@ -688,8 +688,8 @@ public class AdminServiceTests
         string dbName = $"MapUserToResponse_{Guid.NewGuid()}";
         ConfluxContext context = CreateContext(dbName);
 
-        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", UserTier.SuperAdmin);
-        var targetUser = CreateUserWithPerson(Guid.NewGuid(), "Test User", "test@test.com", UserTier.SystemAdmin);
+        var superAdminUser = CreateUserWithPerson(Guid.NewGuid(), "Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
+        var targetUser = CreateUserWithPerson(Guid.NewGuid(), "Test User", "test@test.com", PermissionLevel.SystemAdmin);
         targetUser.SRAMId = "sram-123";
         targetUser.AssignedLectorates = ["Computer Science", "Data Science"];
         targetUser.AssignedOrganisations = ["Org A", "Org B"];
@@ -706,13 +706,13 @@ public class AdminServiceTests
         AdminService service = new(context, mockConfiguration.Object, mockUserSessionService.Object);
 
         // Act
-        UserResponseDTO result = await service.SetUserTier(targetUser.Id, UserTier.SystemAdmin);
+        UserResponseDTO result = await service.SetUserPermissionLevel(targetUser.Id, PermissionLevel.SystemAdmin);
 
         // Assert
         Assert.Equal(targetUser.Id, result.Id);
         Assert.Equal("sram-123", result.SRAMId);
         Assert.Equal("test-scim", result.SCIMId);
-        Assert.Equal(UserTier.SystemAdmin, result.Tier);
+        Assert.Equal(PermissionLevel.SystemAdmin, result.PermissionLevel);
         Assert.Equal(2, result.AssignedLectorates.Count);
         Assert.Equal(2, result.AssignedOrganisations.Count);
         

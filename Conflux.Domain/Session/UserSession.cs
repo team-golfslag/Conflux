@@ -38,7 +38,7 @@ public class UserSession
             SCIMId = DevelopmentUserId + "@scim.sram.surf.nl",
             PersonId = DevelopmentUserId,
             Person = developmentPerson,
-            Tier = UserTier.SuperAdmin
+            PermissionLevel = PermissionLevel.SuperAdmin
         };
         
         // Set bidirectional reference

@@ -5,7 +5,7 @@
 
 namespace Conflux.Domain;
 
-public enum UserTier
+public enum PermissionLevel
 {
     User,
     SuperAdmin,

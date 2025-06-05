@@ -356,6 +356,9 @@ namespace Conflux.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<int>("PermissionLevel")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("PersonId")
                         .HasColumnType("uuid");
 
@@ -367,9 +370,6 @@ namespace Conflux.Data.Migrations
                     b.Property<string>("SRAMId")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "sram_id");
-
-                    b.Property<int>("Tier")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

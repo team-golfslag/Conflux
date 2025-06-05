@@ -33,7 +33,7 @@ public class AdminService : IAdminService
             SRAMId = user.SRAMId,
             SCIMId = user.SCIMId,
             Roles = user.Roles.ToList(),
-            Tier = user.Tier,
+            PermissionLevel = user.PermissionLevel,
             AssignedLectorates = user.AssignedLectorates,
             AssignedOrganisations = user.AssignedOrganisations,
             Person = new PersonResponseDTO
@@ -55,7 +55,7 @@ public class AdminService : IAdminService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
 
-        if (userSession.User is null || userSession.User.Tier != UserTier.SuperAdmin)
+        if (userSession.User is null || userSession.User.PermissionLevel != PermissionLevel.SuperAdmin)
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
 
         List<User> users = await _context.Users
@@ -63,24 +63,24 @@ public class AdminService : IAdminService
             .Include(u => u.Person)
             .Where(u => string.IsNullOrEmpty(query) || u.Person!.Name.Contains(query) ||
                 u.Person.Email!.Contains(query))
-            .Where(u => !adminsOnly || u.Tier == UserTier.SystemAdmin ||
-                u.Tier == UserTier.SuperAdmin)
+            .Where(u => !adminsOnly || u.PermissionLevel == PermissionLevel.SystemAdmin ||
+                u.PermissionLevel == PermissionLevel.SuperAdmin)
             .ToListAsync();
 
         return users.Select(MapUserToResponse).ToList();
     }
 
-    public async Task<UserResponseDTO> SetUserTier(Guid userId, UserTier tier)
+    public async Task<UserResponseDTO> SetUserPermissionLevel(Guid userId, PermissionLevel permissionLevel)
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
 
-        if (userSession.User is null || userSession.User.Tier != UserTier.SuperAdmin)
+        if (userSession.User is null || userSession.User.PermissionLevel != PermissionLevel.SuperAdmin)
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
         
-        if (tier == UserTier.SuperAdmin)
-            throw new ArgumentException("Cannot set user tier to SuperAdmin. This has to be done manually.");
+        if (permissionLevel == PermissionLevel.SuperAdmin)
+            throw new ArgumentException("Cannot set user permissionLevel to SuperAdmin. This has to be done manually.");
 
         User? user = await _context.Users
             .Include(u => u.Person)
@@ -88,7 +88,7 @@ public class AdminService : IAdminService
         if (user is null)
             throw new Exception($"User with ID {userId} not found.");
 
-        user.Tier = tier;
+        user.PermissionLevel = permissionLevel;
         await _context.SaveChangesAsync();
 
         return MapUserToResponse(user);
@@ -102,7 +102,7 @@ public class AdminService : IAdminService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-        if (userSession.User is null || userSession.User.Tier != UserTier.SuperAdmin)
+        if (userSession.User is null || userSession.User.PermissionLevel != PermissionLevel.SuperAdmin)
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
 
         // get all projects with organisation set
@@ -120,7 +120,7 @@ public class AdminService : IAdminService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
 
-        if (userSession.User is null || userSession.User.Tier != UserTier.SuperAdmin)
+        if (userSession.User is null || userSession.User.PermissionLevel != PermissionLevel.SuperAdmin)
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
 
         User? user = _context.Users.
@@ -142,7 +142,7 @@ public class AdminService : IAdminService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
 
-        if (userSession.User is null || userSession.User.Tier != UserTier.SuperAdmin)
+        if (userSession.User is null || userSession.User.PermissionLevel != PermissionLevel.SuperAdmin)
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
 
         User? user = _context.Users.

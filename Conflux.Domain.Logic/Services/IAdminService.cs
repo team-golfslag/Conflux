@@ -10,7 +10,7 @@ namespace Conflux.Domain.Logic.Services;
 public interface IAdminService
 {
     public Task<List<UserResponseDTO>> GetUsersByQuery(string? query, bool adminsOnly);
-    public Task<UserResponseDTO> SetUserTier(Guid userId, UserTier tier);
+    public Task<UserResponseDTO> SetUserPermissionLevel(Guid userId, PermissionLevel permissionLevel);
     public Task<List<string>> GetAvailableLectorates();
     public Task<List<string>> GetAvailableOrganisations();
     public Task<UserResponseDTO> AssignLectoratesToUser(Guid userId, List<string> lectorates);

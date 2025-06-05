@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Conflux.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserAdminProps : Migration
+    public partial class SystemAdministration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,11 +24,23 @@ namespace Conflux.Data.Migrations
                 nullable: false);
 
             migrationBuilder.AddColumn<int>(
-                name: "Tier",
+                name: "PermissionLevel",
                 table: "Users",
                 type: "integer",
                 nullable: false,
                 defaultValue: 0);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Lectorate",
+                table: "Projects",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "OwnerOrganisation",
+                table: "Projects",
+                type: "text",
+                nullable: true);
         }
 
         /// <inheritdoc />
@@ -43,8 +55,16 @@ namespace Conflux.Data.Migrations
                 table: "Users");
 
             migrationBuilder.DropColumn(
-                name: "Tier",
+                name: "PermissionLevel",
                 table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "Lectorate",
+                table: "Projects");
+
+            migrationBuilder.DropColumn(
+                name: "OwnerOrganisation",
+                table: "Projects");
         }
     }
 }

@@ -82,7 +82,7 @@ public class AdminService : IAdminService
             throw new UnauthorizedAccessException("You do not have permission to access this resource.");
         
         if (permissionLevel == PermissionLevel.SuperAdmin)
-            throw new ArgumentException("Cannot set user permissionLevel to SuperAdmin. This has to be done manually.");
+            throw new ArgumentException("Cannot set user permission level to SuperAdmin. This has to be done manually.");
 
         User? user = await _context.Users
             .Include(u => u.Person)

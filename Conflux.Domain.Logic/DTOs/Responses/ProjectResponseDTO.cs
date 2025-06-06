@@ -15,11 +15,15 @@ public class ProjectResponseDTO
 
     public DateTime? EndDate { get; init; }
 
-    public List<UserResponseDTO> Users { get; init; } = [];
+    public List<UserResponseDTO> Users { get; set; } = [];
 
     public List<ContributorResponseDTO> Contributors { get; init; } = [];
 
     public List<ProductResponseDTO> Products { get; init; } = [];
 
     public List<ProjectOrganisationResponseDTO> Organisations { get; init; } = [];
+
+    public string? Lectorate { get; init; }
+    
+    public string? OwnerOrganisation { get; init; }
 }

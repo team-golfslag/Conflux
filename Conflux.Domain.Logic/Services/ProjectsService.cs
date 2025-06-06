@@ -20,31 +20,6 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService : IProjectsService
 {
-    // Compiled query to get project by ID
-    private static readonly Func<ConfluxContext, Guid, Task<Project?>> GetProjectByIdQuery =
-        EF.CompileAsyncQuery((ConfluxContext context, Guid id) =>
-            context.Projects
-                .AsNoTracking()
-                .Include(p => p.Titles)
-                .Include(p => p.Descriptions)
-                .Include(p => p.Users)
-                .ThenInclude(user => user.Roles)
-                .Include(p => p.Users)
-                .ThenInclude(user => user.Person)
-                .Include(p => p.Products)
-                .Include(p => p.Organisations)
-                .ThenInclude(o => o.Roles)
-                .Include(p => p.Organisations)
-                .ThenInclude(o => o.Organisation)
-                .Include(p => p.Contributors)
-                .ThenInclude(c => c.Person)
-                .ThenInclude(p => p!.User)
-                .Include(p => p.Contributors)
-                .ThenInclude(c => c.Roles)
-                .Include(p => p.Contributors)
-                .ThenInclude(c => c.Positions)
-                .SingleOrDefault(p => p.Id == id));
-
     private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
 
@@ -52,6 +27,47 @@ public class ProjectsService : IProjectsService
     {
         _context = context;
         _userSessionService = userSessionService;
+    }
+
+    /// <summary>
+    /// Creates a base query for Projects with all related entities included.
+    /// This helper method centralizes the query logic to avoid duplication.
+    /// </summary>
+    /// <returns>An IQueryable of Project with all includes.</returns>
+    private IQueryable<Project> GetProjectsWithIncludes()
+    {
+        return _context.Projects
+            .AsNoTracking()
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions);
+    }
+
+    /// <summary>
+    /// Filters the roles for each user in a project to only include roles for that specific project.
+    /// </summary>
+    /// <param name="project">The project to filter roles for.</param>
+    private static void FilterRolesForProject(Project project)
+    {
+        foreach (User user in project.Users)
+        {
+            user.Roles = user.Roles.Where(r => r.ProjectId == project.Id).ToList();
+        }
     }
 
     /// <summary>
@@ -101,14 +117,11 @@ public class ProjectsService : IProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id)
     {
-        Project project = await GetProjectByIdQuery(_context, id)
+        Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
-        // filter roles per project per user
-        foreach (User user in project.Users)
-            user.Roles = user.Roles
-                .Where(r => r.ProjectId == project.Id)
-                .ToList();
+        FilterRolesForProject(project);
+
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
@@ -168,11 +181,11 @@ public class ProjectsService : IProjectsService
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
             OrderByType.TitleDesc => projects.OrderByDescending(project =>
                 project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
-            OrderByType.StartDateAsc => projects.OrderBy(project => project.StartDate),
+            OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
-            OrderByType.EndDateAsc => projects.OrderBy(project => project.EndDate),
-            OrderByType.EndDateDesc => projects.OrderByDescending(project => project.EndDate),
-            _ => projects,
+            OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
+            OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
+            _                         => projects,
         };
 
         return projects.ToList();
@@ -228,12 +241,13 @@ public class ProjectsService : IProjectsService
             ?? throw new ProjectNotFoundException(id);
         project.StartDate = dto.StartDate;
         project.EndDate = dto.EndDate;
+        project.Lectorate = dto.Lectorate;
         project.LastestEdit = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
         // Reload the project with all relationships
-        Project loadedProject = await GetFullProjectAsync(id)
+        Project? loadedProject = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         return MapToProjectDTO(loadedProject);
@@ -247,41 +261,35 @@ public class ProjectsService : IProjectsService
     private async Task<List<ProjectResponseDTO>> GetAvailableProjects()
     {
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
+        if (userSession is null || userSession.User is null)
             throw new UserNotAuthenticatedException();
 
-        List<string> accessibleSramIds = userSession.Collaborations
-            .Select(c => c.CollaborationGroup.SCIMId)
-            .ToList();
+        List<Project> projects;
+        if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
+        {
+            projects = await GetProjectsWithIncludes().ToListAsync();
+        }
+        else if (userSession.User.PermissionLevel == PermissionLevel.SystemAdmin)
+        {
+            List<Project> allProjects = await GetProjectsWithIncludes().ToListAsync();
+            projects = allProjects
+                .Where(p => p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate) ||
+                    p.OwnerOrganisation != null && userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation))
+                .ToList();
+        }
+        else
+        {
+            List<string> accessibleSramIds = userSession.Collaborations
+                .Select(c => c.CollaborationGroup.SCIMId)
+                .ToList();
 
-        List<Project> projects = await _context.Projects
-            .AsNoTracking()
-            .Where(p => accessibleSramIds.Contains(p.SCIMId))
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Roles)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Person)
-            .Include(p => p.Products)
-            .Include(p => p.Organisations)
-            .ThenInclude(o => o.Organisation)
-            .Include(p => p.Organisations)
-            .ThenInclude(o => o.Roles)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Person)
-            .ThenInclude(p => p!.User)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Roles)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Positions)
-            .ToListAsync();
-        // filter roles per project per user
-        foreach (Project project in projects)
-            foreach (User user in project.Users)
-                user.Roles = user.Roles
-                    .Where(r => r.ProjectId == project.Id)
-                    .ToList();
+            projects = await GetProjectsWithIncludes()
+                .Where(p => accessibleSramIds.Contains(p.SCIMId))
+                .ToListAsync();
+        }
+
+        // Filter roles per project per user for the retrieved projects
+        projects.ForEach(FilterRolesForProject);
 
         return projects.Select(MapToProjectDTO).ToList();
     }
@@ -334,16 +342,18 @@ public class ProjectsService : IProjectsService
                 Id = u.Id,
                 SRAMId = u.SRAMId,
                 SCIMId = u.SCIMId,
-                Roles = u.Roles,
-                Person = u.Person != null ? new PersonResponseDTO
-                {
-                    Id = u.Person.Id,
-                    Name = u.Person.Name,
-                    GivenName = u.Person.GivenName,
-                    FamilyName = u.Person.FamilyName,
-                    Email = u.Person.Email,
-                    ORCiD = u.Person.ORCiD,
-                } : null
+                Roles = u.Roles.Where(r => r.ProjectId == project.Id).ToList(),
+                Person = u.Person != null
+                    ? new PersonResponseDTO
+                    {
+                        Id = u.Person.Id,
+                        Name = u.Person.Name,
+                        GivenName = u.Person.GivenName,
+                        FamilyName = u.Person.FamilyName,
+                        Email = u.Person.Email,
+                        ORCiD = u.Person.ORCiD,
+                    }
+                    : null
             }),
             Products = project.Products.ConvertAll(p => new ProductResponseDTO
             {
@@ -362,14 +372,14 @@ public class ProjectsService : IProjectsService
                 {
                     Id = o.Id,
                     Name = o.Name,
-                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(
-                            r => new OrganisationRoleResponseDTO
-                            {
-                                Role = r.Role,
-                                StartDate = r.StartDate,
-                                EndDate = r.EndDate,
-                            }
-                            ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
+                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(r =>
+                        new OrganisationRoleResponseDTO
+                        {
+                            Role = r.Role,
+                            StartDate = r.StartDate,
+                            EndDate = r.EndDate,
+                        }
+                    ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
                     RORId = o.RORId,
                 }
             }),
@@ -406,28 +416,10 @@ public class ProjectsService : IProjectsService
                 Contact = c.Contact,
                 ProjectId = c.ProjectId,
             }).ToList(),
+            Lectorate = project.Lectorate,
+            OwnerOrganisation = project.OwnerOrganisation,
         };
     }
-
-    private Task<Project?> GetFullProjectAsync(Guid projectId) =>
-        _context.Projects
-            .AsNoTracking()
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Roles)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Person)
-            .Include(p => p.Products)
-            .Include(p => p.Organisations)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Person)
-            .ThenInclude(p => p!.User)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Roles)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Positions)
-            .SingleOrDefaultAsync(p => p.Id == projectId);
 
     /// <summary>
     /// Generates a CSV formatted string from a collection of data objects,
@@ -441,10 +433,10 @@ public class ProjectsService : IProjectsService
         StringBuilder csv = new();
         PropertyInfo[] properties = typeof(T).GetProperties();
 
-        // Generate header 
+        //  header 
         csv.AppendLine(string.Join(",", properties.Select(p => p.Name)));
 
-        // Generate rows
+        //  rows
         foreach (T item in data)
         {
             IEnumerable<string> values = properties.Select(p =>

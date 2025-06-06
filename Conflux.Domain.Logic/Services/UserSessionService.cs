@@ -12,6 +12,7 @@ using Conflux.Integrations.SRAM;
 using Conflux.Integrations.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 
 namespace Conflux.Domain.Logic.Services;
@@ -23,16 +24,20 @@ public class UserSessionService : IUserSessionService
     private readonly ConfluxContext _confluxContext;
     private readonly IVariantFeatureManager _featureManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly List<string> _superAdminEmails = [];
 
     public UserSessionService(
         ConfluxContext confluxContext, IHttpContextAccessor httpContextAccessor,
         ICollaborationMapper collaborationMapper,
-        IVariantFeatureManager featureManager)
+        IVariantFeatureManager featureManager, IConfiguration configuration)
     {
         _confluxContext = confluxContext;
         _httpContextAccessor = httpContextAccessor;
         _collaborationMapper = collaborationMapper;
         _featureManager = featureManager;
+        _superAdminEmails = configuration
+            .GetSection("SuperAdminEmails")
+            .Get<List<string>>() ?? [];
     }
 
     public async Task<UserSession?> GetUser()
@@ -110,6 +115,13 @@ public class UserSessionService : IUserSessionService
             user.User = _confluxContext.Users.Include(u => u.Person)
                 .SingleOrDefault(p => p.SRAMId == user.SRAMId);
 
+        if (user?.User is { PermissionLevel: PermissionLevel.User } &&
+            _superAdminEmails.Contains(user.Email))
+        {
+            user.User.PermissionLevel = PermissionLevel.SuperAdmin;
+            _confluxContext.Users.Update(user.User);
+        }
+        
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 
         return user;

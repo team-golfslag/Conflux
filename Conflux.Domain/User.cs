@@ -21,6 +21,10 @@ public record User
     
     public List<UserRole> Roles { get; set; } = [];
     
+    public PermissionLevel PermissionLevel { get; set; } = PermissionLevel.User;
+    public List<string> AssignedLectorates { get; set; } = [];
+    public List<string> AssignedOrganisations { get; set; } = [];
+    
     [Required]
     public required Guid PersonId { get; set; }
     [JsonIgnore]

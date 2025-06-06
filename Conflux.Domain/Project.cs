@@ -36,4 +36,8 @@ public class Project
     public List<ProjectDescription> Descriptions { get; set; } = [];
 
     public DateTime LastestEdit { get; set; } = DateTime.UtcNow;
+
+    public string? Lectorate { get; set; }
+    
+    public string? OwnerOrganisation { get; set; }
 }

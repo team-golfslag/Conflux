@@ -10,9 +10,29 @@ namespace Conflux.Domain.Logic.Services;
 
 public class AccessControlService(ConfluxContext context) : IAccessControlService
 {
-    public Task<bool> UserHasRoleInProject(Guid userId, Guid projectId, UserRoleType roleType) =>
-        context.Users
-            .AsNoTracking()
-            .AnyAsync(u => u.Id == userId &&
-                u.Roles.Any(r => r.ProjectId == projectId && r.Type == roleType));
+    public async Task<bool> UserHasRoleInProject(Guid userId, Guid projectId, UserRoleType roleType)
+    {
+        User? user = await context.Users
+            .Include(u => u.Roles)
+            .SingleOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return false;
+
+        if (user.PermissionLevel == PermissionLevel.SuperAdmin) return true;
+        
+        Project? project = await context.Projects.FindAsync(projectId);
+        if (project == null) return false;
+        
+        if (user.PermissionLevel == PermissionLevel.SystemAdmin)
+        {
+            if (project.Lectorate != null && user.AssignedLectorates.Contains(project.Lectorate)) 
+                return true;
+            
+            if (project.OwnerOrganisation != null && user.AssignedOrganisations.Contains(project.OwnerOrganisation)) 
+                return true;
+        }
+
+        return user.Roles
+            .Any(r => r.ProjectId == projectId && r.Type == roleType);
+    }
+        
 }

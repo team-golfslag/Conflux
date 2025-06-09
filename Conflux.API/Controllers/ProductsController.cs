@@ -58,7 +58,7 @@ public class ProductsController : ControllerBase
     /// </returns>
     [HttpPost]
     [RequireProjectRole(UserRoleType.Admin)]
-    [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> CreateProductAsync([FromRoute] Guid projectId,
         [FromBody] ProductRequestDTO productDTO) =>
         await _productService.CreateProductAsync(projectId, productDTO);

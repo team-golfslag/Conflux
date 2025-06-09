@@ -197,7 +197,7 @@ public class ProjectMapperService : IProjectMapperService
                 Type = RAiDIncompatibilityType.OrganisationWithoutRor,
                 ObjectId = o.OrganisationId,
             }));
-        
+
         // Note: An organisation's role may change over time, but each organisation may have one and only one role at any given time.
         // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role
         incompatibilities.AddRange(project.Organisations
@@ -234,14 +234,17 @@ public class ProjectMapperService : IProjectMapperService
         List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
                 o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
             .ToList();
-        
-        if (!leadOrganisationsRoles.Any(r => r.StartDate <= project.StartDate
-            && (r.EndDate == null || r.EndDate >= project.EndDate)))
+
+        if (!leadOrganisationsRoles.Any(r =>
+            r.StartDate.Date >= project.StartDate.Date
+            && r.EndDate == null && project.EndDate == null
+            || r.EndDate != null && project.EndDate != null
+            && r.EndDate.Value.Date <= project.EndDate.Value.Date))
             incompatibilities.Add(new()
             {
                 Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
             });
-        
+
 
         incompatibilities.AddRange(project.Products
             .Where(p => p.Categories.Count == 0)
@@ -414,15 +417,14 @@ public class ProjectMapperService : IProjectMapperService
             EndDate = role.EndDate,
         };
 
-    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation)
-    {
-        return new()
+    private RAiDOrganisation MapOrganisation(ProjectOrganisation projectOrganisation) =>
+        new()
         {
-            Id = projectOrganisation.Organisation!.RORId ?? throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
+            Id = projectOrganisation.Organisation!.RORId ??
+                throw new ArgumentNullException(nameof(projectOrganisation.OrganisationId)),
             SchemaUri = projectOrganisation.Organisation!.SchemaUri,
             Role = projectOrganisation.Roles.Select(MapOrganisationRole).ToList(),
         };
-    }
 
     private static RAiDLanguage MapLanguage(Language lang) =>
         new()

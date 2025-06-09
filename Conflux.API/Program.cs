@@ -200,12 +200,13 @@ public class Program
 
             RAiDService raidSvc = new(httpClient, optionsAccessor, logger);
 
-            string? token = Environment.GetEnvironmentVariable("RAID_BEARER_TOKEN");
-            if (string.IsNullOrWhiteSpace(token) && raidEnabled)
+            string? raidUsername = Environment.GetEnvironmentVariable("RAID_USERNAME");
+            string? raidPassword = Environment.GetEnvironmentVariable("RAID_PASSWORD");
+            if ((string.IsNullOrEmpty(raidUsername) || string.IsNullOrEmpty(raidPassword)) && raidEnabled)
                 throw new InvalidOperationException(
-                    "RAID_BEARER_TOKEN environment variable is not set");
+                    "RAID_USERNAME and RAID_PASSWORD must be set in environment variables.");
 
-            raidSvc.SetBearerToken(token!);
+            raidSvc.SetUsernameAndPassword(raidUsername!, raidPassword!);
             return raidSvc;
         });
     }

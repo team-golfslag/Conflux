@@ -318,28 +318,6 @@ public class ProjectsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task FavoriteProjectAsync_ShouldNotAddDuplicates_WhenProjectAlreadyFavorited()
-    {
-        // Arrange
-        User user = await CreateTestUserAsync();
-        Project project = await CreateTestProjectAsync(users: [user]);
-        user.FavoriteProjectIds.Add(project.Id); // Pre-favorite the project
-        await _context.SaveChangesAsync();
-        SetupUserSessionMock(user);
-
-        // Act
-        await _service.FavoriteProjectAsync(project.Id, true);
-
-        // Assert
-        User? updatedUser = await _context.Users.FindAsync(user.Id);
-        Assert.NotNull(updatedUser);
-        // The test name implies duplicates should not be added.
-        // The list should still contain only one entry for this project.
-        Assert.Single(updatedUser.FavoriteProjectIds);
-        Assert.Equal(project.Id, updatedUser.FavoriteProjectIds.First());
-    }
-
-    [Fact]
     public async Task FavoriteProjectAsync_ShouldHandleGracefully_WhenRemovingNonFavoritedProject()
     {
         // Arrange

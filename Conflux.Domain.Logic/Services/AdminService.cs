@@ -62,8 +62,9 @@ public class AdminService : IAdminService
         List<User> users = await _context.Users
             .AsNoTracking()
             .Include(u => u.Person)
-            .Where(u => string.IsNullOrEmpty(query) || u.Person!.Name.Contains(query) ||
-                u.Person.Email!.Contains(query))
+            .Where(u => string.IsNullOrEmpty(query) || 
+                u.Person!.Name.ToLower().Contains(query.ToLower()) ||
+                u.Person.Email!.ToLower().Contains(query.ToLower()))
             .Where(u => !adminsOnly || u.PermissionLevel == PermissionLevel.SystemAdmin ||
                 u.PermissionLevel == PermissionLevel.SuperAdmin)
             .ToListAsync();

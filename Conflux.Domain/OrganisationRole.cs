@@ -23,16 +23,17 @@ public enum OrganisationRoleType
     OtherOrganization = 188,
 }
 
-[PrimaryKey(nameof(ProjectId), nameof(OrganisationId), nameof(Role))]
 public class OrganisationRole
 {
+    [Key]
+    public Guid Id { get; init; }
     public Guid ProjectId { get; init; }
     
     public Guid OrganisationId { get; init; }
 
     public ProjectOrganisation? Organisation { get; init; }
 
-    [Key] public OrganisationRoleType Role { get; init; }
+    public OrganisationRoleType Role { get; init; }
 
     public string SchemaUri => "https://vocabulary.raid.org/organisation.role.schema/359";
     public DateTime StartDate { get; set; }

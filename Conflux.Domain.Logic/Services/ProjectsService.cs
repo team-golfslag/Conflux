@@ -164,6 +164,9 @@ public class ProjectsService : IProjectsService
             startDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.StartDate >= startDate);
         }
+        
+        if (dto.Lectorate is not null) 
+            projects = projects.Where(project => project.Lectorate == dto.Lectorate);
 
         DateTime? endDate;
         if (dto.EndDate.HasValue)
@@ -178,9 +181,9 @@ public class ProjectsService : IProjectsService
         projects = dto.OrderByType switch
         {
             OrderByType.TitleAsc => projects.OrderBy(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
             OrderByType.TitleDesc => projects.OrderByDescending(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)),
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
             OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
             OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),

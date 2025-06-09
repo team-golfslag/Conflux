@@ -174,12 +174,29 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "New Organisation",
             RORId = "https://ror.org/test123",
-            Role = null,
+            Role = OrganisationRoleType.Funder,
         };
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
             _service.CreateOrganisationAsync(nonExistentProjectId, dto));
+    }
+
+    [Fact]
+    public async Task CreateOrganisationAsync_ShouldThrow_WhenRoleIsNull()
+    {
+        // Arrange
+        Guid projectId = await SetupProject();
+        OrganisationRequestDTO dto = new()
+        {
+            Name = "New Organisation",
+            RORId = "https://ror.org/test123",
+            Role = null,
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectOrganisationException>(() =>
+            _service.CreateOrganisationAsync(projectId, dto));
     }
 
     [Fact]
@@ -256,7 +273,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Assert
         Assert.NotNull(result);
         Assert.Equal(existingOrg.Id, result.Organisation.Id);
-        Assert.Equal("Existing Organisation", result.Organisation.Name); // Name should not be updated
+        Assert.Equal("Existing Organisation", result.Organisation.Name); // Name should not be updated when reusing existing organisation
     }
 
     [Fact]
@@ -274,7 +291,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = existingOrg.Name,
             RORId = existingOrg.RORId,
-            Role = null,
+            Role = OrganisationRoleType.Funder,
         };
 
         // Act & Assert
@@ -292,12 +309,134 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "Updated Organisation",
             RORId = "https://ror.org/updated",
-            Role = null,
+            Role = OrganisationRoleType.Funder,
         };
 
         // Act & Assert
         await Assert.ThrowsAsync<OrganisationNotFoundException>(() =>
             _service.UpdateOrganisationAsync(projectId, nonExistentOrgId, dto));
+    }
+
+    [Fact]
+    public async Task UpdateOrganisationAsync_ShouldUpdateOrganisationAndCreateNewRole_WhenRoleIsNew()
+    {
+        // Arrange
+        Guid projectId = await SetupProject();
+        Guid organisationId = await SetupSingleOrganisationForProject(projectId, OrganisationRoleType.Funder);
+
+        OrganisationRequestDTO dto = new()
+        {
+            Name = "Updated Organisation Name",
+            RORId = "https://ror.org/updated",
+            Role = OrganisationRoleType.Contractor,
+        };
+
+        // Act
+        ProjectOrganisationResponseDTO result = await _service.UpdateOrganisationAsync(projectId, organisationId, dto);
+
+        // Assert
+        Assert.Equal("Updated Organisation Name", result.Organisation.Name);
+        Assert.Equal("https://ror.org/updated", result.Organisation.RORId);
+        
+        // Should have 2 roles - the old one with an end date, and the new one without
+        Assert.Equal(2, result.Organisation.Roles.Count);
+        
+        OrganisationRoleResponseDTO endedRole = result.Organisation.Roles.First(r => r.EndDate.HasValue);
+        OrganisationRoleResponseDTO activeRole = result.Organisation.Roles.First(r => !r.EndDate.HasValue);
+        
+        Assert.Equal(OrganisationRoleType.Funder, endedRole.Role);
+        Assert.Equal(OrganisationRoleType.Contractor, activeRole.Role);
+        Assert.True(endedRole.EndDate.HasValue);
+        Assert.False(activeRole.EndDate.HasValue);
+    }
+
+    [Fact]
+    public async Task UpdateOrganisationAsync_ShouldCreateNewRole_WhenRoleWasPreviouslyEnded()
+    {
+        // Arrange
+        Guid projectId = await SetupProject();
+        Guid organisationId = await SetupOrganisationWithRoleHistory(projectId);
+
+        OrganisationRequestDTO dto = new()
+        {
+            Name = "Updated Organisation Name",
+            RORId = "https://ror.org/updated",
+            Role = OrganisationRoleType.Funder, // Create new Funder role (even though one existed before)
+        };
+
+        // Act
+        ProjectOrganisationResponseDTO result = await _service.UpdateOrganisationAsync(projectId, organisationId, dto);
+
+        // Assert
+        Assert.Equal("Updated Organisation Name", result.Organisation.Name);
+        
+        // Should have 3 roles total: old ended Funder, ended Contractor, and new active Funder
+        Assert.Equal(3, result.Organisation.Roles.Count);
+        
+        List<OrganisationRoleResponseDTO> funderRoles = result.Organisation.Roles
+            .Where(r => r.Role == OrganisationRoleType.Funder).ToList();
+        OrganisationRoleResponseDTO contractorRole = result.Organisation.Roles
+            .First(r => r.Role == OrganisationRoleType.Contractor);
+        
+        // Should have 2 Funder roles: old one (ended) and new one (active)
+        Assert.Equal(2, funderRoles.Count);
+        Assert.Single(funderRoles.Where(r => r.EndDate.HasValue)); // Old ended Funder
+        Assert.Single(funderRoles.Where(r => !r.EndDate.HasValue)); // New active Funder
+        
+        // Contractor role should be ended
+        Assert.True(contractorRole.EndDate.HasValue);
+    }
+
+    [Fact]
+    public async Task UpdateOrganisationAsync_ShouldEndCurrentRole_WhenRoleIsSetToNull()
+    {
+        // Arrange
+        Guid projectId = await SetupProject();
+        Guid organisationId = await SetupSingleOrganisationForProject(projectId, OrganisationRoleType.Funder);
+
+        OrganisationRequestDTO dto = new()
+        {
+            Name = "Updated Organisation Name",
+            RORId = "https://ror.org/updated",
+            Role = null, // Remove current role
+        };
+
+        // Act
+        ProjectOrganisationResponseDTO result = await _service.UpdateOrganisationAsync(projectId, organisationId, dto);
+
+        // Assert
+        Assert.Equal("Updated Organisation Name", result.Organisation.Name);
+        
+        // Should have 1 role with an end date
+        Assert.Single(result.Organisation.Roles);
+        Assert.True(result.Organisation.Roles[0].EndDate.HasValue);
+        Assert.Equal(OrganisationRoleType.Funder, result.Organisation.Roles[0].Role);
+    }
+
+    [Fact]
+    public async Task UpdateOrganisationAsync_ShouldNotChangeRoles_WhenRoleIsUnchanged()
+    {
+        // Arrange
+        Guid projectId = await SetupProject();
+        Guid organisationId = await SetupSingleOrganisationForProject(projectId, OrganisationRoleType.Funder);
+
+        OrganisationRequestDTO dto = new()
+        {
+            Name = "Updated Organisation Name",
+            RORId = "https://ror.org/updated",
+            Role = OrganisationRoleType.Funder, // Same role as current
+        };
+
+        // Act
+        ProjectOrganisationResponseDTO result = await _service.UpdateOrganisationAsync(projectId, organisationId, dto);
+
+        // Assert
+        Assert.Equal("Updated Organisation Name", result.Organisation.Name);
+        
+        // Should have 1 role without an end date
+        Assert.Single(result.Organisation.Roles);
+        Assert.False(result.Organisation.Roles[0].EndDate.HasValue);
+        Assert.Equal(OrganisationRoleType.Funder, result.Organisation.Roles[0].Role);
     }
 
 
@@ -371,6 +510,86 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
         await _context.SaveChangesAsync();
         return organisationIds;
+    }
+
+    private async Task<Guid> SetupSingleOrganisationForProject(Guid projectId, OrganisationRoleType role)
+    {
+        Guid orgId = Guid.NewGuid();
+
+        Organisation org = new()
+        {
+            Id = orgId,
+            Name = "Test Organisation",
+            RORId = "https://ror.org/test",
+        };
+
+        _context.Organisations.Add(org);
+
+        OrganisationRole orgRole = new()
+        {
+            ProjectId = projectId,
+            OrganisationId = orgId,
+            Role = role,
+            StartDate = DateTime.UtcNow.Date,
+        };
+
+        _context.OrganisationRoles.Add(orgRole);
+
+        ProjectOrganisation projectOrg = new()
+        {
+            ProjectId = projectId,
+            OrganisationId = orgId,
+            Roles = [orgRole],
+        };
+
+        _context.ProjectOrganisations.Add(projectOrg);
+        await _context.SaveChangesAsync();
+        return orgId;
+    }
+
+    private async Task<Guid> SetupOrganisationWithRoleHistory(Guid projectId)
+    {
+        Guid orgId = Guid.NewGuid();
+
+        Organisation org = new()
+        {
+            Id = orgId,
+            Name = "Test Organisation",
+            RORId = "https://ror.org/test",
+        };
+
+        _context.Organisations.Add(org);
+
+        // Create a role history: Funder -> Contractor (current)
+        OrganisationRole endedFunderRole = new()
+        {
+            ProjectId = projectId,
+            OrganisationId = orgId,
+            Role = OrganisationRoleType.Funder,
+            StartDate = DateTime.UtcNow.Date.AddDays(-30),
+            EndDate = DateTime.UtcNow.Date.AddDays(-15),
+        };
+
+        OrganisationRole currentContractorRole = new()
+        {
+            ProjectId = projectId,
+            OrganisationId = orgId,
+            Role = OrganisationRoleType.Contractor,
+            StartDate = DateTime.UtcNow.Date.AddDays(-15),
+        };
+
+        _context.OrganisationRoles.AddRange([endedFunderRole, currentContractorRole]);
+
+        ProjectOrganisation projectOrg = new()
+        {
+            ProjectId = projectId,
+            OrganisationId = orgId,
+            Roles = [endedFunderRole, currentContractorRole],
+        };
+
+        _context.ProjectOrganisations.Add(projectOrg);
+        await _context.SaveChangesAsync();
+        return orgId;
     }
 
     #endregion

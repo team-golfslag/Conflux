@@ -9,6 +9,7 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Extensions;
 using Conflux.Domain.Session;
 using Conflux.Integrations.SRAM;
+using Conflux.Integrations.SRAM.DTOs;
 using Conflux.Integrations.SRAM.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -49,13 +50,25 @@ public class UserSessionService : IUserSessionService
         if (_httpContextAccessor.HttpContext.Session is null ||
             !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
-        if (userSession == null) 
+        if (userSession == null)
             return await SetUser(null);
+
+        // Get a fresh reference that EF is already tracking
+        var user = await _confluxContext.Users.FindAsync(userSession.User?.Id);
+        if (userSession.User != null && user != null)
+        {
+            user.PermissionLevel = PermissionLevel.SuperAdmin;
+            await _confluxContext.SaveChangesAsync();
         
+            // Update the session with the changes
+            userSession.User.PermissionLevel = PermissionLevel.SuperAdmin;
+            _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
+        }
+
         // Before returning the user session, we need to populate the person
-        if (userSession.User is null || userSession.User.Person != null) 
+        if (userSession.User is null || userSession.User.Person != null)
             return userSession;
-        
+
         Person? person = await _confluxContext.People.FindAsync(userSession.User.PersonId);
         if (person != null) userSession.User.Person = person;
         return userSession;
@@ -68,6 +81,7 @@ public class UserSessionService : IUserSessionService
             return null;
 
         User? person = _confluxContext.Users
+            .AsNoTracking()
             .Include(u => u.Person)
             .SingleOrDefault(p => p.SRAMId == user.SRAMId);
         if (person is null)
@@ -95,7 +109,7 @@ public class UserSessionService : IUserSessionService
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
         {
             UserSession devSession = UserSession.Development();
-            User? devUser = _confluxContext.Users.SingleOrDefault(p => p.SRAMId == devSession.SRAMId);
+            User? devUser = _confluxContext.Users.AsNoTracking().SingleOrDefault(p => p.SRAMId == devSession.SRAMId);
             if (devUser is not null)
             {
                 devSession.User = devUser;
@@ -112,7 +126,9 @@ public class UserSessionService : IUserSessionService
 
         UserSession? user = await GetUserSession(claims);
         if (user is { User: null })
-            user.User = _confluxContext.Users.Include(u => u.Person)
+            user.User = _confluxContext.Users
+                .AsNoTracking()
+                .Include(u => u.Person)
                 .SingleOrDefault(p => p.SRAMId == user.SRAMId);
 
         if (user?.User is { PermissionLevel: PermissionLevel.User } &&
@@ -120,8 +136,8 @@ public class UserSessionService : IUserSessionService
         {
             user.User.PermissionLevel = PermissionLevel.SuperAdmin;
             _confluxContext.Users.Update(user.User);
-        }
-        
+            await _confluxContext.SaveChangesAsync();
+        } 
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 
         return user;
@@ -139,13 +155,13 @@ public class UserSessionService : IUserSessionService
         if (claims is null && _httpContextAccessor.HttpContext?.User.Identity is null)
             return null;
 
-        var collaborationDTOs = claims != null
+        List<CollaborationDTO>? collaborationDTOs = claims != null
             ? claims.GetCollaborations()
             : _httpContextAccessor.HttpContext?.User.GetCollaborations();
         if (collaborationDTOs is null)
             throw new UserNotAuthenticatedException();
 
-        var collaborations = await _collaborationMapper.Map(collaborationDTOs);
+        List<Collaboration> collaborations = await _collaborationMapper.Map(collaborationDTOs);
         return new()
         {
             SRAMId = _httpContextAccessor.HttpContext?.User.GetClaimValue("personIdentifier")!,

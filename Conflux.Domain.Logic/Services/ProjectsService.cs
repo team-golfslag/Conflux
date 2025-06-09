@@ -112,7 +112,7 @@ public class ProjectsService : IProjectsService
         if (userSession.User is null)
             return;
         
-        if (favorite)
+        if (favorite && !userSession.User.FavoriteProjectIds.Contains(projectId))
             userSession.User.FavoriteProjectIds.Add(projectId);
         else
             userSession.User.FavoriteProjectIds.Remove(projectId);

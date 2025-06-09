@@ -112,14 +112,18 @@ public class ProjectsService : IProjectsService
         if (userSession.User is null)
             return;
         
-        if (favorite && !userSession.User.FavoriteProjectIds.Contains(projectId))
-            userSession.User.FavoriteProjectIds.Add(projectId);
-        else
-            userSession.User.FavoriteProjectIds.Remove(projectId);
+        var user = await _context.Users.FindAsync(userSession.User.Id);
+        if (user is null)
+            return;
         
-        _context.Users.Update(userSession.User);
-        await _userSessionService.CommitUser(userSession);
+        if (favorite && !user.FavoriteProjectIds.Contains(projectId))
+            user.FavoriteProjectIds.Add(projectId);
+        else if (!favorite && user.FavoriteProjectIds.Contains(projectId))
+            user.FavoriteProjectIds.Remove(projectId);
+        
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
+        await _userSessionService.UpdateUser();
     }
 
     /// <summary>

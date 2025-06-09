@@ -262,7 +262,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.Contains(project.Id, updatedUser.FavoriteProjectIds);
         Assert.Single(updatedUser.FavoriteProjectIds);
         _userSessionServiceMock.Verify(
-            s => s.CommitUser(It.IsAny<UserSession>()),
+            s => s.UpdateUser(),
             Times.Once
         );
     }
@@ -286,7 +286,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.DoesNotContain(project.Id, updatedUser.FavoriteProjectIds);
         Assert.Empty(updatedUser.FavoriteProjectIds);
         _userSessionServiceMock.Verify(
-            s => s.CommitUser(It.IsAny<UserSession>()),
+            s => s.UpdateUser(),
             Times.Once
         );
     }
@@ -333,7 +333,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         Assert.NotNull(updatedUser);
         Assert.Empty(updatedUser.FavoriteProjectIds);
         _userSessionServiceMock.Verify(
-            s => s.CommitUser(It.IsAny<UserSession>()),
+            s => s.UpdateUser(),
             Times.Once
         );
     }

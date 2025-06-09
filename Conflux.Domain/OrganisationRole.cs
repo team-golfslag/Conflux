@@ -23,7 +23,6 @@ public enum OrganisationRoleType
     OtherOrganization = 188,
 }
 
-[PrimaryKey(nameof(Id))]
 public class OrganisationRole
 {
     [Key]

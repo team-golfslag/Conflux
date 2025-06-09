@@ -136,8 +136,13 @@ public class ProjectsServiceTests : IAsyncLifetime
             Email = user.Person.Email,
             Name = user.Person.Name,
             SRAMId = user.SRAMId,
-            User = user
+            User = user,
+            Collaborations = []
         };
+        
+        // Set user as SuperAdmin so they can see all projects
+        user.PermissionLevel = PermissionLevel.SuperAdmin;
+        
         _userSessionServiceMock.Setup(s => s.GetUser()).ReturnsAsync(userSession);
         _userSessionServiceMock
             .Setup(s => s.CommitUser(It.IsAny<UserSession>()))
@@ -170,24 +175,33 @@ public class ProjectsServiceTests : IAsyncLifetime
         User user = await CreateTestUserAsync();
         Organisation organisation = await CreateTestOrganisationAsync();
         Project project = await CreateTestProjectAsync(users: [user]);
+        SetupUserSessionMock(user);
 
         // Manually add relations not covered by helpers
-        project.Organisations.Add(
-            new ProjectOrganisation
-            {
-                OrganisationId = organisation.Id,
-                ProjectId = project.Id
-            }
-        );
-        project.Products.Add(
-            new Product
-            {
-                Id = Guid.NewGuid(),
-                Title = "Test Product",
-                Url = "https://example.com/product",
-                Type = ProductType.Software,
-            }
-        );
+        var projectOrganisation = new ProjectOrganisation
+        {
+            OrganisationId = organisation.Id,
+            ProjectId = project.Id
+        };
+        var product = new Product
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = project.Id,
+            Title = "Test Product",
+            Url = "https://example.com/product",
+            Type = ProductType.Software,
+        };
+        var contributor = new Contributor
+        {
+            PersonId = user.PersonId,
+            ProjectId = project.Id,
+            Leader = false,
+            Contact = false
+        };
+        
+        _context.ProjectOrganisations.Add(projectOrganisation);
+        _context.Products.Add(product);
+        _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
         var queryDto = new ProjectQueryDTO { Query = "Test", };

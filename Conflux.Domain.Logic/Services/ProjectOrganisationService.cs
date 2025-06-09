@@ -194,15 +194,29 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
         
         if (organisationDto.Role.HasValue && (currentRole == null || currentRole.Role != organisationDto.Role.Value))
         {
-            // Create a new role with the new role type
-            OrganisationRole newRole = new()
+            // Check if there is a role with this type that has ended, if so we should restart it
+            OrganisationRole? endedRole = await _context.OrganisationRoles
+                .Where(r => r.ProjectId == projectId && r.OrganisationId == organisationId && r.Role == organisationDto.Role.Value && r.EndDate != null)
+                .SingleOrDefaultAsync();
+            
+            if (endedRole != null)
             {
-                ProjectId = projectId,
-                OrganisationId = organisationId,
-                Role = organisationDto.Role.Value,
-                StartDate = DateTime.UtcNow.Date,
-            };
-            _context.OrganisationRoles.Add(newRole);
+                // Restart the ended role
+                endedRole.EndDate = null; // Clear the end date to restart the role
+                _context.OrganisationRoles.Update(endedRole);
+            }
+            else
+            {
+                // Create a new role with the new role type
+                OrganisationRole newRole = new()
+                {
+                    ProjectId = projectId,
+                    OrganisationId = organisationId,
+                    Role = organisationDto.Role.Value,
+                    StartDate = DateTime.UtcNow.Date,
+                };
+                _context.OrganisationRoles.Add(newRole);
+            }
         }
 
         await _context.SaveChangesAsync();

@@ -19,6 +19,8 @@ public class ProjectQueryDTO
     [FromQuery(Name = "start_date")] public DateTime? StartDate { get; init; }
 
     [FromQuery(Name = "end_date")] public DateTime? EndDate { get; init; }
+    
+    [FromQuery(Name = "lectorate")] public string? Lectorate { get; init; }
 
     [FromQuery(Name = "order_by")] public OrderByType? OrderByType { get; init; }
 }

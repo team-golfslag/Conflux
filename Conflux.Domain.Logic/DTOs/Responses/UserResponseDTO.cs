@@ -18,6 +18,8 @@ public class UserResponseDTO
     public PermissionLevel PermissionLevel { get; set; } = PermissionLevel.User;
     public List<string> AssignedLectorates { get; set; } = [];
     public List<string> AssignedOrganisations { get; set; } = [];
+    public List<Guid> RecentlyAccessedProjectIds { get; set; } = [];
+    public List<Guid> FavouriteProjectIds { get; set; } = [];
     
     public PersonResponseDTO? Person { get; init; }
 }

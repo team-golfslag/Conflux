@@ -95,6 +95,33 @@ public class ProjectsService : IProjectsService
         return roles.Where(r => collaboration.Groups.Any(g => g.Urn == r.Urn)).ToList();
     }
 
+    public async Task FavoriteProjectAsync(Guid projectId, bool favorite)
+    {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+
+        Project? project = await _context.Projects
+            .Include(p => p.Users)
+            .ThenInclude(u => u.Person)
+            .SingleOrDefaultAsync(p => p.Id == projectId);
+        
+        if (project is null)
+            throw new ProjectNotFoundException(projectId);
+
+        if (userSession.User is null)
+            return;
+        
+        if (favorite)
+            userSession.User.FavoriteProjectIds.Add(projectId);
+        else
+            userSession.User.FavoriteProjectIds.Remove(projectId);
+        
+        _context.Users.Update(userSession.User);
+        await _userSessionService.CommitUser(userSession);
+        await _context.SaveChangesAsync();
+    }
+
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
@@ -117,14 +144,22 @@ public class ProjectsService : IProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id)
     {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        
         Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         FilterRolesForProject(project);
 
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
-            throw new UserNotAuthenticatedException();
+        if (userSession.User is not null)
+        {
+            userSession.User.RecentlyAccessedProjectIds =
+                userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+            await _context.SaveChangesAsync();
+            await _userSessionService.CommitUser(userSession);
+        }
 
         List<string> accessibleSramIds = userSession.Collaborations
             .Select(c => c.CollaborationGroup.SCIMId)
@@ -146,6 +181,10 @@ public class ProjectsService : IProjectsService
     /// <returns>Filtered and ordered list of project DTOs</returns>
     public async Task<List<ProjectResponseDTO>> GetProjectsByQueryAsync(ProjectQueryDTO dto)
     {
+        UserSession? userSession = await _userSessionService.GetUser();
+        if (userSession is null || userSession.User is null)
+            throw new UserNotAuthenticatedException();
+        
         IEnumerable<ProjectResponseDTO> projects = await GetAvailableProjects();
 
         if (!string.IsNullOrWhiteSpace(dto.Query))
@@ -185,7 +224,9 @@ public class ProjectsService : IProjectsService
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
             OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
             OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
-            _                         => projects,
+            // Default case = relevance, check if the project is contained in the users recently accessed projects
+            _                         => projects.OrderByDescending(project =>
+                userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id))
         };
 
         return projects.ToList();

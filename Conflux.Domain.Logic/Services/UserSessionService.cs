@@ -131,8 +131,8 @@ public class UserSessionService : IUserSessionService
         {
             user.User.PermissionLevel = PermissionLevel.SuperAdmin;
             _confluxContext.Users.Update(user.User);
-        }
-
+            await _confluxContext.SaveChangesAsync();
+        } 
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
 
         return user;

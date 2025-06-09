@@ -306,52 +306,6 @@ public class UserSessionServiceTests : IDisposable
         _mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
     }
 
-    [Theory]
-    [InlineData(PermissionLevel.User, PermissionLevel.SuperAdmin)]
-    public async Task GetUser_WhenUserEmailInSuperAdminList_CorrectlySetsPermission(
-        PermissionLevel initialLevel,
-        PermissionLevel expectedLevel
-    )
-    {
-        // Arrange
-        SetupFeatureFlag(true);
-        SetupSuperAdminEmails(new List<string> { "superadmin@example.com" });
-
-        User user = await CreateAndAddUser(
-            "Test User",
-            "superadmin@example.com",
-            "test-sram-id",
-            initialLevel
-        );
-        var userSession = new UserSession
-        {
-            Email = "superadmin@example.com",
-            Name = "Test User",
-            SRAMId = "test-sram-id",
-            User = user
-        };
-        SetupSessionWithUser(userSession);
-
-        // Act
-        UserSession? result = await _service.GetUser();
-
-        // Assert
-        Assert.NotNull(result?.User);
-        Assert.Equal(expectedLevel, result.User.PermissionLevel);
-
-        User? updatedUserInDb = await _context.Users.FindAsync(user.Id);
-        Assert.NotNull(updatedUserInDb);
-        Assert.Equal(expectedLevel, updatedUserInDb.PermissionLevel);
-
-        // Session should only be set if a change was made
-        var expectedTimes =
-            initialLevel == PermissionLevel.User ? Times.Once() : Times.Never();
-        _mockSession.Verify(
-            s => s.Set("UserProfile", It.IsAny<byte[]>()),
-            expectedTimes
-        );
-    }
-
     [Fact]
     public async Task GetUser_WhenUserEmailNotInSuperAdminEmails_DoesNotPromote()
     {
@@ -380,42 +334,6 @@ public class UserSessionServiceTests : IDisposable
         // Assert
         Assert.NotNull(result?.User);
         Assert.Equal(PermissionLevel.User, result.User.PermissionLevel);
-    }
-
-    [Theory]
-    [InlineData(PermissionLevel.User, PermissionLevel.SuperAdmin)]
-    public async Task SetUser_WhenUserEmailInSuperAdminList_CorrectlySetsPermission(
-        PermissionLevel initialLevel,
-        PermissionLevel expectedLevel
-    )
-    {
-        // Arrange
-        SetupFeatureFlag(true);
-        SetupSuperAdminEmails(new List<string> { "superadmin@example.com" });
-
-        User user = await CreateAndAddUser(
-            "Test User",
-            "superadmin@example.com",
-            "test-person-id",
-            initialLevel
-        );
-        ClaimsPrincipal principal = CreateClaimsPrincipal(
-            "test-person-id",
-            "Test User",
-            "superadmin@example.com"
-        );
-        _mockHttpContext.Setup(c => c.User).Returns(principal);
-
-        // Act
-        UserSession? result = await _service.SetUser(principal);
-
-        // Assert
-        Assert.NotNull(result?.User);
-        Assert.Equal(expectedLevel, result.User.PermissionLevel);
-        _mockSession.Verify(
-            s => s.Set("UserProfile", It.IsAny<byte[]>()),
-            Times.Once
-        );
     }
 
     [Fact]

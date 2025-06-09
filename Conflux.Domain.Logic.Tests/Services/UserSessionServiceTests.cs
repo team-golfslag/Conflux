@@ -53,7 +53,23 @@ public class UserSessionServiceTests : IDisposable
         _mockHttpContextAccessor.Setup(a => a.HttpContext)
             .Returns(_mockHttpContext.Object);
         _mockSession.Setup(s => s.IsAvailable).Returns(true);
-        SetupSuperAdminEmails(new List<string>()); // Default to empty list
+        
+        // Setup the SuperAdminEmails configuration section
+        var emails = new List<string>();
+        var mockEmailSections = emails.Select(email =>
+        {
+            var mockSection = new Mock<IConfigurationSection>();
+            mockSection.Setup(s => s.Value).Returns(email);
+            return mockSection.Object;
+        }).ToList();
+
+        var mockSuperAdminSection = new Mock<IConfigurationSection>();
+        mockSuperAdminSection.Setup(s => s.GetChildren())
+            .Returns(mockEmailSections);
+
+        _mockConfiguration.Setup(c => c.GetSection("SuperAdminEmails"))
+            .Returns(mockSuperAdminSection.Object);
+        
 
         // Service under test
         _service = new UserSessionService(
@@ -80,22 +96,7 @@ public class UserSessionServiceTests : IDisposable
             .ReturnsAsync(isEnabled);
     }
 
-    private void SetupSuperAdminEmails(IEnumerable<string> emails)
-    {
-        var mockEmailSections = emails.Select(email =>
-        {
-            var mockSection = new Mock<IConfigurationSection>();
-            mockSection.Setup(s => s.Value).Returns(email);
-            return mockSection.Object;
-        }).ToList();
-
-        var mockSuperAdminSection = new Mock<IConfigurationSection>();
-        mockSuperAdminSection.Setup(s => s.GetChildren())
-            .Returns(mockEmailSections);
-
-        _mockConfiguration.Setup(c => c.GetSection("SuperAdminEmails"))
-            .Returns(mockSuperAdminSection.Object);
-    }
+   
 
     private async Task<User> CreateAndAddUser(
         string name,
@@ -305,35 +306,65 @@ public class UserSessionServiceTests : IDisposable
         // Assert
         _mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
     }
-
+    
     [Fact]
-    public async Task GetUser_WhenUserEmailNotInSuperAdminEmails_DoesNotPromote()
+    public async Task GetUser_WhenUserEmailInSuperAdminEmails_PromotesToSuperAdmin()
     {
         // Arrange
+        // we have to setup the entire user session service because we need the admins email to be set 
         SetupFeatureFlag(true);
-        SetupSuperAdminEmails(new List<string> { "someone-else@example.com" });
+        const string userEmail = "super@example.com";
+        List<string> superAdminEmails = [userEmail];
+        
+        var mockConfigurationSection = new Mock<IConfigurationSection>();
+        var mockEmailSections = superAdminEmails.Select(email =>
+        {
+            var mockSection = new Mock<IConfigurationSection>();
+            mockSection.Setup(s => s.Value).Returns(email);
+            return mockSection.Object;
+        }).ToList();
+
+        var mockSuperAdminSection = new Mock<IConfigurationSection>();
+        mockSuperAdminSection.Setup(s => s.GetChildren())
+            .Returns(mockEmailSections);
+
+        mockConfigurationSection.Setup(c => c.GetSection("SuperAdminEmails"))
+            .Returns(mockSuperAdminSection.Object);
 
         User user = await CreateAndAddUser(
             "Test User",
-            "regular@example.com",
+            userEmail,
             "test-sram-id",
             PermissionLevel.User
         );
         var userSession = new UserSession
         {
-            Email = "regular@example.com",
+            Email = userEmail,
             Name = "Test User",
             SRAMId = "test-sram-id",
             User = user
         };
         SetupSessionWithUser(userSession);
-
+        
+        var sessionService = new UserSessionService(
+            _context,
+            _mockHttpContextAccessor.Object,
+            _mockCollaborationMapper.Object,
+            _mockFeatureManager.Object,
+            mockConfigurationSection.Object
+        );
+        
         // Act
-        UserSession? result = await _service.GetUser();
+        UserSession? result = await sessionService.GetUser();
 
         // Assert
         Assert.NotNull(result?.User);
-        Assert.Equal(PermissionLevel.User, result.User.PermissionLevel);
+        Assert.Equal(PermissionLevel.SuperAdmin, result.User.PermissionLevel);
+    
+        // Verify the user was updated in the database as well
+        User? updatedUser = await _context.Users.FindAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.Equal(PermissionLevel.SuperAdmin, updatedUser.PermissionLevel);
     }
 
     [Fact]
@@ -341,7 +372,6 @@ public class UserSessionServiceTests : IDisposable
     {
         // Arrange
         SetupFeatureFlag(true);
-        SetupSuperAdminEmails(new List<string> { "someone-else@example.com" });
 
         await CreateAndAddUser(
             "Test User",

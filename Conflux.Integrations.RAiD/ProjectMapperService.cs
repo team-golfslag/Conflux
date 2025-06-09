@@ -229,22 +229,40 @@ public class ProjectMapperService : IProjectMapperService
                 ObjectId = o.OrganisationId,
             }));
 
-        // Constraints: one (and only one) Organisation must be designated as 'Lead Research Organisation'
+       // Constraints: one (and only one) Organisation must be designated as 'Lead Research Organisation'
         // Source: https://metadata.raid.org/en/latest/core/organisations.html#organisation-role-id
         List<OrganisationRole> leadOrganisationsRoles = project.Organisations.SelectMany(o =>
                 o.Roles.Where(r => r.Role == OrganisationRoleType.LeadResearchOrganization))
             .ToList();
-
-        if (!leadOrganisationsRoles.Any(r =>
-            r.StartDate.Date >= project.StartDate.Date
-            && r.EndDate == null && project.EndDate == null
-            || r.EndDate != null && project.EndDate != null
-            && r.EndDate.Value.Date <= project.EndDate.Value.Date))
+        if (leadOrganisationsRoles.Count == 0)
+        {
             incompatibilities.Add(new()
             {
                 Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
             });
+        }
+        else
+        {
+            leadOrganisationsRoles.Sort((r1, r2) => DateTime.Compare(r1.StartDate, r2.StartDate));
+            DateTime? last = project.StartDate;
+            foreach (OrganisationRole leadOrganisationsRole in leadOrganisationsRoles)
+            {
+                // Last had no end so we have overlap
+                if (last == null)
+                    incompatibilities.Add(new()
+                    {
+                        Type = RAiDIncompatibilityType.MultipleLeadResearchOrganisation,
+                    });
 
+                last = leadOrganisationsRole.EndDate;
+            }
+
+            if (last != null && last != project.EndDate)
+                incompatibilities.Add(new()
+                {
+                    Type = RAiDIncompatibilityType.NoLeadResearchOrganisation,
+                });
+        }
 
         incompatibilities.AddRange(project.Products
             .Where(p => p.Categories.Count == 0)

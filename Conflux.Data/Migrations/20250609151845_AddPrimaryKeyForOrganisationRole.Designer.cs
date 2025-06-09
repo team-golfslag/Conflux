@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Conflux.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Data.Migrations
 {
     [DbContext(typeof(ConfluxContext))]
-    partial class ConfluxContextModelSnapshot : ModelSnapshot
+    [Migration("20250609151845_AddPrimaryKeyForOrganisationRole")]
+    partial class AddPrimaryKeyForOrganisationRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -362,19 +365,11 @@ namespace Conflux.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
-                    b.PrimitiveCollection<List<Guid>>("FavoriteProjectIds")
-                        .IsRequired()
-                        .HasColumnType("uuid[]");
-
                     b.Property<int>("PermissionLevel")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("PersonId")
                         .HasColumnType("uuid");
-
-                    b.PrimitiveCollection<List<Guid>>("RecentlyAccessedProjectIds")
-                        .IsRequired()
-                        .HasColumnType("uuid[]");
 
                     b.Property<string>("SCIMId")
                         .IsRequired()

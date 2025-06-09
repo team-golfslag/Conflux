@@ -1,6 +1,6 @@
 // This program has been developed by students from the bachelor Computer Science at Utrecht
 // University within the Software Project course.
-// 
+//
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Security.Claims;
@@ -20,35 +20,148 @@ using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class UserSessionServiceTests
+public class UserSessionServiceTests : IDisposable
 {
+    private readonly ConfluxContext _context;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
+    private readonly Mock<ICollaborationMapper> _mockCollaborationMapper;
+    private readonly Mock<IVariantFeatureManager> _mockFeatureManager;
+    private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<ISession> _mockSession;
+    private readonly Mock<HttpContext> _mockHttpContext;
+    private readonly UserSessionService _service;
+
+    public UserSessionServiceTests()
+    {
+        // Database context setup
+        DbContextOptions<ConfluxContext> options =
+            new DbContextOptionsBuilder<ConfluxContext>()
+                .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+                .Options;
+        _context = new ConfluxContext(options);
+
+        // Common Mocks
+        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        _mockCollaborationMapper = new Mock<ICollaborationMapper>();
+        _mockFeatureManager = new Mock<IVariantFeatureManager>();
+        _mockConfiguration = new Mock<IConfiguration>();
+        _mockSession = new Mock<ISession>();
+        _mockHttpContext = new Mock<HttpContext>();
+
+        // Common Mock setups
+        _mockHttpContext.Setup(c => c.Session).Returns(_mockSession.Object);
+        _mockHttpContextAccessor.Setup(a => a.HttpContext)
+            .Returns(_mockHttpContext.Object);
+        _mockSession.Setup(s => s.IsAvailable).Returns(true);
+        
+        // Setup the SuperAdminEmails configuration section
+        var emails = new List<string>();
+        var mockEmailSections = emails.Select(email =>
+        {
+            var mockSection = new Mock<IConfigurationSection>();
+            mockSection.Setup(s => s.Value).Returns(email);
+            return mockSection.Object;
+        }).ToList();
+
+        var mockSuperAdminSection = new Mock<IConfigurationSection>();
+        mockSuperAdminSection.Setup(s => s.GetChildren())
+            .Returns(mockEmailSections);
+
+        _mockConfiguration.Setup(c => c.GetSection("SuperAdminEmails"))
+            .Returns(mockSuperAdminSection.Object);
+        
+
+        // Service under test
+        _service = new UserSessionService(
+            _context,
+            _mockHttpContextAccessor.Object,
+            _mockCollaborationMapper.Object,
+            _mockFeatureManager.Object,
+            _mockConfiguration.Object
+        );
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    #region Helper Methods
+
+    private void SetupFeatureFlag(bool isEnabled)
+    {
+        _mockFeatureManager
+            .Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
+            .ReturnsAsync(isEnabled);
+    }
+
+   
+
+    private async Task<User> CreateAndAddUser(
+        string name,
+        string email,
+        string sramId,
+        PermissionLevel permissionLevel = PermissionLevel.User
+    )
+    {
+        var person = new Person { Id = Guid.NewGuid(), Name = name, Email = email, };
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            SRAMId = sramId,
+            SCIMId = $"scim-id-{sramId}",
+            PersonId = person.Id,
+            Person = person,
+            PermissionLevel = permissionLevel
+        };
+
+        person.User = user;
+        _context.People.Add(person);
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return user;
+    }
+
+    private void SetupSessionWithUser(UserSession userSession)
+    {
+        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
+        _mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
+            .Returns(true);
+    }
+
+    private ClaimsPrincipal CreateClaimsPrincipal(
+        string sramId,
+        string name,
+        string email,
+        string givenName = "Test",
+        string familyName = "User"
+    )
+    {
+        var claims = new List<Claim>
+        {
+            new("personIdentifier", sramId),
+            new("Name", name),
+            new("given_name", givenName),
+            new("family_name", familyName),
+            new("Email", email),
+            new("Role", "urn:mace:surf.nl:sram:group:org:project1:group1"),
+        };
+        var identity = new ClaimsIdentity(claims);
+        return new ClaimsPrincipal(identity);
+    }
+
+    #endregion
+
     [Fact]
     public async Task GetUser_WhenFeatureFlagDisabled_ReturnsDevelopmentUser()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(false);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section with children
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-        
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupFeatureFlag(false);
 
         // Act
-        UserSession? result = await service.GetUser();
+        UserSession? result = await _service.GetUser();
 
         // Assert
         Assert.NotNull(result);
@@ -57,84 +170,33 @@ public class UserSessionServiceTests
     }
 
     [Fact]
-    public async Task GetUser_WhenSessionNotAvailable_CallsSetUser()
+    public async Task GetUser_WhenSessionNotAvailable_ThrowsException()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns((ISession)null!);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section with children
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupFeatureFlag(true);
+        _mockHttpContext.Setup(c => c.Session).Returns((ISession)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => service.GetUser());
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(
+            () => _service.GetUser()
+        );
     }
 
     [Fact]
     public async Task GetUser_WhenSessionHasUser_ReturnsStoredUser()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<ISession> mockSession = new();
-        UserSession userSession = new()
+        SetupFeatureFlag(true);
+        var userSession = new UserSession
         {
             Email = "test@example.com",
             Name = "Test User",
             SRAMId = "test-sram-id",
         };
-
-        mockSession.Setup(s => s.IsAvailable).Returns(true);
-        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
-        mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
-            .Returns(true);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupSessionWithUser(userSession);
 
         // Act
-        UserSession? result = await service.GetUser();
+        UserSession? result = await _service.GetUser();
 
         // Assert
         Assert.NotNull(result);
@@ -146,125 +208,44 @@ public class UserSessionServiceTests
     public async Task UpdateUser_WhenUserFoundInDatabase_UpdatesSessionUser()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
-
-        // Create the person first with user's personal info
-        Person person = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "Database User",
-            Email = "db@example.com",
-        };
-        
-        // Then create the user with reference to the person
-        User user = new()
-        {
-            Id = Guid.NewGuid(),
-            SRAMId = "sram-id-1",
-            SCIMId = "scim-id-1",
-            PersonId = person.Id,
-            Person = person
-        };
-        
-        // Set bidirectional reference
-        person.User = user;
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-        // Add both person and user
-        context.People.Add(person);
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
-
-        Mock<ISession> mockSession = new();
-        UserSession userSession = new()
+        SetupFeatureFlag(true);
+        User dbUser = await CreateAndAddUser(
+            "Database User",
+            "db@example.com",
+            "sram-id-1"
+        );
+        var userSession = new UserSession
         {
             Email = "test@example.com",
             Name = "Test User",
             SRAMId = "sram-id-1",
         };
-
-        mockSession.Setup(s => s.IsAvailable).Returns(true);
-        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
-        mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
-            .Returns(true);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupSessionWithUser(userSession);
 
         // Act
-        UserSession? result = await service.UpdateUser();
+        UserSession? result = await _service.UpdateUser();
 
         // Assert
         Assert.NotNull(result);
         Assert.NotNull(result.User);
-        Assert.Equal("Database User", result.User.Person?.Name);
+        Assert.Equal(dbUser.Person.Name, result.User.Person?.Name);
     }
 
     [Fact]
     public async Task UpdateUser_WhenUserNotFoundInDatabase_ReturnsUnchangedUser()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-        // No user added to database
-
-        Mock<ISession> mockSession = new();
-        UserSession userSession = new()
+        SetupFeatureFlag(true);
+        var userSession = new UserSession
         {
             Email = "test@example.com",
             Name = "Test User",
             SRAMId = "sram-id-1",
         };
-
-        mockSession.Setup(s => s.IsAvailable).Returns(true);
-        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
-        mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
-            .Returns(true);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupSessionWithUser(userSession);
 
         // Act
-        UserSession? result = await service.UpdateUser();
+        UserSession? result = await _service.UpdateUser();
 
         // Assert
         Assert.NotNull(result);
@@ -276,97 +257,36 @@ public class UserSessionServiceTests
     public async Task CommitUser_WhenFeatureFlagDisabled_DoesNotStoreUser()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(false);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<ISession> mockSession = new();
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
-
-        UserSession userSession = new()
-        {
-            Email = "test@example.com",
-        };
+        SetupFeatureFlag(false);
+        var userSession = new UserSession { Email = "test@example.com", };
 
         // Act
-        await service.CommitUser(userSession);
+        await _service.CommitUser(userSession);
 
         // Assert
-        mockSession.Verify(s => s.Set(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
+        _mockSession.Verify(
+            s => s.Set(It.IsAny<string>(), It.IsAny<byte[]>()),
+            Times.Never
+        );
     }
 
     [Fact]
     public async Task SetUser_ExtractsUserDataFromClaims()
     {
         // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-        mockFeatureManager.Setup(m => m.IsEnabledAsync("SRAMAuthentication", CancellationToken.None))
-            .ReturnsAsync(true);
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<ISession> mockSession = new();
-        mockSession.Setup(s => s.IsAvailable).Returns(true);
-
-        List<Claim> claims =
-        [
-            new("personIdentifier", "test-person-id"),
-            new("Name", "Test User"),
-            new("given_name", "Test"),
-            new("family_name", "User"),
-            new("Email", "test@example.com"),
-            new("Role", "urn:mace:surf.nl:sram:group:org:project1:group1"),
-        ];
-
-        ClaimsIdentity identity = new(claims);
-        ClaimsPrincipal principal = new(identity);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.User).Returns(principal);
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        mockCollaborationMapper.Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
-            .ReturnsAsync([]);
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
+        SetupFeatureFlag(true);
+        ClaimsPrincipal principal = CreateClaimsPrincipal(
+            "test-person-id",
+            "Test User",
+            "test@example.com"
+        );
+        _mockHttpContext.Setup(c => c.User).Returns(principal);
+        _mockCollaborationMapper
+            .Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
+            .ReturnsAsync(new List<Collaboration>());
 
         // Act
-        UserSession? result = await service.SetUser(principal);
+        UserSession? result = await _service.SetUser(principal);
 
         // Assert
         Assert.NotNull(result);
@@ -380,39 +300,97 @@ public class UserSessionServiceTests
     [Fact]
     public void ClearUser_RemovesUserFromSession()
     {
-        // Arrange
-        Mock<IVariantFeatureManager> mockFeatureManager = new();
-
-        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
-            .Options;
-        ConfluxContext context = new(options);
-
-        Mock<ISession> mockSession = new();
-        mockSession.Setup(s => s.IsAvailable).Returns(true);
-
-        Mock<HttpContext> mockHttpContext = new();
-        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
-
-        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
-
-        Mock<ICollaborationMapper> mockCollaborationMapper = new();
-        Mock<IConfiguration> configurationMock = new();
-        
-        // Setup SuperAdminEmails configuration section
-        Mock<IConfigurationSection> superAdminEmailsSection = new();
-        superAdminEmailsSection.Setup(s => s.GetChildren()).Returns(new List<IConfigurationSection>());
-        configurationMock.Setup(c => c.GetSection("SuperAdminEmails")).Returns(superAdminEmailsSection.Object);
-
-        UserSessionService service = new(context, mockHttpContextAccessor.Object,
-            mockCollaborationMapper.Object, mockFeatureManager.Object, configurationMock.Object);
-
         // Act
-        service.ClearUser();
+        _service.ClearUser();
 
         // Assert
-        mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
+        _mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
+    }
+    
+    [Fact]
+    public async Task GetUser_WhenUserEmailInSuperAdminEmails_PromotesToSuperAdmin()
+    {
+        // Arrange
+        // we have to setup the entire user session service because we need the admins email to be set 
+        SetupFeatureFlag(true);
+        const string userEmail = "super@example.com";
+        List<string> superAdminEmails = [userEmail];
+        
+        var mockConfigurationSection = new Mock<IConfigurationSection>();
+        var mockEmailSections = superAdminEmails.Select(email =>
+        {
+            var mockSection = new Mock<IConfigurationSection>();
+            mockSection.Setup(s => s.Value).Returns(email);
+            return mockSection.Object;
+        }).ToList();
+
+        var mockSuperAdminSection = new Mock<IConfigurationSection>();
+        mockSuperAdminSection.Setup(s => s.GetChildren())
+            .Returns(mockEmailSections);
+
+        mockConfigurationSection.Setup(c => c.GetSection("SuperAdminEmails"))
+            .Returns(mockSuperAdminSection.Object);
+
+        User user = await CreateAndAddUser(
+            "Test User",
+            userEmail,
+            "test-sram-id",
+            PermissionLevel.User
+        );
+        var userSession = new UserSession
+        {
+            Email = userEmail,
+            Name = "Test User",
+            SRAMId = "test-sram-id",
+            User = user
+        };
+        SetupSessionWithUser(userSession);
+        
+        var sessionService = new UserSessionService(
+            _context,
+            _mockHttpContextAccessor.Object,
+            _mockCollaborationMapper.Object,
+            _mockFeatureManager.Object,
+            mockConfigurationSection.Object
+        );
+        
+        // Act
+        UserSession? result = await sessionService.GetUser();
+
+        // Assert
+        Assert.NotNull(result?.User);
+        Assert.Equal(PermissionLevel.SuperAdmin, result.User.PermissionLevel);
+    
+        // Verify the user was updated in the database as well
+        User? updatedUser = await _context.Users.FindAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.Equal(PermissionLevel.SuperAdmin, updatedUser.PermissionLevel);
+    }
+
+    [Fact]
+    public async Task SetUser_WhenUserEmailNotInSuperAdminEmails_DoesNotPromote()
+    {
+        // Arrange
+        SetupFeatureFlag(true);
+
+        await CreateAndAddUser(
+            "Test User",
+            "regular@example.com",
+            "test-person-id",
+            PermissionLevel.User
+        );
+        ClaimsPrincipal principal = CreateClaimsPrincipal(
+            "test-person-id",
+            "Test User",
+            "regular@example.com"
+        );
+        _mockHttpContext.Setup(c => c.User).Returns(principal);
+
+        // Act
+        UserSession? result = await _service.SetUser(principal);
+
+        // Assert
+        Assert.NotNull(result?.User);
+        Assert.Equal(PermissionLevel.User, result.User.PermissionLevel);
     }
 }
-

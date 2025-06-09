@@ -181,9 +181,9 @@ public class ProjectsService : IProjectsService
         projects = dto.OrderByType switch
         {
             OrderByType.TitleAsc => projects.OrderBy(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)?.Text),
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
             OrderByType.TitleDesc => projects.OrderByDescending(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary)?.Text),
+                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
             OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
             OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
             OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),

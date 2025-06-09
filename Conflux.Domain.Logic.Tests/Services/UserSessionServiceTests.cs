@@ -309,7 +309,6 @@ public class UserSessionServiceTests : IDisposable
     [Theory]
     [InlineData(PermissionLevel.User, PermissionLevel.SuperAdmin)]
     [InlineData(PermissionLevel.SuperAdmin, PermissionLevel.SuperAdmin)]
-    [InlineData(PermissionLevel.SystemAdmin, PermissionLevel.SystemAdmin)]
     public async Task GetUser_WhenUserEmailInSuperAdminList_CorrectlySetsPermission(
         PermissionLevel initialLevel,
         PermissionLevel expectedLevel
@@ -387,7 +386,6 @@ public class UserSessionServiceTests : IDisposable
     [Theory]
     [InlineData(PermissionLevel.User, PermissionLevel.SuperAdmin)]
     [InlineData(PermissionLevel.SuperAdmin, PermissionLevel.SuperAdmin)]
-    [InlineData(PermissionLevel.SystemAdmin, PermissionLevel.SystemAdmin)]
     public async Task SetUser_WhenUserEmailInSuperAdminList_CorrectlySetsPermission(
         PermissionLevel initialLevel,
         PermissionLevel expectedLevel

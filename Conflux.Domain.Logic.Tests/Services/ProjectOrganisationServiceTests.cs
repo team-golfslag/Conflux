@@ -351,7 +351,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateOrganisationAsync_ShouldReactivateEndedRole_WhenRoleWasPreviouslyEnded()
+    public async Task UpdateOrganisationAsync_ShouldCreateNewRole_WhenRoleWasPreviouslyEnded()
     {
         // Arrange
         Guid projectId = await SetupProject();
@@ -361,7 +361,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         {
             Name = "Updated Organisation Name",
             RORId = "https://ror.org/updated",
-            Role = OrganisationRoleType.Funder, // Reactivate previously ended Funder role
+            Role = OrganisationRoleType.Funder, // Create new Funder role (even though one existed before)
         };
 
         // Act
@@ -370,19 +370,21 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Assert
         Assert.Equal("Updated Organisation Name", result.Organisation.Name);
         
-        // Should have 2 roles total: ended Contractor and reactivated Funder
-        Assert.Equal(2, result.Organisation.Roles.Count);
+        // Should have 3 roles total: old ended Funder, ended Contractor, and new active Funder
+        Assert.Equal(3, result.Organisation.Roles.Count);
         
-        OrganisationRoleResponseDTO endedContractorRole = result.Organisation.Roles
+        List<OrganisationRoleResponseDTO> funderRoles = result.Organisation.Roles
+            .Where(r => r.Role == OrganisationRoleType.Funder).ToList();
+        OrganisationRoleResponseDTO contractorRole = result.Organisation.Roles
             .First(r => r.Role == OrganisationRoleType.Contractor);
-        OrganisationRoleResponseDTO activeFunderRole = result.Organisation.Roles
-            .First(r => r.Role == OrganisationRoleType.Funder);
+        
+        // Should have 2 Funder roles: old one (ended) and new one (active)
+        Assert.Equal(2, funderRoles.Count);
+        Assert.Single(funderRoles.Where(r => r.EndDate.HasValue)); // Old ended Funder
+        Assert.Single(funderRoles.Where(r => !r.EndDate.HasValue)); // New active Funder
         
         // Contractor role should be ended
-        Assert.True(endedContractorRole.EndDate.HasValue);
-        
-        // Funder role should be active (reactivated)
-        Assert.False(activeFunderRole.EndDate.HasValue);
+        Assert.True(contractorRole.EndDate.HasValue);
     }
 
     [Fact]

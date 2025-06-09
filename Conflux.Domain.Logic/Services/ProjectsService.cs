@@ -164,6 +164,9 @@ public class ProjectsService : IProjectsService
             startDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.StartDate >= startDate);
         }
+        
+        if (dto.Lectorate is not null) 
+            projects = projects.Where(project => project.Lectorate == dto.Lectorate);
 
         DateTime? endDate;
         if (dto.EndDate.HasValue)

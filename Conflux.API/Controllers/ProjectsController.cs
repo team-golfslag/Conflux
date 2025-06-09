@@ -127,6 +127,22 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectResponseDTO>> GetProjectById([FromRoute] Guid id) =>
         await _projectsService.GetProjectDTOByIdAsync(id);
+    
+    /// <summary>
+    /// Favorites a project by its GUID.
+    /// </summary>
+    /// <param name="id">The GUID of the project to favorite</param>
+    /// <param name="favorite">Whether to favorite or unfavorite the project</param>
+    [HttpPost]
+    [Route("{id:guid}/favorite")]
+    [RouteParamName("id")]
+    [RequireProjectRole(UserRoleType.User)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult> FavoriteProject([FromRoute] Guid id, [FromQuery] bool favorite)
+    {
+        await _projectsService.FavoriteProjectAsync(id, favorite);
+        return Ok();
+    }
 
     /// <summary>
     /// Puts a project by its GUID

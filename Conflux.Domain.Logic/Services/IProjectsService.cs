@@ -12,6 +12,7 @@ namespace Conflux.Domain.Logic.Services;
 public interface IProjectsService
 {
     public Task<List<UserRole>?> GetRolesFromProject(Project project);
+    public Task FavoriteProjectAsync(Guid projectId, bool favorite);
 
     public Task<ProjectResponseDTO> GetProjectDTOByIdAsync(Guid id);
     public Task<Project> GetProjectByIdAsync(Guid id);

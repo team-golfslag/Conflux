@@ -25,6 +25,9 @@ public record User
     public List<string> AssignedLectorates { get; set; } = [];
     public List<string> AssignedOrganisations { get; set; } = [];
     
+    public List<Guid> RecentlyAccessedProjectIds { get; set; } = [];
+    public List<Guid> FavoriteProjectIds { get; set; } = [];
+
     [Required]
     public required Guid PersonId { get; set; }
     [JsonIgnore]

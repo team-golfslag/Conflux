@@ -112,6 +112,8 @@ public class UserSessionController : ControllerBase
                     PermissionLevel = userSession.User.PermissionLevel,
                     AssignedLectorates = userSession.User.AssignedLectorates,
                     AssignedOrganisations = userSession.User.AssignedOrganisations,
+                    RecentlyAccessedProjectIds = userSession.User.RecentlyAccessedProjectIds,
+                    FavouriteProjectIds = userSession.User.FavoriteProjectIds,
                     Person = userSession.User.Person != null
                         ? new PersonResponseDTO
                         {

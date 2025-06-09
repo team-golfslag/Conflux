@@ -55,7 +55,7 @@ public class UserSessionService : IUserSessionService
 
         // Get a fresh reference that EF is already tracking
         var user = await _confluxContext.Users.FindAsync(userSession.User?.Id);
-        if (userSession.User != null && user != null)
+        if (userSession.User != null && user != null && user.PermissionLevel != PermissionLevel.SuperAdmin && _superAdminEmails.Contains(userSession.Email))
         {
             user.PermissionLevel = PermissionLevel.SuperAdmin;
             await _confluxContext.SaveChangesAsync();

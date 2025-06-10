@@ -149,7 +149,7 @@ public class ProjectsService : IProjectsService
     public async Task<Project> GetProjectByIdAsync(Guid id)
     {
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
+        if (userSession?.User is null)
             throw new UserNotAuthenticatedException();
         
         Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
@@ -157,21 +157,26 @@ public class ProjectsService : IProjectsService
 
         FilterRolesForProject(project);
 
-        if (userSession.User is not null)
+        
+        userSession.User.RecentlyAccessedProjectIds =
+            userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+        await _context.SaveChangesAsync();
+        await _userSessionService.CommitUser(userSession);
+
+        switch (userSession.User.PermissionLevel)
         {
-            userSession.User.RecentlyAccessedProjectIds =
-                userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
-            await _context.SaveChangesAsync();
-            await _userSessionService.CommitUser(userSession);
+            case PermissionLevel.SuperAdmin:
+            case PermissionLevel.SystemAdmin when (
+                project.Lectorate is not null && userSession.User.AssignedLectorates.Contains(project.Lectorate) ||
+                project.OwnerOrganisation is not null &&
+                userSession.User.AssignedOrganisations.Contains(project.OwnerOrganisation)):
+            case PermissionLevel.User when (userSession.Collaborations
+                .Select(c => c.CollaborationGroup.SCIMId).Contains(project.SCIMId)):
+                return project;
+            default:
+                throw new ProjectNotFoundException(id);
         }
 
-        List<string> accessibleSramIds = userSession.Collaborations
-            .Select(c => c.CollaborationGroup.SCIMId)
-            .ToList();
-        if (!accessibleSramIds.Contains(project.SCIMId))
-            throw new ProjectNotFoundException(id);
-
-        return project;
     }
 
     /// <summary>

@@ -39,5 +39,8 @@ public class Project
 
     public string? Lectorate { get; set; }
     
+    /// <summary>
+    /// Owner organisation of the SRAM CO
+    /// </summary>
     public string? OwnerOrganisation { get; set; }
 }

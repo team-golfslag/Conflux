@@ -84,7 +84,6 @@ public class OrcidController : ControllerBase
         if (userSession.User == null)
             return BadRequest("User session does not contain a user");
 
-        // Hardcoded ORCID - likely for testing/dev only
         const string exampleOrcid = "https://orcid.org/0000-0002-1825-0097";
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.

@@ -37,8 +37,7 @@ public class ProjectMapperServiceTests
         Project project = await CreateProject();
 
         DateTime start = project.StartDate;
-
-
+        
         RAiDCreateRequest result = await _service.MapProjectCreationRequest(project.Id);
         Assert.NotNull(result.Date);
         Assert.Equal(start, result.Date.StartDate);

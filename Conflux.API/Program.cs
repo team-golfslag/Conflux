@@ -25,6 +25,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NWOpen.Net.Services;
 using ORCID.Net.Services;
 using RAiD.Net;
+using ROR.Net.Services;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
 
@@ -120,7 +121,8 @@ public class Program
 
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();
-
+        
+        ConfigureRorServices(builder);
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
 
@@ -209,6 +211,23 @@ public class Program
             raidSvc.SetUsernameAndPassword(raidUsername!, raidPassword!);
             return raidSvc;
         });
+    }
+    
+    private static void ConfigureRorServices(WebApplicationBuilder builder)
+    {
+        builder.Services.Configure<OrganizationServiceOptions>(builder.Configuration.GetSection("ROR"));
+        
+        builder.Services.AddHttpClient("ROR");
+        builder.Services.AddScoped<IOrganizationService, OrganizationService>(provider =>
+        {
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("ROR");
+            IOptions<OrganizationServiceOptions> optionsAccessor =
+                provider.GetRequiredService<IOptions<OrganizationServiceOptions>>();
+            ILogger<OrganizationService> logger = provider.GetRequiredService<ILogger<OrganizationService>>();
+
+            return new OrganizationService(httpClient, optionsAccessor, logger);
+        });
+        
     }
 
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,

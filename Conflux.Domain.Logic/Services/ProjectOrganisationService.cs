@@ -23,12 +23,13 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 {
     private readonly ConfluxContext _context;
     private readonly IProjectsService _projectsService;
-    private readonly OrganizationService _organizationService = new OrganizationService(new HttpClient(), new OptionsWrapper<OrganizationServiceOptions>(new OrganizationServiceOptions()), new Logger<OrganizationService>(new LoggerFactory()));
+    private readonly IOrganizationService _organizationService;
 
-    public ProjectOrganisationsService(ConfluxContext context, IProjectsService projectsService)
+    public ProjectOrganisationsService(ConfluxContext context, IProjectsService projectsService, IOrganizationService organizationService)
     {
         _context = context;
         _projectsService = projectsService;
+        _organizationService = organizationService;
     }
 
     /// <inheritdoc />
@@ -270,10 +271,8 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
     public async Task<OrganisationResponseDTO> GetOrganisationNameByRorAsync(string ror)
     {
         Organization? org = await _organizationService.GetOrganizationAsync(ror);
-        if (org == null)
-        {
-            throw new OrganisationNotFoundException($"Organisation with ROR ID {ror} not found.");
-        }
+        if (org == null) throw new OrganisationNotFoundException($"Organisation with ROR ID {ror} not found.");
+        
 
         return new OrganisationResponseDTO()
         {

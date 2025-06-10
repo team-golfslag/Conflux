@@ -10,6 +10,7 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using ROR.Net.Services;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -43,7 +44,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             });
 
         // Create the service with the mock
-        _service = new(_context, _projectsServiceMock.Object);
+        _service = new(_context, _projectsServiceMock.Object, new Mock<OrganizationService>().Object);
 
         await _context.Database.EnsureCreatedAsync();
     }

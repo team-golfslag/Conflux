@@ -126,7 +126,7 @@ public class ProjectOrganisationsController : ControllerBase
     /// <param name="ror">The ROR ID of the organization</param>
     /// <returns>A DTO of the Organization</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(List<ProjectOrganisationResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Organization>> GetOrganisationNameByRor(string ror) => Ok(await _projectOrganisationsService.GetOrganisationNameByRorAsync(ror));
     

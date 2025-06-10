@@ -70,7 +70,7 @@ public class ProjectMapperServiceTests
         Assert.Single(result.RelatedObject);
         RAiDRelatedObject relatedObject = result.RelatedObject[0];
         Assert.Equal("https://doi.org/10.5555/666655554444", relatedObject.Id);
-        Assert.Equal("http://doi.org/", relatedObject.SchemaUri);
+        Assert.Equal("https://doi.org/", relatedObject.SchemaUri);
         Assert.NotNull(relatedObject.Type);
         Assert.Equal("https://vocabulary.raid.org/relatedObject.type.schema/250", relatedObject.Type.Id);
         Assert.Equal("https://vocabulary.raid.org/relatedObject.type.schema/329", relatedObject.Type.SchemaUri);
@@ -79,7 +79,7 @@ public class ProjectMapperServiceTests
         Assert.Single(relatedObject.Category);
         RAiDRelatedObjectCategory objCat = relatedObject.Category[0];
         Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/190", objCat.Id);
-        Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/385", objCat.SchemaUri);
+        Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/386", objCat.SchemaUri);
 
         Assert.NotNull(result.Organisation);
         Assert.Single(result.Organisation);
@@ -174,7 +174,7 @@ public class ProjectMapperServiceTests
         Assert.Single(result.RelatedObject);
         RAiDRelatedObject relatedObject = result.RelatedObject[0];
         Assert.Equal("https://doi.org/10.5555/666655554444", relatedObject.Id);
-        Assert.Equal("http://doi.org/", relatedObject.SchemaUri);
+        Assert.Equal("https://doi.org/", relatedObject.SchemaUri);
         Assert.NotNull(relatedObject.Type);
         Assert.Equal("https://vocabulary.raid.org/relatedObject.type.schema/250", relatedObject.Type.Id);
         Assert.Equal("https://vocabulary.raid.org/relatedObject.type.schema/329", relatedObject.Type.SchemaUri);
@@ -183,7 +183,7 @@ public class ProjectMapperServiceTests
         Assert.Single(relatedObject.Category);
         RAiDRelatedObjectCategory objCat = relatedObject.Category[0];
         Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/190", objCat.Id);
-        Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/385", objCat.SchemaUri);
+        Assert.Equal("https://vocabulary.raid.org/relatedObject.category.schema/386", objCat.SchemaUri);
 
         Assert.NotNull(result.Organisation);
         Assert.Single(result.Organisation);

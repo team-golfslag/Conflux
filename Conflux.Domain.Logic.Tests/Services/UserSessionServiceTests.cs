@@ -36,7 +36,7 @@ public class UserSessionServiceTests : IDisposable
         // Database context setup
         DbContextOptions<ConfluxContext> options =
             new DbContextOptionsBuilder<ConfluxContext>()
-                .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+                .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
                 .Options;
         _context = new ConfluxContext(options);
 
@@ -105,11 +105,11 @@ public class UserSessionServiceTests : IDisposable
         PermissionLevel permissionLevel = PermissionLevel.User
     )
     {
-        var person = new Person { Id = Guid.NewGuid(), Name = name, Email = email, };
+        var person = new Person { Id = Guid.CreateVersion7(), Name = name, Email = email, };
 
         var user = new User
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SRAMId = sramId,
             SCIMId = $"scim-id-{sramId}",
             PersonId = person.Id,

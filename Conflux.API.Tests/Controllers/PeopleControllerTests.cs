@@ -34,13 +34,13 @@ public class PeopleControllerTests
         [
             new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = "Test Person",
             },
 
             new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = "Another Test",
             },
         ];
@@ -63,7 +63,7 @@ public class PeopleControllerTests
     public async Task GetPersonById_WithValidId_ReturnsPerson()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,
@@ -87,7 +87,7 @@ public class PeopleControllerTests
     public async Task GetPersonById_WithInvalidId_ThrowsPersonNotFoundException()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
 
         _mockPeopleService.Setup(s => s.GetPersonByIdAsync(personId))
             .ThrowsAsync(new PersonNotFoundException(personId));
@@ -108,7 +108,7 @@ public class PeopleControllerTests
 
         Person createdPerson = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "New Person",
             Email = "new@example.com",
         };
@@ -135,7 +135,7 @@ public class PeopleControllerTests
     public async Task UpdatePerson_WithValidId_ReturnsPerson()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         PersonRequestDTO dto = new()
         {
             Name = "Updated Person",
@@ -167,7 +167,7 @@ public class PeopleControllerTests
     public async Task UpdatePerson_WithInvalidId_ThrowsPersonNotFoundException()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         PersonRequestDTO dto = new()
         {
             Name = "Updated Person",
@@ -184,7 +184,7 @@ public class PeopleControllerTests
     public async Task DeletePerson_WithValidId_ReturnsNoContent()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
 
         _mockPeopleService.Setup(s => s.DeletePersonAsync(personId))
             .Returns(Task.CompletedTask);
@@ -200,7 +200,7 @@ public class PeopleControllerTests
     public async Task DeletePerson_WithInvalidId_ThrowsPersonNotFoundException()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
 
         _mockPeopleService.Setup(s => s.DeletePersonAsync(personId))
             .ThrowsAsync(new PersonNotFoundException(personId));
@@ -213,7 +213,7 @@ public class PeopleControllerTests
     public async Task DeletePerson_WithContributors_ThrowsPersonHasContributorsException()
     {
         // Arrange
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
 
         _mockPeopleService.Setup(s => s.DeletePersonAsync(personId))
             .ThrowsAsync(new PersonHasContributorsException(personId));

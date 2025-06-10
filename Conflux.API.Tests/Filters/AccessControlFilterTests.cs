@@ -20,7 +20,7 @@ public class AccessControlFilterTests
 {
     private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
     {
-        var personId = Guid.NewGuid();
+        var personId = Guid.CreateVersion7();
         
         // Create the person first
         var person = new Person
@@ -74,8 +74,8 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_UserHasNoRole_ThrowsUnauthorized()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
-        Guid projectId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
+        Guid projectId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
         UserSession userSession = new()
@@ -120,8 +120,8 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_UserHasRole_ReturnsNull()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
-        Guid projectId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
+        Guid projectId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
         UserSession userSession = new()
@@ -169,7 +169,7 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_MissingRouteParamNameAttribute_UsesEmptyGuid()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
         UserSession userSession = new()
@@ -214,7 +214,7 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_MissingProjectId_ThrowsArgumentNullException()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
         UserSession userSession = new()
@@ -255,7 +255,7 @@ public class AccessControlFilterTests
     public async Task OnAuthorizationAsync_InvalidProjectIdFormat_ThrowsArgumentException()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
         UserSession userSession = new()

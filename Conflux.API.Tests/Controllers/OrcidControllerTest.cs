@@ -56,7 +56,7 @@ public class OrcidControllerTests
         _mockConfigSection = new();
 
         _dbOptions = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()) // Unique DB for each test run
+            .UseInMemoryDatabase(Guid.CreateVersion7().ToString()) // Unique DB for each test run
             .Options;
 
         // Setup Configuration mock
@@ -106,8 +106,8 @@ public class OrcidControllerTests
     private static User CreateUserWithPerson(string name, string scimId, string? orcid = null, Guid? userId = null,
         Guid? personId = null)
     {
-        var actualUserId = userId ?? Guid.NewGuid();
-        var actualPersonId = personId ?? Guid.NewGuid();
+        var actualUserId = userId ?? Guid.CreateVersion7();
+        var actualPersonId = personId ?? Guid.CreateVersion7();
 
         // First create the person without the User reference
         var person = new Person
@@ -458,7 +458,7 @@ public class OrcidControllerTests
         // Setup person creation
         var newPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             GivenName = "John",
             FamilyName = "Doe",
@@ -497,7 +497,7 @@ public class OrcidControllerTests
         // Setup that person already exists
         var existingPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             ORCiD = ExampleOrcid
         };
@@ -528,7 +528,7 @@ public class OrcidControllerTests
             .ReturnsAsync(true);
         var existingPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             ORCiD = ExampleOrcid
         };
@@ -567,7 +567,7 @@ public class OrcidControllerTests
         // Setup person creation
         var newPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             GivenName = "John",
             FamilyName = "Doe",

@@ -65,7 +65,7 @@ public class ProjectTitlesService : IProjectTitlesService
 
         ProjectTitle newTitle = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = projectId,
             Text = titleDTO.Text,
             Language = titleDTO.Language,

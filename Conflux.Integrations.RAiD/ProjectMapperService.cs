@@ -13,9 +13,11 @@ namespace Conflux.Integrations.RAiD;
 public class ProjectMapperService : IProjectMapperService
 {
     private readonly ConfluxContext _context;
+    private readonly ILanguageService _languageService;
 
-    public ProjectMapperService(ConfluxContext context)
+    public ProjectMapperService(ConfluxContext context, ILanguageService languageService)
     {
+        _languageService = languageService;
         _context = context;
     }
 
@@ -133,6 +135,23 @@ public class ProjectMapperService : IProjectMapperService
             {
                 Type = RAiDIncompatibilityType.NoContributors,
             });
+        
+        // Language incompatibilities
+        incompatibilities.AddRange(project.Titles
+            .Where(t => t.Language != null && !_languageService.IsValidLanguageCode(t.Language.Id))
+            .Select(t => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.InvalidTitleLanguage,
+                ObjectId = t.Id,
+            }));
+        
+        incompatibilities.AddRange(project.Descriptions
+            .Where(d => d.Language != null && !_languageService.IsValidLanguageCode(d.Language.Id))
+            .Select(d => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.InvalidDescriptionLanguage,
+                ObjectId = d.Id,
+            }));
 
         // In Conflux people are not required to have an ORCiD
         incompatibilities.AddRange(project.Contributors

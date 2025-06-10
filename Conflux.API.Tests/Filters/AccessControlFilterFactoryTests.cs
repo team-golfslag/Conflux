@@ -52,8 +52,8 @@ public class AccessControlFilterFactoryTests
         // we'll verify the filter behavior by testing its functionality
 
         // Set up a scenario where we can verify the role is used correctly
-        Guid userId = Guid.NewGuid();
-        Guid projectId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
+        Guid projectId = Guid.CreateVersion7();
 
         // Setup the access control service to return true for the specific role we're testing
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, role))

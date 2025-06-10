@@ -121,7 +121,7 @@ public class SessionMappingService : ISessionMappingService
                 await _context.Projects.SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
             if (existingCollaboration is null)
             {
-                Guid projectId = Guid.NewGuid();
+                Guid projectId = Guid.CreateVersion7();
                 // We only add the project, the members are added in the next step
                 _context.Projects.Add(new()
                 {
@@ -183,8 +183,8 @@ public class SessionMappingService : ISessionMappingService
             return;
         }
         
-        Guid personId = Guid.NewGuid();
-        Guid userId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
+        Guid userId = Guid.CreateVersion7();
         
         Person newPerson = new()
         {
@@ -224,7 +224,7 @@ public class SessionMappingService : ISessionMappingService
             if (projects is null) continue;
             foreach (UserRole newRole in collaboration.Groups.Select(group => new UserRole
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projects.Id,
                     Type = GroupUrnToUserRoleType(group.Urn),
                     SCIMId = group.SCIMId,

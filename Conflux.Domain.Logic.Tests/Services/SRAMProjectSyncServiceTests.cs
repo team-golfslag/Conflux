@@ -29,7 +29,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
             .BuildServiceProvider();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
@@ -50,10 +50,10 @@ public class SRAMProjectSyncServiceTests : IDisposable
     private async Task<(User User, Person Person)> CreateAndSaveUserAsync(string name, string scimId)
     {
         Person person = new()
-            { Id = Guid.NewGuid(), Name = name };
+            { Id = Guid.CreateVersion7(), Name = name };
         User user = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SCIMId = scimId,
             Person = person,
             PersonId = person.Id,
@@ -69,7 +69,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SCIMId = scimId,
             Users = users ?? [],
             StartDate = DateTime.UtcNow.AddDays(-10)
@@ -89,7 +89,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
             {
                 Urn = "test-urn"
             },
-            ExternalId = Guid.NewGuid().ToString(),
+            ExternalId = Guid.CreateVersion7().ToString(),
             SCIMMeta = new()
             {
                 Created = DateTime.UtcNow,
@@ -131,7 +131,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
     public async Task SyncProjectAsync_WithNonExistentProject_ThrowsProjectNotFoundException()
     {
         // Arrange
-        Guid nonExistentProjectId = Guid.NewGuid();
+        Guid nonExistentProjectId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() => _service.SyncProjectAsync(nonExistentProjectId));
@@ -181,7 +181,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
         Project project = await CreateAndSaveProjectAsync("project-scim-id", [user]);
         UserRole role = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Urn = "urn:mace:surf.nl:sram:group:conflux-contributor",
             ProjectId = project.Id,
             Type = UserRoleType.Contributor,
@@ -213,7 +213,7 @@ public class SRAMProjectSyncServiceTests : IDisposable
         Project project = await CreateAndSaveProjectAsync("project-scim-id", [user]);
         UserRole role = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Urn = "urn:mace:surf.nl:sram:group:conflux-contributor",
             ProjectId = project.Id,
             Type = UserRoleType.Contributor,

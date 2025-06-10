@@ -58,7 +58,7 @@ public class UserSession
                 {
                     CollaborationGroup = new()
                     {
-                        Id = Guid.NewGuid().ToString(),
+                        Id = Guid.CreateVersion7().ToString(),
                         Urn = "urn:mace:surf.nl:sram:group:surf:development",
                         DisplayName = "Development Group",
                         Description = "This is a development group.",
@@ -66,7 +66,7 @@ public class UserSession
                         Url = "https://example.com/development",
                         LogoUrl = "https://example.com/logo.png",
 #pragma warning restore S1075
-                        ExternalId = Guid.NewGuid().ToString(),
+                        ExternalId = Guid.CreateVersion7().ToString(),
                         SCIMId = "SCIM",
                     },
                     Organization = "Development Organization",
@@ -74,7 +74,7 @@ public class UserSession
                     [
                         new()
                         {
-                            Id = Guid.NewGuid().ToString(),
+                            Id = Guid.CreateVersion7().ToString(),
                             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-cx_project_admin",
                             DisplayName = "Development Group",
                             Description = "This is a development group.",
@@ -82,8 +82,8 @@ public class UserSession
                             Url = "https://example.com/development",
                             LogoUrl = "https://example.com/logo.png",
 #pragma warning restore S1075
-                            ExternalId = Guid.NewGuid().ToString(),
-                            SCIMId = Guid.NewGuid().ToString(),
+                            ExternalId = Guid.CreateVersion7().ToString(),
+                            SCIMId = Guid.CreateVersion7().ToString(),
                         },
                     ],
                 },

@@ -30,10 +30,15 @@ public class RaidInfoServiceTest : IAsyncLifetime
             .UseNpgsql(_postgres.GetConnectionString())
             .Options;
 
+        Mock<ILanguageService> languageServiceMock = new();
+        languageServiceMock
+            .Setup(s => s.IsValidLanguageCode(It.IsAny<string>()))
+            .Returns(true);
+        
         ConfluxContext context = new(options);
         await context.Database.EnsureCreatedAsync();
         _context = context;
-        _mapper = new(context);
+        _mapper = new(context, languageServiceMock.Object);
     }
 
     public async Task DisposeAsync()
@@ -111,6 +116,24 @@ public class RaidInfoServiceTest : IAsyncLifetime
             SpatialCoverage = null,
         });
 
+        mockMapper.Setup(m => m.MapProjectUpdateRequest(projectId)).ReturnsAsync(new RAiDUpdateRequest
+        {
+            Metadata = null,
+            Identifier = null,
+            Title = null,
+            Date = null,
+            Description = null,
+            Access = null,
+            AlternateUrl = null,
+            Contributor = null,
+            Organisation = null,
+            Subject = null,
+            RelatedRaid = null,
+            RelatedObject = null,
+            AlternateIdentifier = null,
+            SpatialCoverage = null,
+        });
+
         IProjectMapperService mapper = mockMapper.Object;
 
 
@@ -122,7 +145,7 @@ public class RaidInfoServiceTest : IAsyncLifetime
 
     private async Task<Guid> CreateUnmintedProject()
     {
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
 
         _context.Projects.Add(new()
         {
@@ -145,7 +168,7 @@ public class RaidInfoServiceTest : IAsyncLifetime
 
     private async Task<Guid> CreateMintedProject()
     {
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
 
         _context.Projects.Add(new()
         {
@@ -271,6 +294,24 @@ public class RaidInfoServiceTest : IAsyncLifetime
         mockMapper.Setup(m => m.CheckProjectCompatibility(projectId))
             .ReturnsAsync([]);
 
+        mockMapper.Setup(m => m.MapProjectUpdateRequest(projectId)).ReturnsAsync(new RAiDUpdateRequest
+        {
+            Metadata = null,
+            Identifier = null,
+            Title = null,
+            Date = null,
+            Description = null,
+            Access = null,
+            AlternateUrl = null,
+            Contributor = null,
+            Organisation = null,
+            Subject = null,
+            RelatedRaid = null,
+            RelatedObject = null,
+            AlternateIdentifier = null,
+            SpatialCoverage = null,
+        });
+
         RaidInfoService service = new(_context, mockRaidService.Object, mockMapper.Object);
 
         await service.SyncRAiDAsync(projectId);
@@ -315,6 +356,24 @@ public class RaidInfoServiceTest : IAsyncLifetime
         Mock<IRAiDService> mockRaidService = new();
         Mock<IProjectMapperService> mockMapper = new();
 
+        mockMapper.Setup(m => m.MapProjectUpdateRequest(projectId)).ReturnsAsync(new RAiDUpdateRequest
+        {
+            Metadata = null,
+            Identifier = null,
+            Title = null,
+            Date = null,
+            Description = null,
+            Access = null,
+            AlternateUrl = null,
+            Contributor = null,
+            Organisation = null,
+            Subject = null,
+            RelatedRaid = null,
+            RelatedObject = null,
+            AlternateIdentifier = null,
+            SpatialCoverage = null,
+        });
+
         RaidInfoService service = new(_context, mockRaidService.Object, mockMapper.Object);
 
         RAiDInfoResponseDTO result = await service.GetRAiDInfoByProjectId(projectId);
@@ -344,7 +403,7 @@ public class RaidInfoServiceTest : IAsyncLifetime
         Mock<IRAiDService> mockRaidService = new();
         Mock<IProjectMapperService> mockMapper = new();
 
-        Guid testId = Guid.NewGuid();
+        Guid testId = Guid.CreateVersion7();
         mockMapper.Setup(m => m.CheckProjectCompatibility(projectId))
             .ReturnsAsync([
                 new()

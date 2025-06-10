@@ -19,7 +19,7 @@ public interface IProjectsService
 
     public Task<List<ProjectResponseDTO>> GetProjectsByQueryAsync(ProjectQueryDTO dto);
 
-    public Task<string> ExportProjectsToCsvAsync(ProjectQueryDTO dto);
+    public Task<string> ExportProjectsToCsvAsync(ProjectCsvRequestDTO dto);
 
     public Task<List<ProjectResponseDTO>> GetAllProjectsAsync();
 

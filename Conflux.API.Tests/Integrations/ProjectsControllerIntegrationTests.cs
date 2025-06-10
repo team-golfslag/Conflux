@@ -130,11 +130,21 @@ public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
     public async Task ExportProjectsToCsv_ReturnsCsvFile()
     {
         // Arrange
-        ProjectQueryDTO queryDto = new()
+        ProjectCsvRequestDTO queryDto = new()
         {
             Query = "Test",
             StartDate = DateTime.UtcNow.AddDays(-30),
             EndDate = DateTime.UtcNow.AddDays(30),
+            IncludeStartDate = true,
+            IncludeEndDate = true,
+            IncludeUsers = true,
+            IncludeContributors = true,
+            IncludeProducts = true,
+            IncludeOrganisations = true,
+            IncludeTitle = true,
+            IncludeDescription = true,
+            IncludeLectorate = true,
+            IncludeOwnerOrganisation = true,
         };
 
         // Act
@@ -146,6 +156,6 @@ public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
         string csvContent = await response.Content.ReadAsStringAsync();
         Assert.NotNull(csvContent);
         Assert.NotEmpty(csvContent);
-        Assert.Contains("Id", csvContent); // Check if CSV contains header
+        Assert.Contains("id", csvContent); // Check if CSV contains header
     }
 }

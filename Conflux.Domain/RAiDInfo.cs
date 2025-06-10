@@ -15,6 +15,8 @@ public record RAiDInfo
 
     public DateTime? LatestSync { get; set; }
     public bool Dirty { get; set; }
+    
+    public string? Checksum { get; set; }
 
     [JsonPropertyName("raid_id")] public string RAiDId { get; init; }
     public string SchemaUri => "https://raid.org/";

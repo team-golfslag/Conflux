@@ -63,7 +63,7 @@ public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactory
     public async Task GetDescriptions_ReturnsNotFound_ForNonExistingProject()
     {
         // Arrange
-        Guid nonExistingProjectId = Guid.NewGuid();
+        Guid nonExistingProjectId = Guid.CreateVersion7();
 
         // Act
         HttpResponseMessage response = await _client.GetAsync($"projects/{nonExistingProjectId}/descriptions");
@@ -112,7 +112,7 @@ public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactory
     public async Task GetDescriptionById_ReturnsNotFound_ForNonExistingDescription()
     {
         // Arrange
-        Guid nonExistingDescriptionId = Guid.NewGuid();
+        Guid nonExistingDescriptionId = Guid.CreateVersion7();
 
         // Act
         HttpResponseMessage response = await _client.GetAsync(
@@ -155,7 +155,7 @@ public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactory
     public async Task CreateDescription_ReturnsNotFound_ForNonExistingProject()
     {
         // Arrange
-        Guid nonExistingProjectId = Guid.NewGuid();
+        Guid nonExistingProjectId = Guid.CreateVersion7();
         ProjectDescriptionRequestDTO descriptionDto = new()
         {
             Text = "Test Description for Non-existing Project",
@@ -225,7 +225,7 @@ public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactory
     public async Task UpdateDescription_ReturnsNotFound_ForNonExistingDescription()
     {
         // Arrange
-        Guid nonExistingDescriptionId = Guid.NewGuid();
+        Guid nonExistingDescriptionId = Guid.CreateVersion7();
         ProjectDescriptionRequestDTO updateDto = new()
         {
             Text = "Update Non-existing Description",
@@ -282,7 +282,7 @@ public class ProjectDescriptionsControllerIntegrationTests(WebApplicationFactory
     public async Task DeleteDescription_ReturnsNotFound_ForNonExistingDescription()
     {
         // Arrange
-        Guid nonExistingDescriptionId = Guid.NewGuid();
+        Guid nonExistingDescriptionId = Guid.CreateVersion7();
 
         // Act
         HttpResponseMessage response = await _client.DeleteAsync(

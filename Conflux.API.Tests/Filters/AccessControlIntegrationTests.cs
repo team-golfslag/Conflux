@@ -27,7 +27,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
 {
     private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
     {
-        var personId = Guid.NewGuid();
+        var personId = Guid.CreateVersion7();
         
         // Create the person first
         var person = new Person
@@ -75,7 +75,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task Endpoint_WithRequireProjectRoleAttribute_RejectsForbiddenUser()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
         UserSession userSession = new()
@@ -100,7 +100,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task Endpoint_WithRequireProjectRoleAttribute_AllowsAuthorizedUser()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
         UserSession userSession = new()
@@ -125,7 +125,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task Endpoint_WithRequireProjectRoleAttribute_AndDifferentRole_ChecksCorrectRole()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
         UserSession userSession = new()
@@ -153,7 +153,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task Endpoint_WithoutRouteParam_UsesCorrectDefaultProjectId()
     {
         // Arrange
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
 
         UserSession userSession = new()
         {

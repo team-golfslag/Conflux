@@ -29,12 +29,12 @@ public class ProjectDescriptionsControllerTests
     public async Task GetDescriptions_ReturnsListOfDescriptions()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         List<ProjectDescriptionResponseDTO> descriptions =
         [
             new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 ProjectId = projectId,
                 Text = "Test Description",
                 Type = DescriptionType.Primary,
@@ -42,7 +42,7 @@ public class ProjectDescriptionsControllerTests
             },
             new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 ProjectId = projectId,
                 Text = "Another Description",
                 Type = DescriptionType.Brief,
@@ -70,8 +70,8 @@ public class ProjectDescriptionsControllerTests
     public async Task GetDescriptionById_WithValidIds_ReturnsDescription()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
         ProjectDescriptionResponseDTO description = new()
         {
             Id = descriptionId,
@@ -102,8 +102,8 @@ public class ProjectDescriptionsControllerTests
     public async Task GetDescriptionById_WithInvalidIds_ThrowsProjectDescriptionNotFoundException()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
 
         _mockService.Setup(s => s.GetDescriptionByIdAsync(projectId, descriptionId))
             .ThrowsAsync(new ProjectDescriptionNotFoundException(descriptionId));
@@ -117,8 +117,8 @@ public class ProjectDescriptionsControllerTests
     public async Task CreateDescription_ReturnsCreatedAtActionResult()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
         ProjectDescriptionRequestDTO requestDto = new()
         {
             Text = "New Description",
@@ -161,8 +161,8 @@ public class ProjectDescriptionsControllerTests
     public async Task UpdateDescription_WithValidIds_ReturnsUpdatedDescription()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
         ProjectDescriptionRequestDTO requestDto = new()
         {
             Text = "Updated Description",
@@ -200,8 +200,8 @@ public class ProjectDescriptionsControllerTests
     public async Task UpdateDescription_WithInvalidIds_ThrowsProjectDescriptionNotFoundException()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
         ProjectDescriptionRequestDTO requestDto = new()
         {
             Text = "Updated Description",
@@ -221,8 +221,8 @@ public class ProjectDescriptionsControllerTests
     public async Task DeleteDescription_WithValidIds_ReturnsNoContent()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid descriptionId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid descriptionId = Guid.CreateVersion7();
 
         _mockService.Setup(s => s.DeleteDescriptionAsync(projectId, descriptionId))
             .Returns(Task.CompletedTask);

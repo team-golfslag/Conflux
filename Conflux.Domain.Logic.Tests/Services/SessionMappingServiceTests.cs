@@ -30,7 +30,7 @@ public class SessionMappingServiceTests : IDisposable
             .BuildServiceProvider();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
@@ -76,8 +76,8 @@ public class SessionMappingServiceTests : IDisposable
             Description = description,
             Urn = urn,
             Members = members,
-            Id = Guid.NewGuid().ToString(),
-            ExternalId = Guid.NewGuid().ToString(),
+            Id = Guid.CreateVersion7().ToString(),
+            ExternalId = Guid.CreateVersion7().ToString(),
         };
 
     private static SCIMUser CreateScimUser(string id, string displayName, string email) =>

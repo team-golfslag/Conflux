@@ -62,7 +62,7 @@ public static class NwOpenMapper
             ? DateTime.SpecifyKind(project.EndDate.Value, DateTimeKind.Utc)
             : null;
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
 
         List<ProjectDescription> descriptions = new();
         if (project.SummaryNl != null)
@@ -132,7 +132,7 @@ public static class NwOpenMapper
             return;
         }
 
-        Guid productId = Guid.NewGuid();
+        Guid productId = Guid.CreateVersion7();
 
         Product mappedProduct = new()
         {
@@ -158,7 +158,7 @@ public static class NwOpenMapper
     /// <param name="projectMember">The member to map to a person</param>
     private static void MapContributor(Project project, NwOpenProjectMember projectMember)
     {
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,
@@ -225,7 +225,7 @@ public static class NwOpenMapper
         {
             organisation = new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 RORId = "https://ror.org/04pp8hn57",
                 Name = projectMember.Organisation!,
             };
@@ -286,7 +286,7 @@ public static class NwOpenMapper
         // Create Admin role for the user
         UserRole adminRole = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Type = UserRoleType.Admin,
             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-admin",
@@ -296,7 +296,7 @@ public static class NwOpenMapper
         // Create User role for the user
         UserRole userRole = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Type = UserRoleType.User,
             Urn = "urn:mace:surf.nl:sram:group:surf:development:conflux-user",

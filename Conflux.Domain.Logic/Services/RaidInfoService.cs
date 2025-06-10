@@ -33,6 +33,10 @@ public class RaidInfoService : IRaidInfoService
 
         RAiDInfo? info = await GetEntityAsync(projectId);
         if (info == null) throw new ProjectNotMintedException(projectId);
+        
+        RAiDUpdateRequest dto = await _projectMapperService.MapProjectUpdateRequest(projectId);
+        string hash = dto.GetHash();
+        info.Dirty = info.Checksum != hash;
 
         return MapRAiDInfo(info);
     }
@@ -68,10 +72,19 @@ public class RaidInfoService : IRaidInfoService
         RAiDInfo newRAiDInfo = GetNewRAiDInfo(projectId, result);
         _context.RAiDInfos.Add(newRAiDInfo);
         await _context.SaveChangesAsync();
+        
+        RAiDUpdateRequest updateDto = await _projectMapperService.MapProjectUpdateRequest(projectId);
+        string hash = updateDto.GetHash();
+        
+        var updateInfo = await _context.RAiDInfos.FindAsync(projectId);
+        if (updateInfo == null) throw new ProjectNotMintedException(projectId);
+        updateInfo.Checksum = hash;
+        updateInfo.Dirty = false;
+        _context.RAiDInfos.Update(updateInfo);
+        await _context.SaveChangesAsync();
 
         return MapRAiDInfo(newRAiDInfo);
     }
-
 
     public async Task<RAiDInfoResponseDTO> SyncRAiDAsync(Guid projectId)
     {
@@ -92,7 +105,10 @@ public class RaidInfoService : IRaidInfoService
         RAiDDto? result = await _raidService.UpdateRaidAsync(prefix, suffix, dto);
         if (result == null) throw new RAiDException("An unexpected error occured. :(");
 
-        _context.RAiDInfos.Entry(info).CurrentValues.SetValues(GetNewRAiDInfo(projectId, result));
+        RAiDInfo newRaidInfo = GetNewRAiDInfo(projectId, result);
+        newRaidInfo.Checksum = dto.GetHash();
+        
+        _context.RAiDInfos.Entry(info).CurrentValues.SetValues(newRaidInfo);
         await _context.SaveChangesAsync();
 
         return MapRAiDInfo(info);
@@ -141,5 +157,15 @@ public class RaidInfoService : IRaidInfoService
         bool projectExists = await _context.Projects.AnyAsync(p => p.Id == projectId);
 
         if (!projectExists) throw new ProjectNotFoundException(projectId);
+    }
+    
+    public async Task MarkProjectDirty(Guid projectId)
+    {
+        RAiDInfo? info = await GetEntityAsync(projectId);
+        if (info == null) throw new ProjectNotMintedException(projectId);
+
+        info.Dirty = true;
+        _context.RAiDInfos.Update(info);
+        await _context.SaveChangesAsync();
     }
 }

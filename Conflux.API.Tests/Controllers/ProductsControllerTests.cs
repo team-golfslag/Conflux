@@ -30,8 +30,8 @@ public class ProductsControllerTests
     public async Task GetProductById_ReturnsSuccess_ForValidId()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid productId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid productId = Guid.CreateVersion7();
 
         ProductResponseDTO dto = new()
         {
@@ -65,8 +65,8 @@ public class ProductsControllerTests
     public async Task GetProductById_ReturnsNotFound_ForInvalidId()
     {
         // Arrange
-        Guid invalidId = Guid.NewGuid();
-        Guid projectId = Guid.NewGuid();
+        Guid invalidId = Guid.CreateVersion7();
+        Guid projectId = Guid.CreateVersion7();
 
         _mockService.Setup(s => s.GetProductByIdAsync(projectId, invalidId))
             .ThrowsAsync(new ProductNotFoundException(projectId, invalidId));
@@ -79,10 +79,10 @@ public class ProductsControllerTests
     public async Task CreateProduct_ReturnsCreatedProduct()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         ProductResponseDTO createdProduct = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = projectId,
             Title = "New Test Product",
             Schema = ProductSchema.Doi,
@@ -123,8 +123,8 @@ public class ProductsControllerTests
     public async Task UpdateProduct_UpdatesProduct()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid productId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid productId = Guid.CreateVersion7();
 
         ProductRequestDTO dto = new()
         {
@@ -169,8 +169,8 @@ public class ProductsControllerTests
     public async Task UpdateProduct_ReturnsNotFound_ForInvalidId()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid productId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid productId = Guid.CreateVersion7();
         ProductRequestDTO updateDto = new()
         {
             Schema = ProductSchema.Doi,
@@ -195,8 +195,8 @@ public class ProductsControllerTests
     public async Task DeleteProduct_DeletesProduct()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid productId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid productId = Guid.CreateVersion7();
 
         _mockService.Setup(s => s.DeleteProductAsync(projectId, productId)).Returns(Task.CompletedTask);
 
@@ -211,8 +211,8 @@ public class ProductsControllerTests
     public async Task DeleteProduct_ReturnsNotFound_ForInvalidId()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid productId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid productId = Guid.CreateVersion7();
         
         _mockService.Setup(s => s.DeleteProductAsync(projectId, productId))
             .ThrowsAsync(new ProductNotFoundException(projectId, productId));

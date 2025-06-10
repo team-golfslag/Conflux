@@ -48,7 +48,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime startDate = new(2024, 1, 15);
-        Project project = CreateBasicProject(Guid.NewGuid(), startDate);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), startDate);
         SetupMockProjectService(project);
 
         // Act
@@ -66,7 +66,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime endDate = new(2024, 12, 31);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now, endDate);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now, endDate);
         SetupMockProjectService(project);
 
         // Act
@@ -84,7 +84,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime titleDate = new(2024, 2, 10);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Titles = [
             new ProjectTitle
             {
@@ -112,7 +112,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime orgStartDate = new(2024, 2, 20);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Organisations = [
             new ProjectOrganisation
             {
@@ -138,7 +138,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime orgEndDate = new(2024, 11, 30);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Organisations = [
             new ProjectOrganisation
             {
@@ -164,7 +164,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime contributorStartDate = new(2024, 3, 1);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Contributors = [
             new Contributor
             {
@@ -190,7 +190,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime contributorEndDate = new(2024, 10, 15);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Contributors = [
             new Contributor
             {
@@ -216,7 +216,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime earliestDate = new(2024, 2, 15);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Contributors = [
             new Contributor
             {
@@ -243,7 +243,7 @@ public class TimelineServiceTests
     {
         // Arrange
         DateTime latestDate = new(2024, 10, 31);
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Contributors = [
             new Contributor
             {
@@ -269,7 +269,7 @@ public class TimelineServiceTests
     public async Task GetTimelineItemsAsync_WithSomePositionsWithoutEndDate_DoesNotReturnContributorLeftItem()
     {
         // Arrange
-        Project project = CreateBasicProject(Guid.NewGuid(), DateTime.Now);
+        Project project = CreateBasicProject(Guid.CreateVersion7(), DateTime.Now);
         project.Contributors = [
             new Contributor
             {
@@ -294,7 +294,7 @@ public class TimelineServiceTests
     public async Task GetTimelineItemsAsync_ReturnsItemsOrderedByDateDescending()
     {
         // Arrange
-        Project project = CreateBasicProject(Guid.NewGuid(), new(2024, 1, 15), new DateTime(2024, 12, 31));
+        Project project = CreateBasicProject(Guid.CreateVersion7(), new(2024, 1, 15), new DateTime(2024, 12, 31));
         project.Titles = [new ProjectTitle
             {
                 StartDate = new(2024,
@@ -327,7 +327,7 @@ public class TimelineServiceTests
     public async Task GetTimelineItemsAsync_WhenProjectsServiceThrows_PropagatesException()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         _mockProjectsService.Setup(s => s.GetProjectByIdAsync(projectId))
             .ThrowsAsync(new ProjectNotFoundException(projectId));
 

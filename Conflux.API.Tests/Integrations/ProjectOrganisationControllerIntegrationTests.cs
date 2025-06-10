@@ -50,7 +50,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -68,7 +68,7 @@ public class ProjectOrganisationsControllerIntegrationTests
             ],
         };
 
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
         Organisation org = new()
         {
             Id = orgId,
@@ -117,7 +117,7 @@ public class ProjectOrganisationsControllerIntegrationTests
     public async Task GetOrganisations_ReturnsNotFound_WhenProjectDoesNotExist()
     {
         // Act
-        HttpResponseMessage response = await _client.GetAsync($"projects/{Guid.NewGuid()}/organisations");
+        HttpResponseMessage response = await _client.GetAsync($"projects/{Guid.CreateVersion7()}/organisations");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -130,7 +130,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -148,7 +148,7 @@ public class ProjectOrganisationsControllerIntegrationTests
             ],
         };
 
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
         Organisation org = new()
         {
             Id = orgId,
@@ -199,7 +199,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -219,7 +219,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         await context.SaveChangesAsync();
 
         // Act
-        HttpResponseMessage response = await _client.GetAsync($"projects/{projectId}/organisations/{Guid.NewGuid()}");
+        HttpResponseMessage response = await _client.GetAsync($"projects/{projectId}/organisations/{Guid.CreateVersion7()}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -232,7 +232,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -292,7 +292,7 @@ public class ProjectOrganisationsControllerIntegrationTests
 
         // Act
         HttpResponseMessage response =
-            await _client.PostAsJsonAsync($"projects/{Guid.NewGuid()}/organisations", newOrgDto);
+            await _client.PostAsJsonAsync($"projects/{Guid.CreateVersion7()}/organisations", newOrgDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -305,7 +305,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -323,7 +323,7 @@ public class ProjectOrganisationsControllerIntegrationTests
             ],
         };
 
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
         Organisation org = new()
         {
             Id = orgId,
@@ -381,7 +381,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -409,7 +409,7 @@ public class ProjectOrganisationsControllerIntegrationTests
 
         // Act
         HttpResponseMessage response =
-            await _client.PutAsJsonAsync($"projects/{projectId}/organisations/{Guid.NewGuid()}", updateDto);
+            await _client.PutAsJsonAsync($"projects/{projectId}/organisations/{Guid.CreateVersion7()}", updateDto);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -422,7 +422,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -439,7 +439,7 @@ public class ProjectOrganisationsControllerIntegrationTests
             ],
         };
 
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
         Organisation org = new()
         {
             Id = orgId,
@@ -490,7 +490,7 @@ public class ProjectOrganisationsControllerIntegrationTests
         using IServiceScope scope = _factory.Services.CreateScope();
         ConfluxContext context = scope.ServiceProvider.GetRequiredService<ConfluxContext>();
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -511,7 +511,7 @@ public class ProjectOrganisationsControllerIntegrationTests
 
         // Act
         HttpResponseMessage response =
-            await _client.DeleteAsync($"projects/{projectId}/organisations/{Guid.NewGuid()}");
+            await _client.DeleteAsync($"projects/{projectId}/organisations/{Guid.CreateVersion7()}");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

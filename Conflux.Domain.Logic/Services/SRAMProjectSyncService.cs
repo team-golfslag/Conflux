@@ -58,8 +58,8 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         foreach (GroupMember user in projectGroup.Members
             .Where(m => project.Users.All(u => m.SCIMId != u.SCIMId)))
         {
-            Guid personId = Guid.NewGuid();
-            Guid userId = Guid.NewGuid();
+            Guid personId = Guid.CreateVersion7();
+            Guid userId = Guid.CreateVersion7();
             
             Person person = new()
             {
@@ -116,7 +116,7 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
 
         UserRole newUserRole = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Type = SessionMappingService.GroupUrnToUserRoleType(updatedGroup.Urn),
             Urn = updatedGroup.Urn,

@@ -23,7 +23,7 @@ public class AccessControlServiceTests : IDisposable
             .BuildServiceProvider();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}") // Unique name for isolation
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}") // Unique name for isolation
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
@@ -50,11 +50,11 @@ public class AccessControlServiceTests : IDisposable
         List<string>? organisations = null)
     {
         Person person = new()
-            { Id = Guid.NewGuid(), Name = "Test User" };
+            { Id = Guid.CreateVersion7(), Name = "Test User" };
         User user = new()
         {
-            Id = Guid.NewGuid(),
-            SCIMId = $"user-scim-id-{Guid.NewGuid()}",
+            Id = Guid.CreateVersion7(),
+            SCIMId = $"user-scim-id-{Guid.CreateVersion7()}",
             Person = person,
             PermissionLevel = permissionLevel,
             AssignedLectorates = lectorates ??
@@ -79,7 +79,7 @@ public class AccessControlServiceTests : IDisposable
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Lectorate = lectorate,
             OwnerOrganisation = ownerOrg
         };
@@ -95,7 +95,7 @@ public class AccessControlServiceTests : IDisposable
     {
         UserRole userRole = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Type = roleType,
             Urn = "test-urn",
@@ -179,7 +179,7 @@ public class AccessControlServiceTests : IDisposable
     {
         // Arrange
         Project project = await CreateProjectAsync();
-        Guid nonExistentUserId = Guid.NewGuid();
+        Guid nonExistentUserId = Guid.CreateVersion7();
 
         // Act
         bool result = await _service.UserHasRoleInProject(nonExistentUserId, project.Id, UserRoleType.Admin);
@@ -193,7 +193,7 @@ public class AccessControlServiceTests : IDisposable
     {
         // Arrange
         User user = await CreateUserAsync();
-        Guid nonExistentProjectId = Guid.NewGuid();
+        Guid nonExistentProjectId = Guid.CreateVersion7();
 
         // Act
         bool result = await _service.UserHasRoleInProject(user.Id, nonExistentProjectId, UserRoleType.Admin);

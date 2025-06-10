@@ -24,7 +24,7 @@ public class CollaborationMapperTests
     public CollaborationMapperTests()
     {
         var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .Options;
 
         _context = new(options);

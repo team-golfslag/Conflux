@@ -124,7 +124,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
         {
             organisation = new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = organisationDto.Name,
                 RORId = organisationDto.RORId ?? string.Empty,
             };

@@ -16,6 +16,7 @@ public enum RAiDIncompatibilityType
     NoContributors,
     ContributorWithoutOrcid,
     OverlappingContributorPositions,
+    ContributorWithoutPosition,
     NoProjectLeader,
     NoProjectContact,
     OrganisationWithoutRor,
@@ -23,6 +24,8 @@ public enum RAiDIncompatibilityType
     NoLeadResearchOrganisation,
     MultipleLeadResearchOrganisation,
     NoProductCategory,
+    InvalidTitleLanguage,
+    InvalidDescriptionLanguage,
 }
 
 public class RAiDIncompatibility

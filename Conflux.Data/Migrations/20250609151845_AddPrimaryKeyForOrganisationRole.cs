@@ -20,7 +20,7 @@ namespace Conflux.Data.Migrations
                 table: "OrganisationRoles",
                 type: "uuid",
                 nullable: false,
-                defaultValue: Guid.NewGuid());
+                defaultValue: Guid.CreateVersion7());
 
             migrationBuilder.AddPrimaryKey(
                 name: "PK_OrganisationRoles",

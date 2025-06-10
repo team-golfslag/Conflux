@@ -49,7 +49,9 @@ public class Product
         };
 
     public List<ProductCategoryType> Categories { get; set; } = [];
-    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
+    
+    // This is incorrect according to the spec but necessary for the current implementation with SURF RAiD.
+    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/386";
 
     public static string GetCategoryUri(ProductCategoryType t) =>
         $"https://vocabulary.raid.org/relatedObject.category.schema/{(int)t}";

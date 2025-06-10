@@ -19,7 +19,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 {
     private static User CreateUserWithPerson(Guid userId, string name, string scimId, string? orcid = null)
     {
-        var personId = Guid.NewGuid();
+        var personId = Guid.CreateVersion7();
         
         // Create the person first
         var person = new Person
@@ -45,7 +45,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
     }
 
     // This is a unique name for the in-memory database to avoid conflicts between tests
-    private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.NewGuid()}";
+    private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.CreateVersion7()}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -85,7 +85,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                     new()
                     {
                         ProjectId = new("00000000-0000-0000-0000-000000000001"),
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         Text = "Test Project",
                         Type = TitleType.Primary,
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -115,7 +115,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                     new()
                     {
                         ProjectId = new("00000000-0000-0000-0000-000000000002"),
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         Text = "Test Project 2",
                         Type = TitleType.Primary,
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -143,7 +143,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                     new()
                     {
                         ProjectId = new("00000000-0000-0000-0000-000000000003"),
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         Text = "Test Project 3",
                         Type = TitleType.Primary,
                         StartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -182,7 +182,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
             // Add roles for the test user
             db.UserRoles.Add(new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 ProjectId = new("00000000-0000-0000-0000-000000000001"),
                 Type = UserRoleType.Admin,
                 Urn = "test:urn:1",
@@ -191,7 +191,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             db.UserRoles.Add(new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 ProjectId = new("00000000-0000-0000-0000-000000000002"),
                 Type = UserRoleType.Admin,
                 Urn = "test:urn:2",
@@ -200,7 +200,7 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             db.UserRoles.Add(new()
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 ProjectId = new("00000000-0000-0000-0000-000000000003"),
                 Type = UserRoleType.Admin,
                 Urn = "test:urn:3",

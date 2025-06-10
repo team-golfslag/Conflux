@@ -6,6 +6,7 @@
 using Conflux.Data;
 using Conflux.Domain;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using RAiD.Net.Domain;
 
 namespace Conflux.Integrations.RAiD.Tests;
@@ -18,11 +19,16 @@ public class ProjectMapperServiceTests
     public ProjectMapperServiceTests()
     {
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .Options;
 
+        Mock<ILanguageService> languageServiceMock = new();
+        languageServiceMock
+            .Setup(s => s.IsValidLanguageCode(It.IsAny<string>()))
+            .Returns(true);
+        
         _context = new(options);
-        _service = new(_context);
+        _service = new(_context, languageServiceMock.Object);
     }
 
     [Fact]

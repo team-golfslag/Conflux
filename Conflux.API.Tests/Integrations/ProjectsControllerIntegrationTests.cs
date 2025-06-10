@@ -50,7 +50,7 @@ public class ProjectsControllerTests : IClassFixture<WebApplicationFactoryTests>
     [Fact]
     public async Task GetProjectById_ReturnsNotFound_ForInvalidId()
     {
-        Guid invalidId = Guid.NewGuid();
+        Guid invalidId = Guid.CreateVersion7();
         HttpResponseMessage response = await _client.GetAsync($"/projects/{invalidId}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

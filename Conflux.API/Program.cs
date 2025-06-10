@@ -62,10 +62,11 @@ public class Program
 
     private static async Task ConfigureServices(WebApplicationBuilder builder, IVariantFeatureManager featureManager)
     {
+        bool jsonIndented = await featureManager.IsEnabledAsync("JsonIndentation");
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
-            options.JsonSerializerOptions.WriteIndented = true;
+            options.JsonSerializerOptions.WriteIndented = jsonIndented;
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
@@ -102,6 +103,8 @@ public class Program
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
         builder.Services.AddScoped<ITimelineService, TimelineService>();
         builder.Services.AddScoped<IAdminService, AdminService>();
+        builder.Services.AddScoped<ILanguageService, LanguageService>();
+
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))
             builder.Services.AddScoped<IPersonRetrievalService, PersonRetrievalService>(provider =>

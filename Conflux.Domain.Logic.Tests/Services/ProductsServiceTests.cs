@@ -29,13 +29,13 @@ public class ProductsServiceTests : IAsyncLifetime
         // Seed a sample project
         _project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Titles =
             [
                 new()
                 {
-                    Id = Guid.NewGuid(),
-                    ProjectId = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
+                    ProjectId = Guid.CreateVersion7(),
                     Text = "Sample Project",
                     Type = TitleType.Primary,
                     StartDate = DateTime.UtcNow,
@@ -61,7 +61,7 @@ public class ProductsServiceTests : IAsyncLifetime
 
         // Add product to the context
         Guid projectId = _project.Id;
-        Guid productId = Guid.NewGuid();
+        Guid productId = Guid.CreateVersion7();
         Product testProduct = new()
         {
             ProjectId = projectId,
@@ -99,7 +99,7 @@ public class ProductsServiceTests : IAsyncLifetime
         // Arrange
         ProductsService productsService = new(_context);
         Guid projectId = _project.Id;
-        Guid nonExistentProductId = Guid.NewGuid();
+        Guid nonExistentProductId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>
@@ -155,7 +155,7 @@ public class ProductsServiceTests : IAsyncLifetime
         Guid projectId = _project.Id;
 
         // Add an initial product to the context
-        Guid productId = Guid.NewGuid();
+        Guid productId = Guid.CreateVersion7();
         Product initialProduct = new()
         {
             ProjectId = projectId,
@@ -226,7 +226,7 @@ public class ProductsServiceTests : IAsyncLifetime
         // Arrange
         ProductsService productsService = new(_context);
         Guid projectId = _project.Id;
-        Guid nonExistentProductId = Guid.NewGuid();
+        Guid nonExistentProductId = Guid.CreateVersion7();
 
         ProductRequestDTO updateDto = new()
         {
@@ -254,7 +254,7 @@ public class ProductsServiceTests : IAsyncLifetime
         Guid projectId = _project.Id;
 
         // Add product to the context
-        Guid productId = Guid.NewGuid();
+        Guid productId = Guid.CreateVersion7();
         Product testProduct = new()
         {
             ProjectId = projectId,
@@ -285,8 +285,8 @@ public class ProductsServiceTests : IAsyncLifetime
     {
         // Arrange
         ProductsService productsService = new(_context);
-        Guid projectId = Guid.NewGuid();
-        Guid nonExistentProductId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid nonExistentProductId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>

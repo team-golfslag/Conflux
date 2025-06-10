@@ -50,7 +50,7 @@ public class ProductsService : IProductsService
         Product product = new()
         {
             ProjectId = projectId,
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Schema = productDTO.Schema,
             Url = productDTO.Url,
             Title = productDTO.Title,

@@ -50,7 +50,7 @@ public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescri
 
         ProjectDescription description = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = projectId,
             Text = descriptionDTO.Text,
             Type = descriptionDTO.Type,

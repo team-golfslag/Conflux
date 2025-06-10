@@ -43,7 +43,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         ContributorsService contributorsService = new(_context);
 
         // Add project to the context
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -64,7 +64,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         _context.Projects.Add(project);
 
         // Add person to the context
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,
@@ -94,7 +94,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         ContributorsService contributorsService = new(_context);
 
         // Add project to the context
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -115,7 +115,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         _context.Projects.Add(project);
 
         // Add person to the context
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,
@@ -148,8 +148,8 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorService = new(_context);
 
-        Guid projectId = Guid.NewGuid();
-        Guid personId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid personId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ContributorNotFoundException>(() =>
@@ -163,7 +163,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         ContributorsService contributorsService = new(_context);
 
         // Add project to the context
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -184,7 +184,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         _context.Projects.Add(project);
 
         // Add person to the context
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,
@@ -217,7 +217,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         // Arrange
         ContributorsService contributorsService = new(_context);
         // Add project to the context
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -238,7 +238,7 @@ public class ContributorsServiceTests : IAsyncLifetime
         _context.Projects.Add(project);
 
         // Add person to the context
-        Guid personId = Guid.NewGuid();
+        Guid personId = Guid.CreateVersion7();
         Person person = new()
         {
             Id = personId,

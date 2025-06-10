@@ -16,6 +16,7 @@ public enum RAiDIncompatibilityType
     NoContributors,
     ContributorWithoutOrcid,
     OverlappingContributorPositions,
+    ContributorWithoutPosition,
     NoProjectLeader,
     NoProjectContact,
     OrganisationWithoutRor,

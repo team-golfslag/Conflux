@@ -165,6 +165,14 @@ public class ProjectMapperService : IProjectMapperService
         // Constraints: contributors must have one and only one position at any given time (contributors may also be flagged as a 'leader' or 'contact' separately)
         // Source: https://metadata.raid.org/en/latest/core/contributors.html#contributor-position
         incompatibilities.AddRange(project.Contributors
+            .Where(c => c.Positions.Count == 0)
+            .Select(c => new RAiDIncompatibility
+            {
+                Type = RAiDIncompatibilityType.ContributorWithoutPosition,
+                ObjectId = c.PersonId,
+            }));
+        
+        incompatibilities.AddRange(project.Contributors
             .Where(c =>
             {
                 if (c.Positions.Count == 0)

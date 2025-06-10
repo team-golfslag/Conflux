@@ -8,6 +8,11 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using ROR.Net;
+using ROR.Net.Models;
+using ROR.Net.Services;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -18,11 +23,13 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 {
     private readonly ConfluxContext _context;
     private readonly IProjectsService _projectsService;
+    private readonly IOrganizationService _organizationService;
 
-    public ProjectOrganisationsService(ConfluxContext context, IProjectsService projectsService)
+    public ProjectOrganisationsService(ConfluxContext context, IProjectsService projectsService, IOrganizationService organizationService)
     {
         _context = context;
         _projectsService = projectsService;
+        _organizationService = organizationService;
     }
 
     /// <inheritdoc />
@@ -259,5 +266,19 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
             throw new ProjectOrganisationNotFoundException(projectId, organisationId);
 
         return projectOrganisation;
+    }
+
+    public async Task<OrganisationResponseDTO> GetOrganisationNameByRorAsync(string ror)
+    {
+        Organization? org = await _organizationService.GetOrganizationAsync(ror);
+        if (org == null) throw new OrganisationNotFoundException($"Organisation with ROR ID {ror} not found.");
+        
+
+        return new OrganisationResponseDTO()
+        {
+            Name = org.Names[0].Value,
+            RORId = org.Id,
+        };
+
     }
 }

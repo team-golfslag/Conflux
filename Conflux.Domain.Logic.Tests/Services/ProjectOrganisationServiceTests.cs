@@ -10,6 +10,7 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using ROR.Net.Models;
 using ROR.Net.Services;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -21,6 +22,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private ConfluxContext _context = null!;
     private Mock<IProjectsService> _projectsServiceMock = null!;
+    private Mock<IOrganizationService> _orgServiceMock = null!;
     private ProjectOrganisationsService _service = null!;
 
     public async Task InitializeAsync()
@@ -43,8 +45,40 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
                 Id = Guid.NewGuid(),
             });
 
+        _orgServiceMock = new();
+
+        var names = new List<OrganizationName>();
+        names.Add(new OrganizationName()
+        {
+            Value = "Organisation Name",
+            Types = new List<OrganizationNameType>()
+        });
+            
+
+        _orgServiceMock.Setup(m => m.GetOrganizationAsync(It.IsAny<string>())).ReturnsAsync(new Organization()
+        {
+            Id = "someID",
+            Locations = new List<OrganizationLocation>(),
+            Admin = new OrganizationAdmin()
+            {
+                Created = new DateEntry()
+                {
+                    Date = "",
+                    SchemaVersion = ""
+                },
+                DateEntry = new DateEntry()
+                {
+                    Date = "",
+                    SchemaVersion = ""
+                }
+                
+            },
+            Names = names,
+            Types = new List<OrganizationType>()
+        });
+
         // Create the service with the mock
-        _service = new(_context, _projectsServiceMock.Object, new Mock<IOrganizationService>().Object);
+        _service = new(_context, _projectsServiceMock.Object, _orgServiceMock.Object);
 
         await _context.Database.EnsureCreatedAsync();
     }
@@ -451,6 +485,44 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Act & Assert
         await Assert.ThrowsAsync<ProjectOrganisationNotFoundException>(() =>
             _service.DeleteOrganisationAsync(projectId, nonExistentOrgId));
+    }
+    
+    [Fact]
+    public async Task RetrieveNameByRorAsync_ShouldReturnOrganisationName_WhenRorExists()
+    {
+        // Arrange
+        string rorId = "someID";
+        Organisation org = new()
+        {
+            Name = "Organisation Name",
+            RORId = rorId,
+        };
+        
+        // Act
+        OrganisationResponseDTO result = await _service.GetOrganisationNameByRorAsync(rorId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Organisation Name", result.Name);
+        Assert.Equal(rorId, result.RORId);
+    }
+    
+    [Fact]
+    public async Task RetrieveNameByRorAsync_ShouldThrow_WhenRorNotExists()
+    {
+        // Arrange
+        string rorId = "someID";
+        Organisation org = new()
+        {
+            Name = "Organisation Name",
+            RORId = rorId,
+        };
+
+        _orgServiceMock.Setup(m => m.GetOrganizationAsync(It.IsAny<string>())).ReturnsAsync((Organization)null!);
+        
+
+        // Assert
+        await Assert.ThrowsAsync<OrganisationNotFoundException>(() => _service.GetOrganisationNameByRorAsync(rorId));
     }
 
     #region Helper Methods

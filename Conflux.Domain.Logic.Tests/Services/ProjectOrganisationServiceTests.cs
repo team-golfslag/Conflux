@@ -44,7 +44,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             });
 
         // Create the service with the mock
-        _service = new(_context, _projectsServiceMock.Object, new Mock<OrganizationService>().Object);
+        _service = new(_context, _projectsServiceMock.Object, new Mock<IOrganizationService>().Object);
 
         await _context.Database.EnsureCreatedAsync();
     }

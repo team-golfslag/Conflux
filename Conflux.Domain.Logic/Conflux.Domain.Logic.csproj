@@ -7,16 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj"/>
-        <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj"/>
-        <ProjectReference Include="..\Conflux.Integrations.SRAM\Conflux.Integrations.SRAM.csproj"/>
+        <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj" />
+        <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj" />
+        <ProjectReference Include="..\Conflux.Integrations.SRAM\Conflux.Integrations.SRAM.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0"/>
-        <PackageReference Include="Microsoft.FeatureManagement" Version="4.0.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
+        <PackageReference Include="Microsoft.FeatureManagement" Version="4.0.0" />
+        <PackageReference Include="ROR.Net" Version="1.2.0" />
     </ItemGroup>
 
 </Project>

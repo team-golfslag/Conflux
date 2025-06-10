@@ -26,7 +26,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     {
         // Use in-memory database for testing
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.CreateVersion7().ToString())
             .Options;
 
         _context = new(options);
@@ -39,7 +39,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             .Setup(m => m.GetProjectDTOByIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new ProjectResponseDTO
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
             });
 
         // Create the service with the mock
@@ -57,7 +57,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     public async Task GetOrganisationsByProjectIdAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
         // Arrange
-        Guid nonExistentProjectId = Guid.NewGuid();
+        Guid nonExistentProjectId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
@@ -97,7 +97,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     {
         // Arrange
         Guid projectId = await SetupProject();
-        Guid nonExistentOrgId = Guid.NewGuid();
+        Guid nonExistentOrgId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectOrganisationNotFoundException>(() =>
@@ -108,8 +108,8 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     public async Task GetOrganisationByIdAsync_ShouldReturnOrganisation_WhenProjectOrganisationExists()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
-        Guid orgId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
+        Guid orgId = Guid.CreateVersion7();
 
         Project project = new()
         {
@@ -169,7 +169,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     public async Task CreateOrganisationAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
         // Arrange
-        Guid nonExistentProjectId = Guid.NewGuid();
+        Guid nonExistentProjectId = Guid.CreateVersion7();
         OrganisationRequestDTO dto = new()
         {
             Name = "New Organisation",
@@ -203,7 +203,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     public async Task CreateOrganisationAsync_ShouldCreateNewOrganisation_WhenOrganisationDoesNotExist()
     {
         // Arrange
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -253,7 +253,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Add an organisation to the database first
         Organisation existingOrg = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "Existing Organisation",
             RORId = "https://ror.org/existing",
         };
@@ -304,7 +304,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     {
         // Arrange
         Guid projectId = await SetupProject();
-        Guid nonExistentOrgId = Guid.NewGuid();
+        Guid nonExistentOrgId = Guid.CreateVersion7();
         OrganisationRequestDTO dto = new()
         {
             Name = "Updated Organisation",
@@ -445,7 +445,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
     {
         // Arrange
         Guid projectId = await SetupProject();
-        Guid nonExistentOrgId = Guid.NewGuid();
+        Guid nonExistentOrgId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectOrganisationNotFoundException>(() =>
@@ -456,7 +456,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
     private async Task<Guid> SetupProject()
     {
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
         Project project = new()
         {
             Id = projectId,
@@ -466,7 +466,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test Project",
                     Type = TitleType.Primary,
@@ -486,7 +486,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
         for (int i = 0; i < count; i++)
         {
-            Guid orgId = Guid.NewGuid();
+            Guid orgId = Guid.CreateVersion7();
             organisationIds.Add(orgId);
 
             Organisation org = new()
@@ -514,7 +514,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
     private async Task<Guid> SetupSingleOrganisationForProject(Guid projectId, OrganisationRoleType role)
     {
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
 
         Organisation org = new()
         {
@@ -549,7 +549,7 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
 
     private async Task<Guid> SetupOrganisationWithRoleHistory(Guid projectId)
     {
-        Guid orgId = Guid.NewGuid();
+        Guid orgId = Guid.CreateVersion7();
 
         Organisation org = new()
         {

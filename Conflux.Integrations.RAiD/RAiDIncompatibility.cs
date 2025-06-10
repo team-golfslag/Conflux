@@ -23,6 +23,8 @@ public enum RAiDIncompatibilityType
     NoLeadResearchOrganisation,
     MultipleLeadResearchOrganisation,
     NoProductCategory,
+    InvalidTitleLanguage,
+    InvalidDescriptionLanguage,
 }
 
 public class RAiDIncompatibility

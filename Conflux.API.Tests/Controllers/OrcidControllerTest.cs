@@ -56,7 +56,7 @@ public class OrcidControllerTests
         _mockConfigSection = new();
 
         _dbOptions = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()) // Unique DB for each test run
+            .UseInMemoryDatabase(Guid.CreateVersion7().ToString()) // Unique DB for each test run
             .Options;
 
         // Setup Configuration mock
@@ -87,7 +87,7 @@ public class OrcidControllerTests
         var mockServiceProvider = new Mock<IServiceProvider>();
         mockServiceProvider.Setup(sp => sp.GetService(typeof(IAuthenticationService))).Returns(mockAuthService.Object);
         httpContext.RequestServices = mockServiceProvider.Object;
-        
+
         // Create a mock session
         var mockSession = new Mock<ISession>();
         httpContext.Session = mockSession.Object;
@@ -103,11 +103,12 @@ public class OrcidControllerTests
             _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession?)null);
     }
 
-    private static User CreateUserWithPerson(string name, string scimId, string? orcid = null, Guid? userId = null, Guid? personId = null)
+    private static User CreateUserWithPerson(string name, string scimId, string? orcid = null, Guid? userId = null,
+        Guid? personId = null)
     {
-        var actualUserId = userId ?? Guid.NewGuid();
-        var actualPersonId = personId ?? Guid.NewGuid();
-        
+        var actualUserId = userId ?? Guid.CreateVersion7();
+        var actualPersonId = personId ?? Guid.CreateVersion7();
+
         // First create the person without the User reference
         var person = new Person
         {
@@ -116,7 +117,7 @@ public class OrcidControllerTests
             ORCiD = orcid,
             User = null
         };
-        
+
         // Now create the user with the person reference
         var user = new User
         {
@@ -128,7 +129,7 @@ public class OrcidControllerTests
 
         // Set the bidirectional reference
         person.User = user;
-        
+
         return user;
     }
 
@@ -150,14 +151,14 @@ public class OrcidControllerTests
 
         // We need to mock the Session differently since GetString is an extension method
         var mockSession = new Mock<ISession>();
-        
+
         if (orcidSession != null)
         {
             byte[] orcidBytes = Encoding.UTF8.GetBytes(orcidSession);
-            
+
             // Use our custom delegate for TryGetValue
             mockSession.Setup(s => s.TryGetValue("orcid", out It.Ref<byte[]>.IsAny))
-                .Returns(new TryGetValueDelegate((string key, out byte[] value) => 
+                .Returns(new TryGetValueDelegate((string key, out byte[] value) =>
                 {
                     value = orcidBytes;
                     return true;
@@ -167,7 +168,7 @@ public class OrcidControllerTests
         {
             // Use our custom delegate for TryGetValue with no value
             mockSession.Setup(s => s.TryGetValue("orcid", out It.Ref<byte[]>.IsAny))
-                .Returns(new TryGetValueDelegate((string key, out byte[] value) => 
+                .Returns(new TryGetValueDelegate((string key, out byte[] value) =>
                 {
                     value = Array.Empty<byte>();
                     return false;
@@ -216,8 +217,8 @@ public class OrcidControllerTests
         Assert.Equal(ValidRelativeRedirect, redirectResult.Url);
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
-        Assert.Equal(ExampleOrcid, dbUser?.Person?.ORCiD);                       // Check if hardcoded ORCID was saved
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
+        Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser?.Person?.ORCiD); // Check if hardcoded ORCID was saved
+        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     [Fact]
@@ -386,8 +387,8 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Equal(ExampleOrcid, dbUser!.Person?.ORCiD);                       // Check ORCID update
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
+        Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser!.Person?.ORCiD); // Check ORCID update
+        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     [Fact]
@@ -409,8 +410,8 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Equal(ExampleOrcid, dbUser!.Person?.ORCiD);                       // Check ORCID update
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once); // Verify session update
+        Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser!.Person?.ORCiD); // Check ORCID update
+        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     // --- GetPersonByQuery Tests ---
@@ -456,14 +457,14 @@ public class OrcidControllerTests
 
         // Setup person creation
         var newPerson = new Person
-        { 
-            Id = Guid.NewGuid(),
+        {
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             GivenName = "John",
             FamilyName = "Doe",
             ORCiD = ExampleOrcid
         };
-        
+
         _mockPeopleService.Setup(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()))
             .ReturnsAsync(newPerson);
 
@@ -496,11 +497,11 @@ public class OrcidControllerTests
         // Setup that person already exists
         var existingPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             ORCiD = ExampleOrcid
         };
-        
+
         _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
             .ReturnsAsync(existingPerson);
 
@@ -511,7 +512,7 @@ public class OrcidControllerTests
         var returnValue = Assert.IsType<ActionResult<List<Person>>>(result);
         var people = returnValue.Value;
         Assert.NotNull(people);
-        Assert.Single(people); // Should contain the existing person
+        Assert.Single(people);                   // Should contain the existing person
         Assert.Equal(existingPerson, people[0]); // The existing person should be in the result
         _mockPeopleService.Verify(s => s.CreatePersonAsync(It.IsAny<PersonRequestDTO>()), Times.Never);
     }
@@ -527,7 +528,7 @@ public class OrcidControllerTests
             .ReturnsAsync(true);
         var existingPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             ORCiD = ExampleOrcid
         };
@@ -552,7 +553,7 @@ public class OrcidControllerTests
         InitializeController();
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidIntegration", CancellationToken.None))
             .ReturnsAsync(true);
-        
+
         // Person doesn't exist yet
         _mockPeopleService.Setup(s => s.GetPersonByOrcidIdAsync(ExampleOrcid))
             .ReturnsAsync((Person?)null);
@@ -566,7 +567,7 @@ public class OrcidControllerTests
         // Setup person creation
         var newPerson = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "John Doe",
             GivenName = "John",
             FamilyName = "Doe",
@@ -607,7 +608,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser!.Person?.ORCiD);                                             // ORCID should be null after unlinking
+        Assert.Null(dbUser!.Person?.ORCiD);                                     // ORCID should be null after unlinking
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
@@ -629,7 +630,7 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
-        Assert.Null(dbUser!.Person?.ORCiD);                                             // ORCID should remain null
+        Assert.Null(dbUser!.Person?.ORCiD);                                     // ORCID should remain null
         _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 

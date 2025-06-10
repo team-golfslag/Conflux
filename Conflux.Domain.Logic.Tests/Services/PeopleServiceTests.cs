@@ -21,7 +21,7 @@ public class PeopleServiceTests : IAsyncLifetime
     {
         // Use a new in-memory database for each test run
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.CreateVersion7().ToString())
             .Options;
 
         _context = new(options);
@@ -31,7 +31,7 @@ public class PeopleServiceTests : IAsyncLifetime
         _context.People.AddRange(
             new Person
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = "John Doe",
                 GivenName = "John",
                 FamilyName = "Doe",
@@ -39,7 +39,7 @@ public class PeopleServiceTests : IAsyncLifetime
             },
             new Person
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = "Jane Smith",
                 GivenName = "Jane",
                 FamilyName = "Smith",
@@ -47,7 +47,7 @@ public class PeopleServiceTests : IAsyncLifetime
             },
             new Person
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Name = "Bob Johnson",
                 GivenName = "Bob",
                 FamilyName = "Johnson",
@@ -109,7 +109,7 @@ public class PeopleServiceTests : IAsyncLifetime
     [Fact]
     public async Task GetPersonByIdAsync_WithInvalidId_ThrowsPersonNotFoundException()
     {
-        await Assert.ThrowsAsync<PersonNotFoundException>(() => _service.GetPersonByIdAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<PersonNotFoundException>(() => _service.GetPersonByIdAsync(Guid.CreateVersion7()));
     }
 
     [Fact]
@@ -206,14 +206,14 @@ public class PeopleServiceTests : IAsyncLifetime
         // seed a new person + a contributor for them
         Person person = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "X Y",
         };
         await _context.People.AddAsync(person);
 
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1),
         };

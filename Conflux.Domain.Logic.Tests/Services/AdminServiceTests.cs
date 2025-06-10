@@ -30,7 +30,7 @@ public class AdminServiceTests : IDisposable
             .BuildServiceProvider();
 
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .UseInternalServiceProvider(serviceProvider)
             .Options;
 
@@ -56,10 +56,10 @@ public class AdminServiceTests : IDisposable
     /// </summary>
     private async Task<User> CreateAndSaveUserAsync(string name, string email, PermissionLevel permissionLevel = PermissionLevel.User)
     {
-        Guid userId = Guid.NewGuid();
+        Guid userId = Guid.CreateVersion7();
         Person person = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = name,
             Email = email,
             UserId = userId
@@ -67,7 +67,7 @@ public class AdminServiceTests : IDisposable
         User user = new()
         {
             Id = userId,
-            SCIMId = $"scim-id-{Guid.NewGuid()}",
+            SCIMId = $"scim-id-{Guid.CreateVersion7()}",
             Person = person,
             PermissionLevel = permissionLevel,
             PersonId = person.Id,
@@ -86,7 +86,7 @@ public class AdminServiceTests : IDisposable
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             OwnerOrganisation = ownerOrganisation
         };
         _context.Projects.Add(project);

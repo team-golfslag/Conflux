@@ -51,7 +51,7 @@ public class PeopleService : IPeopleService
     {
         Person person = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = personDTO.Name,
             GivenName = personDTO.GivenName,
             FamilyName = personDTO.FamilyName,

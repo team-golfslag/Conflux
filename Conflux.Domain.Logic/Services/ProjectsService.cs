@@ -24,7 +24,7 @@ public class ProjectsService : IProjectsService
 {
     private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
-    
+
     public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
     {
         _context = context;
@@ -52,16 +52,16 @@ public class ProjectsService : IProjectsService
         List<UserRole> roles = await _context.UserRoles
             .Where(r => r.ProjectId == project.Id)
             .ToListAsync();
-        
+
         return roles.Where(r => collaboration.Groups.Any(g => g.Urn == r.Urn)).ToList();
     }
-    
+
     public async Task FavoriteProjectAsync(Guid projectId, bool favorite)
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-        
+
         Project? project = await _context.Projects
             .Include(p => p.Users)
             .ThenInclude(u => u.Person)
@@ -69,7 +69,7 @@ public class ProjectsService : IProjectsService
         
         if (project is null)
             throw new ProjectNotFoundException(projectId);
-        
+
         if (userSession.User is null)
             return;
         
@@ -86,7 +86,7 @@ public class ProjectsService : IProjectsService
         await _context.SaveChangesAsync();
         await _userSessionService.UpdateUser();
     }
-    
+
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
@@ -97,10 +97,10 @@ public class ProjectsService : IProjectsService
     {
         Project project = await GetProjectByIdAsync(id)
             ?? throw new ProjectNotFoundException(id);
-        
+
         return MapToProjectDTO(project);
     }
-    
+
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
@@ -110,31 +110,36 @@ public class ProjectsService : IProjectsService
     public async Task<Project> GetProjectByIdAsync(Guid id)
     {
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
+        if (userSession?.User is null)
             throw new UserNotAuthenticatedException();
         
         Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
-        
+
         FilterRolesForProject(project);
+
         
-        if (userSession.User is not null)
+        userSession.User.RecentlyAccessedProjectIds =
+            userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+        await _context.SaveChangesAsync();
+        await _userSessionService.CommitUser(userSession);
+
+        switch (userSession.User.PermissionLevel)
         {
-            userSession.User.RecentlyAccessedProjectIds =
-                userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
-            await _context.SaveChangesAsync();
-            await _userSessionService.CommitUser(userSession);
+            case PermissionLevel.SuperAdmin:
+            case PermissionLevel.SystemAdmin when (
+                project.Lectorate is not null && userSession.User.AssignedLectorates.Contains(project.Lectorate) ||
+                project.OwnerOrganisation is not null &&
+                userSession.User.AssignedOrganisations.Contains(project.OwnerOrganisation)):
+            case PermissionLevel.User when (userSession.Collaborations
+                .Select(c => c.CollaborationGroup.SCIMId).Contains(project.SCIMId)):
+                return project;
+            default:
+                throw new ProjectNotFoundException(id);
         }
-        
-        List<string> accessibleSramIds = userSession.Collaborations
-            .Select(c => c.CollaborationGroup.SCIMId)
-            .ToList();
-        if (!accessibleSramIds.Contains(project.SCIMId))
-            throw new ProjectNotFoundException(id);
-        
-        return project;
+
     }
-    
+
     /// <summary>
     /// Gets all projects whose title or description contain the query (case-insensitive),
     /// and optionally filters by start and/or end date.
@@ -151,7 +156,7 @@ public class ProjectsService : IProjectsService
             throw new UserNotAuthenticatedException();
         
         IEnumerable<ProjectResponseDTO> projects = await GetAvailableProjects();
-        
+
         if (!string.IsNullOrWhiteSpace(dto.Query))
         {
             string loweredQuery = dto.Query.ToLowerInvariant();
@@ -161,7 +166,7 @@ public class ProjectsService : IProjectsService
                 project.Descriptions.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)));
 #pragma warning restore CA1862
         }
-        
+
         DateTime? startDate;
         if (dto.StartDate.HasValue)
         {
@@ -169,19 +174,19 @@ public class ProjectsService : IProjectsService
             projects = projects.Where(project => project.StartDate >= startDate);
         }
         
-        if (dto.Lectorate is not null)
+        if (dto.Lectorate is not null) 
             projects = projects.Where(project => project.Lectorate == dto.Lectorate);
-        
+
         DateTime? endDate;
         if (dto.EndDate.HasValue)
         {
             endDate = DateTime.SpecifyKind(dto.EndDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.EndDate != null && project.EndDate <= endDate);
         }
-        
+
         if (dto is { StartDate: not null, EndDate: not null })
             projects = projects.Where(project => project.StartDate <= dto.EndDate && project.EndDate >= dto.StartDate);
-        
+
         projects = dto.OrderByType switch
         {
             OrderByType.TitleAsc => projects.OrderBy(project =>
@@ -193,13 +198,18 @@ public class ProjectsService : IProjectsService
             OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
             OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
             // Default case = relevance, check if the project is contained in the users recently accessed projects
-            _ => projects.OrderByDescending(project =>
-                userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id)),
+            _                         => projects.OrderByDescending(project =>
+                userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id))
         };
-        
+
         return projects.ToList();
     }
     
+    /// <summary>
+    /// Exports a list of <see cref="Project" />s matching the specified query criteria into a CSV format.
+    /// </summary>
+    /// <param name="dto">The query criteria used to filter the projects to be exported.</param>
+    /// <returns>A string containing the CSV representation of the filtered projects.</returns>
     public async Task<string> ExportProjectsToCsvAsync(ProjectCsvRequestDTO dto)
     {
         List<ProjectResponseDTO> projects = await GetProjectsByQueryAsync(dto);
@@ -256,7 +266,7 @@ public class ProjectsService : IProjectsService
         
         return writer.ToString();
     }
-    
+
     /// <summary>
     /// Gets all projects.
     /// </summary>
@@ -266,11 +276,11 @@ public class ProjectsService : IProjectsService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-        
+
         List<ProjectResponseDTO> projects = await GetAvailableProjects();
         return projects.ToList();
     }
-    
+
     /// <summary>
     /// Updates a project to the database via PUT.
     /// </summary>
@@ -287,13 +297,13 @@ public class ProjectsService : IProjectsService
         project.EndDate = dto.EndDate;
         project.Lectorate = dto.Lectorate;
         project.LastestEdit = DateTime.UtcNow;
-        
+
         await _context.SaveChangesAsync();
-        
+
         // Reload the project with all relationships
         Project? loadedProject = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
-        
+
         return MapToProjectDTO(loadedProject);
     }
     
@@ -345,7 +355,7 @@ public class ProjectsService : IProjectsService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null || userSession.User is null)
             throw new UserNotAuthenticatedException();
-        
+
         List<Project> projects;
         if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
         {
@@ -364,18 +374,18 @@ public class ProjectsService : IProjectsService
             List<string> accessibleSramIds = userSession.Collaborations
                 .Select(c => c.CollaborationGroup.SCIMId)
                 .ToList();
-            
+
             projects = await GetProjectsWithIncludes()
                 .Where(p => accessibleSramIds.Contains(p.SCIMId))
                 .ToListAsync();
         }
-        
+
         // Filter roles per project per user for the retrieved projects
         projects.ForEach(FilterRolesForProject);
-        
+
         return projects.Select(MapToProjectDTO).ToList();
     }
-    
+
     /// <summary>
     /// Maps a Project entity to a ProjectDTO
     /// </summary>
@@ -383,19 +393,19 @@ public class ProjectsService : IProjectsService
     {
         // Get all person IDs from contributors to fetch in one query
         List<Guid> personIds = project.Contributors.Select(c => c.PersonId).Distinct().ToList();
-        
+
         // Fetch all persons in one go (to avoid N+1 query problem)
         Dictionary<Guid, Person> people = _context.People
             .Where(p => personIds.Contains(p.Id))
             .ToDictionary(p => p.Id);
-        
+
         List<Guid> organisationIds =
             project.Organisations.Select(o => o.OrganisationId).Distinct().ToList();
-        
+
         List<Organisation> organisations = _context.Organisations
             .Where(o => organisationIds.Contains(o.Id))
             .ToList();
-        
+
         return new()
         {
             Id = project.Id,
@@ -435,7 +445,7 @@ public class ProjectsService : IProjectsService
                         Email = u.Person.Email,
                         ORCiD = u.Person.ORCiD,
                     }
-                    : null,
+                    : null
             }),
             Products = project.Products.ConvertAll(p => new ProductResponseDTO
             {
@@ -463,7 +473,7 @@ public class ProjectsService : IProjectsService
                         }
                     ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
                     RORId = o.RORId,
-                },
+                }
             }),
             Contributors = project.Contributors.Select(c => new ContributorResponseDTO
             {
@@ -502,7 +512,7 @@ public class ProjectsService : IProjectsService
             OwnerOrganisation = project.OwnerOrganisation,
         };
     }
-    
+
     /// <summary>
     /// Generates a CSV formatted string from a collection of data objects,
     /// where each object's properties are used to populate the CSV rows and columns.
@@ -514,10 +524,10 @@ public class ProjectsService : IProjectsService
     {
         StringBuilder csv = new();
         PropertyInfo[] properties = typeof(T).GetProperties();
-        
+
         //  header 
         csv.AppendLine(string.Join(",", properties.Select(p => p.Name)));
-        
+
         //  rows
         foreach (T item in data)
         {
@@ -529,10 +539,10 @@ public class ProjectsService : IProjectsService
                     value = $"\"{value.Replace("\"", "\"\"")}\"";
                 return value;
             });
-            
+
             csv.AppendLine(string.Join(",", values));
         }
-        
+
         return csv.ToString();
     }
 }

@@ -174,7 +174,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
         _context.Projects.RemoveRange(_context.Projects);
         _context.ProjectTitles.RemoveRange(_context.ProjectTitles);
 
-        Guid projectId = Guid.NewGuid();
+        Guid projectId = Guid.CreateVersion7();
 
         Project project = new()
         {
@@ -189,7 +189,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
             [
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test primary title 1",
                     Language = new()
@@ -202,7 +202,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test other expired title 1",
                     Language = new()
@@ -215,7 +215,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test other expired title 2",
                     Language = new()
@@ -228,7 +228,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test short expired title 1",
                     Language = new()
@@ -241,7 +241,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ProjectId = projectId,
                     Text = "Test short title 2",
                     Language = new()
@@ -289,7 +289,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
         // Add a title created today
         ProjectTitle todayTitle = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Text = "Today's title",
             Language = new()
@@ -456,7 +456,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SCIMId = null,
             RAiDInfo = null,
             StartDate = DateTime.UtcNow.Date,
@@ -469,7 +469,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
             [
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "Test",
                     Language = new()
                     {
@@ -496,7 +496,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SCIMId = null,
             RAiDInfo = null,
             StartDate = DateTime.UtcNow.Date,
@@ -509,7 +509,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
             [
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "Test",
                     Language = new()
                     {
@@ -521,7 +521,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "TeST",
                     Language = new()
                     {
@@ -533,7 +533,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "T.E.S.T.",
                     Language = new()
                     {
@@ -563,7 +563,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
     {
         Project project = new()
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SCIMId = null,
             RAiDInfo = null,
             StartDate = DateTime.UtcNow.Date,
@@ -576,7 +576,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
             [
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "Test",
                     Language = new()
                     {
@@ -588,7 +588,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "TeST",
                     Language = new()
                     {
@@ -600,7 +600,7 @@ public class ProjectTitlesServiceTests : IAsyncLifetime
                 },
                 new ProjectTitle
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     Text = "T.E.S.T.",
                     Language = new()
                     {

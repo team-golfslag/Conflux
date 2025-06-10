@@ -56,16 +56,16 @@ public class ProjectsServiceTests : IAsyncLifetime
     {
         var person = new Person
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = "Test User",
             Email = email
         };
 
         var user = new User
         {
-            Id = Guid.NewGuid(),
-            SRAMId = $"sram-id-{Guid.NewGuid()}",
-            SCIMId = $"scim-id-{Guid.NewGuid()}",
+            Id = Guid.CreateVersion7(),
+            SRAMId = $"sram-id-{Guid.CreateVersion7()}",
+            SCIMId = $"scim-id-{Guid.CreateVersion7()}",
             PersonId = person.Id,
             Person = person,
             FavoriteProjectIds = favoriteProjectIds ?? []
@@ -86,11 +86,11 @@ public class ProjectsServiceTests : IAsyncLifetime
         IEnumerable<User>? users = null
     )
     {
-        var projectId = Guid.NewGuid();
+        var projectId = Guid.CreateVersion7();
         var project = new Project
         {
             Id = projectId,
-            SCIMId = $"project-scim-{Guid.NewGuid()}",
+            SCIMId = $"project-scim-{Guid.CreateVersion7()}",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(1),
             Titles =
@@ -117,7 +117,7 @@ public class ProjectsServiceTests : IAsyncLifetime
     {
         var organisation = new Organisation
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             RORId = "https://ror.org/00x00x00",
             Name = "Test Organisation",
         };
@@ -158,7 +158,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         await Assert.ThrowsAsync<ProjectNotFoundException>(
             async () =>
                 await _service.PutProjectAsync(
-                    Guid.NewGuid(),
+                    Guid.CreateVersion7(),
                     new ProjectRequestDTO
                     {
                         StartDate = DateTime.UtcNow,
@@ -185,7 +185,7 @@ public class ProjectsServiceTests : IAsyncLifetime
         };
         var product = new Product
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             ProjectId = project.Id,
             Title = "Test Product",
             Url = "https://example.com/product",
@@ -303,7 +303,7 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(
-            () => _service.FavoriteProjectAsync(Guid.NewGuid(), true)
+            () => _service.FavoriteProjectAsync(Guid.CreateVersion7(), true)
         );
     }
 
@@ -316,7 +316,7 @@ public class ProjectsServiceTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<UserNotAuthenticatedException>(
-            () => _service.FavoriteProjectAsync(Guid.NewGuid(), true)
+            () => _service.FavoriteProjectAsync(Guid.CreateVersion7(), true)
         );
     }
 

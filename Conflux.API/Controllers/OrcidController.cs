@@ -84,8 +84,7 @@ public class OrcidController : ControllerBase
         if (userSession.User == null)
             return BadRequest("User session does not contain a user");
 
-        // Hardcoded ORCID - likely for testing/dev only
-        const string exampleOrcid = "0000-0002-1825-0097";
+        const string exampleOrcid = "https://orcid.org/0000-0002-1825-0097";
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
@@ -243,7 +242,7 @@ public class OrcidController : ControllerBase
             return NotFound("User does not have an associated Person record.");
         }
         
-        dbUser.Person.ORCiD = orcidId;
+        dbUser.Person.ORCiD = $"https://orcid.org/{orcidId}";
         try
         {
             await _context.SaveChangesAsync();

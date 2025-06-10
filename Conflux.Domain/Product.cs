@@ -38,16 +38,20 @@ public class Product
         Schema switch
         {
             ProductSchema.Ark     => "https://arks.org/",
-            ProductSchema.Doi     => "http://doi.org/",
+            // This is incorrect according to the spec but necessary for the current implementation with SURF RAiD.
+            ProductSchema.Doi     => "https://doi.org/",
             ProductSchema.Handle  => "http://hdl.handle.net/",
             ProductSchema.Isbn    => "https://www.isbn-international.org/",
             ProductSchema.Rrid    => "https://scicrunch.org/resolver/",
-            ProductSchema.Archive => "https://archive.org/",
+            // This is incorrect according to the spec but necessary for the current implementation with SURF RAiD.
+            ProductSchema.Archive => "https://web.archive.org/",
             _                     => throw new ArgumentOutOfRangeException(),
         };
 
     public List<ProductCategoryType> Categories { get; set; } = [];
-    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/385";
+    
+    // This is incorrect according to the spec but necessary for the current implementation with SURF RAiD.
+    public static string CategorySchemaUri => "https://vocabulary.raid.org/relatedObject.category.schema/386";
 
     public static string GetCategoryUri(ProductCategoryType t) =>
         $"https://vocabulary.raid.org/relatedObject.category.schema/{(int)t}";

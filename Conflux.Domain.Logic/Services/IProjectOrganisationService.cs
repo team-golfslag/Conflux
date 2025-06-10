@@ -53,4 +53,7 @@ public interface IProjectOrganisationsService
     /// <param name="projectId">The project id</param>
     /// <param name="organisationId">The organisation id</param>
     Task DeleteOrganisationAsync(Guid projectId, Guid organisationId);
+    
+    Task<OrganisationResponseDTO> GetOrganisationNameByRorAsync(string ror);
+    
 }

@@ -46,34 +46,10 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             });
 
         _orgServiceMock = new();
-
-        var names = new List<OrganizationName>();
-        names.Add(new OrganizationName()
-        {
-            Value = "Organisation Name",
-            Types = new List<OrganizationNameType>()
-        });
-            
-
         _orgServiceMock.Setup(m => m.GetOrganizationAsync(It.IsAny<string>())).ReturnsAsync(new Organization()
         {
             Id = "someID",
-            Locations = new List<OrganizationLocation>(),
-            Admin = new OrganizationAdmin()
-            {
-                Created = new DateEntry()
-                {
-                    Date = "",
-                    SchemaVersion = ""
-                },
-                DateEntry = new DateEntry()
-                {
-                    Date = "",
-                    SchemaVersion = ""
-                }
-                
-            },
-            Names = names,
+            Name = "Organisation Name",
             Types = new List<OrganizationType>()
         });
 

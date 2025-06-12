@@ -11,36 +11,40 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class ProjectsServiceTests : IAsyncLifetime
+public class ProjectsServiceTests : IDisposable
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
     private readonly Mock<IUserSessionService> _userSessionServiceMock = new();
-    private ConfluxContext _context = null!;
-    private ProjectsService _service = null!;
+    private readonly ConfluxContext _context = null!;
+    private readonly ProjectsService _service = null!;
 
-    public async Task InitializeAsync()
+    public ProjectsServiceTests()
     {
-        await _postgres.StartAsync();
-        DbContextOptions<ConfluxContext> options =
-            new DbContextOptionsBuilder<ConfluxContext>()
-                .UseNpgsql(_postgres.GetConnectionString())
-                .Options;
+        ServiceProvider serviceProvider = new ServiceCollection()
+            .AddEntityFrameworkInMemoryDatabase()
+            .BuildServiceProvider();
+
+        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
+            .UseInternalServiceProvider(serviceProvider)
+            .Options;
 
         _context = new ConfluxContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        _context.Database.EnsureCreated();
 
         _service = new ProjectsService(_context, _userSessionServiceMock.Object);
     }
 
-    public async Task DisposeAsync()
+    public void Dispose()
     {
-        await _postgres.DisposeAsync();
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     #region Helper Methods

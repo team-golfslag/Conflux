@@ -4,14 +4,11 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
 
 namespace Conflux.Data.Tests;
 
 public class ConfluxContextTests
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-
     /// <summary>
     /// Given a database context
     /// When the context is created
@@ -20,12 +17,10 @@ public class ConfluxContextTests
     [Fact]
     public async Task Can_Create_ConfluxContext()
     {
-        // Arrange & Act
-        await _postgres.StartAsync();
-
-        var options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString()).Options;
-
+        DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
+            .UseInMemoryDatabase(Guid.CreateVersion7().ToString())
+            .Options;
+        
         ConfluxContext context = new(options);
 
         // Assert

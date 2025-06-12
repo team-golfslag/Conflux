@@ -12,20 +12,18 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using ROR.Net.Models;
 using ROR.Net.Services;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class ProjectOrganisationsServiceTests : IAsyncLifetime
+public class ProjectOrganisationsServiceTests : IDisposable
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context = null!;
-    private Mock<IProjectsService> _projectsServiceMock = null!;
-    private Mock<IOrganizationService> _orgServiceMock = null!;
-    private ProjectOrganisationsService _service = null!;
+    private readonly ConfluxContext _context = null!;
+    private readonly Mock<IProjectsService> _projectsServiceMock = null!;
+    private readonly Mock<IOrganizationService> _orgServiceMock = null!;
+    private readonly ProjectOrganisationsService _service = null!;
 
-    public async Task InitializeAsync()
+    public ProjectOrganisationsServiceTests()
     {
         // Use in-memory database for testing
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
@@ -56,12 +54,14 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Create the service with the mock
         _service = new(_context, _projectsServiceMock.Object, _orgServiceMock.Object);
 
-        await _context.Database.EnsureCreatedAsync();
+        _context.Database.EnsureCreated();
     }
 
-    public async Task DisposeAsync()
+    public void Dispose()
     {
-        await _postgres.DisposeAsync();
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

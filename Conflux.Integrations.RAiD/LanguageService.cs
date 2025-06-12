@@ -10,7 +10,7 @@ namespace Conflux.Integrations.RAiD;
 /// </summary>
 public class LanguageService : ILanguageService
 {
-    private readonly HashSet<string> _languageCodes;
+    private readonly Dictionary<string, string> _languageCodes;
     private static readonly HttpClient HttpClient = new();
 
     /// <summary>
@@ -25,7 +25,7 @@ public class LanguageService : ILanguageService
     /// <summary>
     /// Asynchronously initializes the language codes from the ISO 639-3 source.
     /// </summary>
-    private async Task InitializeLanguagesAsync()
+    public async Task InitializeLanguagesAsync()
     {
         const string url =
             "https://iso639-3.sil.org/sites/iso639-3/files/downloads/iso-639-3.tab";
@@ -39,8 +39,18 @@ public class LanguageService : ILanguageService
             while (await reader.ReadLineAsync() is { } line)
             {
                 string[] columns = line.Split('\t');
-                if (columns.Length > 0 && !string.IsNullOrWhiteSpace(columns[0]))
-                    _languageCodes.Add(columns[0]);
+
+                // The 'Id' is at index 0 and 'Ref_Name' is at index 6.
+                // Ensure the line has enough columns to safely access index 6.
+                if (columns.Length <= 6) continue;
+                
+                string id = columns[0];
+                string refName = columns[6];
+
+                // Ensure both the key (id) and value (refName) are valid
+                if (!string.IsNullOrWhiteSpace(id) &&
+                    !string.IsNullOrWhiteSpace(refName))
+                    _languageCodes[id] = refName;
             }
         }
         catch (HttpRequestException e)
@@ -57,13 +67,13 @@ public class LanguageService : ILanguageService
     /// Retrieves an enumerable collection of all ISO 639-3 language codes.
     /// </summary>
     /// <returns>An IEnumerable of strings containing all language codes.</returns>
-    public IEnumerable<string> GetAllLanguages() => _languageCodes;
+    public Dictionary<string, string> GetAllLanguages() => _languageCodes;
 
     /// <summary>
     /// Checks if the given language code is a valid ISO 639-3 code.
     /// </summary>
     /// <param name="languageCode">The language code to validate.</param>
     /// <returns>True if the language code is valid; otherwise, false.</returns>
-    public bool IsValidLanguageCode(string languageCode) => 
-        languageCode.Length == 3 && _languageCodes.Contains(languageCode);
+    public bool IsValidLanguageCode(string languageCode) =>
+        languageCode.Length == 3 && _languageCodes.ContainsKey(languageCode);
 }

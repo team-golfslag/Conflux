@@ -56,4 +56,5 @@ public interface IProjectOrganisationsService
     
     Task<OrganisationResponseDTO> GetOrganisationNameByRorAsync(string ror);
     
+    Task<List<OrganisationResponseDTO>> FindOrganisationsByName(string query);
 }

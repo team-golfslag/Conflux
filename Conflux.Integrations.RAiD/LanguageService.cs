@@ -1,6 +1,6 @@
 // This program has been developed by students from the bachelor Computer Science at Utrecht
 // University within the Software Project course.
-// 
+//
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 namespace Conflux.Integrations.RAiD;
@@ -11,13 +11,21 @@ namespace Conflux.Integrations.RAiD;
 public class LanguageService : ILanguageService
 {
     private readonly Dictionary<string, string> _languageCodes;
-    private static readonly HttpClient HttpClient = new();
+    private readonly HttpClient _httpClient;
 
     /// <summary>
-    /// Initializes a new instance of the LanguageService and populates the language codes.
+    // Initializes a new instance of the LanguageService and populates the language codes.
     /// </summary>
-    public LanguageService()
+    public LanguageService() : this(new()) { }
+
+    // Add a new constructor for dependency injection (and testing)
+    /// <summary>
+    /// Initializes a new instance of the LanguageService with a specific HttpClient.
+    /// </summary>
+    /// <param name="httpClient">The HttpClient to use for requests.</param>
+    public LanguageService(HttpClient httpClient)
     {
+        _httpClient = httpClient;
         _languageCodes = new(StringComparer.OrdinalIgnoreCase);
         InitializeLanguagesAsync().GetAwaiter().GetResult();
     }
@@ -31,7 +39,7 @@ public class LanguageService : ILanguageService
             "https://iso639-3.sil.org/sites/iso639-3/files/downloads/iso-639-3.tab";
         try
         {
-            await using Stream stream = await HttpClient.GetStreamAsync(url);
+            await using Stream stream = await _httpClient.GetStreamAsync(url);
             using StreamReader reader = new(stream);
             // Skip the header line
             await reader.ReadLineAsync();
@@ -42,8 +50,9 @@ public class LanguageService : ILanguageService
 
                 // The 'Id' is at index 0 and 'Ref_Name' is at index 6.
                 // Ensure the line has enough columns to safely access index 6.
-                if (columns.Length <= 6) continue;
-                
+                if (columns.Length <= 6)
+                    continue;
+
                 string id = columns[0];
                 string refName = columns[6];
 
@@ -75,5 +84,7 @@ public class LanguageService : ILanguageService
     /// <param name="languageCode">The language code to validate.</param>
     /// <returns>True if the language code is valid; otherwise, false.</returns>
     public bool IsValidLanguageCode(string languageCode) =>
-        languageCode.Length == 3 && _languageCodes.ContainsKey(languageCode);
+        !string.IsNullOrEmpty(languageCode) &&
+        languageCode.Length == 3 &&
+        _languageCodes.ContainsKey(languageCode);
 }

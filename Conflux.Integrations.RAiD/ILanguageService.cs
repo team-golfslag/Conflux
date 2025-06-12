@@ -14,7 +14,7 @@ public interface ILanguageService
     /// Retrieves an enumerable collection of all ISO 639-3 language codes.
     /// </summary>
     /// <returns>An IEnumerable of strings containing all language codes.</returns>
-    IEnumerable<string> GetAllLanguages();
+    Dictionary<string, string> GetAllLanguages();
 
     /// <summary>
     /// Checks if the given language code is a valid ISO 639-3 code.

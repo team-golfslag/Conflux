@@ -276,9 +276,22 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new OrganisationResponseDTO()
         {
-            Name = org.Names[0].Value,
+            Name = org.Name,
             RORId = org.Id,
         };
 
+    }
+
+    public async Task<List<OrganisationResponseDTO>> FindOrganisationsByName(string query)
+    {
+        OrganizationsResult? result = await _organizationService.PerformQueryAsync(query);
+        if (result == null || result.Organizations == null) throw new OrganisationNotFoundException($"No organisations found for query: {query}");
+        var organisationResponseDtos = from org in result.Organizations
+            select new OrganisationResponseDTO()
+            {
+                Name = org.Name,
+                RORId = org.Id,
+            };
+        return organisationResponseDtos.ToList();
     }
 }

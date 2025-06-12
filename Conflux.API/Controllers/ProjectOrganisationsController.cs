@@ -119,15 +119,27 @@ public class ProjectOrganisationsController : ControllerBase
         await _projectOrganisationsService.DeleteOrganisationAsync(projectId, organisationId);
         return NoContent();
     }
-    
+
     /// <summary>
     /// Gets the organisation name by its ROR ID
     /// </summary>
     /// <param name="ror">The ROR ID of the organization</param>
     /// <returns>A DTO of the Organization</returns>
     [HttpGet("/ror/{ror}")]
-    [ProducesResponseType(typeof(ProjectOrganisationResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OrganisationResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Organization>> GetOrganisationNameByRor(string ror) => Ok(await _projectOrganisationsService.GetOrganisationNameByRorAsync(ror));
-    
+    public async Task<ActionResult<OrganisationResponseDTO>> GetOrganisationNameByRor(string ror) =>
+        await _projectOrganisationsService.GetOrganisationNameByRorAsync(ror);
+
+
+    /// <summary>
+    /// Queries the ROR API for an organization by name
+    /// </summary>
+    /// <param name="query">The name of the organization</param>
+    /// <returns></returns>
+    [HttpGet("/ror")]
+    [ProducesResponseType(typeof(List<OrganisationResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<OrganisationResponseDTO>>> FindOrganisationByName([FromQuery] string query) =>
+        await _projectOrganisationsService.FindOrganisationsByName(query);
 }

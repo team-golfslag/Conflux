@@ -46,34 +46,10 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
             });
 
         _orgServiceMock = new();
-
-        var names = new List<OrganizationName>();
-        names.Add(new OrganizationName()
-        {
-            Value = "Organisation Name",
-            Types = new List<OrganizationNameType>()
-        });
-            
-
         _orgServiceMock.Setup(m => m.GetOrganizationAsync(It.IsAny<string>())).ReturnsAsync(new Organization()
         {
             Id = "someID",
-            Locations = new List<OrganizationLocation>(),
-            Admin = new OrganizationAdmin()
-            {
-                Created = new DateEntry()
-                {
-                    Date = "",
-                    SchemaVersion = ""
-                },
-                DateEntry = new DateEntry()
-                {
-                    Date = "",
-                    SchemaVersion = ""
-                }
-                
-            },
-            Names = names,
+            Name = "Organisation Name",
             Types = new List<OrganizationType>()
         });
 
@@ -524,7 +500,49 @@ public class ProjectOrganisationsServiceTests : IAsyncLifetime
         // Assert
         await Assert.ThrowsAsync<OrganisationNotFoundException>(() => _service.GetOrganisationNameByRorAsync(rorId));
     }
+    
+    [Fact]
+    public async Task QueryOrgsByName_ShouldReturnMatchingOrganisations_WhenQueryMatches()
+    {
+        // Arrange
+        string query = "Test Organisation";
+        List<Organization> organisations = new()
+        {
+            new Organization { Id = "1", Name = "Test Organisation 1" , Types = new List<OrganizationType>()},
+            new Organization { Id = "2", Name = "Test Organisation 2" , Types = new List<OrganizationType>()},
+            new Organization { Id = "3", Name = "Another Organisation" , Types = new List<OrganizationType>()},
+        };
+        OrganizationsResult orgResult = new OrganizationsResult()
+        {
+            Organizations = organisations,
+            Metadata = null
+        };
 
+        _orgServiceMock.Setup(m => m.PerformQueryAsync(query)).ReturnsAsync(orgResult);
+
+        // Act
+        List<OrganisationResponseDTO> result = await _service.FindOrganisationsByName(query);
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, o => o.Name == "Test Organisation 1");
+        Assert.Contains(result, o => o.Name == "Test Organisation 2");
+        Assert.Contains(result, o => o.Name == "Another Organisation");
+
+    }
+    
+    [Fact]
+    public async Task QueryOrgsByName_ShouldThrow_WhenNullReturned()
+    {
+        // Arrange
+        string query = "Test Organisation";
+        _orgServiceMock.Setup(m => m.PerformQueryAsync(query)).ReturnsAsync((OrganizationsResult) null!);
+
+        
+        // Assert
+        await Assert.ThrowsAsync<OrganisationNotFoundException>(() => _service.FindOrganisationsByName(query));
+
+    }
     #region Helper Methods
 
     private async Task<Guid> SetupProject()

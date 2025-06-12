@@ -252,11 +252,17 @@ public class ProjectsService : IProjectsService
             if (dto.IncludeOrganisations)
                 csv.WriteField(string.Join(";", p.Organisations.Select(o => o.Organisation.Name)));
             if (dto.IncludeTitle)
-                csv.WriteField(p.Titles.SingleOrDefault(t =>
-                    t.Type == TitleType.Primary && t.StartDate.Date <= DateTime.UtcNow.Date &&
-                    (t.EndDate == null || DateTime.UtcNow.Date <= t.EndDate.Value.Date))?.Text ?? string.Empty);
+            {
+                List<ProjectTitleResponseDTO> primaryTitles = p.Titles.Where(t => t.Type == TitleType.Primary).ToList();
+                ProjectTitleResponseDTO? unendedTitle = primaryTitles.FirstOrDefault(t => t.EndDate == null);
+                if (unendedTitle is not null)
+                    csv.WriteField(unendedTitle.Text);
+                else
+                    csv.WriteField(primaryTitles.OrderByDescending(t => t.EndDate).FirstOrDefault()?.Text);
+
+            }
             if (dto.IncludeDescription)
-                csv.WriteField(p.Descriptions.SingleOrDefault(d => d.Type == DescriptionType.Primary)?.Text ??
+                csv.WriteField(p.Descriptions.FirstOrDefault(d => d.Type == DescriptionType.Primary)?.Text ??
                     string.Empty);
             if (dto.IncludeLectorate) csv.WriteField(p.Lectorate);
             if (dto.IncludeOwnerOrganisation) csv.WriteField(p.OwnerOrganisation);

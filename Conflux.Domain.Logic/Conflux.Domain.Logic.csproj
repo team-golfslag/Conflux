@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Crossref.Net" Version="1.1.0" />
         <PackageReference Include="CsvHelper" Version="33.1.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />

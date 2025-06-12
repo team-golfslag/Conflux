@@ -16,7 +16,7 @@ public class ProductResponseDTO
 
     public required string Title { get; init; }
 
-    public required ProductType Type { get; init; }
+    public required ProductType? Type { get; init; }
 
     public List<ProductCategoryType> Categories { get; init; } = [];
 }

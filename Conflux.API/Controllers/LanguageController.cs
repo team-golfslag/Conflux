@@ -28,11 +28,12 @@ public class LanguageController(ILanguageService languageService) : ControllerBa
     /// Gets all available language codes.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
-    public Task<ActionResult<List<string>>> GetAvailableLanguageCodes()
+    [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
+    // Cache for 7 days (604800 seconds)
+    [ResponseCache(Duration = 604800, Location = ResponseCacheLocation.Any)]
+    public ActionResult<Dictionary<string, string>> GetAvailableLanguageCodes()
     {
-        IEnumerable<string> languageCodes = languageService.GetAllLanguages();
-        return Task.FromResult<ActionResult<List<string>>>(Ok(languageCodes.ToList()));
+        Dictionary<string, string> languageCodes = languageService.GetAllLanguages();
+        return languageCodes;
     }
 }
-

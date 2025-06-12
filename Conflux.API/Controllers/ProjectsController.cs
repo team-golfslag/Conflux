@@ -28,12 +28,12 @@ namespace Conflux.API.Controllers;
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class ProjectsController : ControllerBase
 {
+    private readonly IConfiguration _configuration;
     private readonly ISRAMProjectSyncService _iSRAMProjectSyncService;
     private readonly IProjectsService _projectsService;
-    private readonly IUserSessionService _userSessionService;
     private readonly ITimelineService _timelineService;
-    private readonly IConfiguration _configuration;
-
+    private readonly IUserSessionService _userSessionService;
+    
     public ProjectsController(IProjectsService projectsService, ISRAMProjectSyncService iSRAMProjectSyncService,
         IUserSessionService userSessionService, ITimelineService timelineService, IConfiguration configuration)
     {
@@ -43,7 +43,7 @@ public class ProjectsController : ControllerBase
         _timelineService = timelineService;
         _configuration = configuration;
     }
-
+    
     /// <summary>
     /// Gets all projects whose title or description contains the query (case-insensitive)
     /// and optionally filters by start and/or end date.
@@ -58,13 +58,13 @@ public class ProjectsController : ControllerBase
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetProjectByQuery(
         ProjectQueryDTO projectQueryDto) =>
         await _projectsService.GetProjectsByQueryAsync(projectQueryDto);
-
+    
     /// <summary>
     /// Gets the timeline items for a specific project by its GUID.
     /// </summary>
     /// <param name="id">The GUID of the project.</param>
     /// <returns>
-    /// A list of <see cref="TimelineItemResponseDTO"/> representing the timeline items for the project.
+    /// A list of <see cref="TimelineItemResponseDTO" /> representing the timeline items for the project.
     /// </returns>
     [HttpGet]
     [Route("timeline")]
@@ -74,11 +74,11 @@ public class ProjectsController : ControllerBase
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             return Unauthorized();
-
+        
         return await _timelineService.GetTimelineItemsAsync(id);
     }
-
-
+    
+    
     /// <summary>
     /// Exports projects as a CSV file based on the provided query parameters and returns it as a downloadable file.
     /// </summary>
@@ -91,17 +91,17 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     [Route("export")]
     [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
-    public async Task<ActionResult> ExportToCsv([FromQuery] ProjectQueryDTO projectQueryDto)
+    public async Task<ActionResult> ExportToCsv([FromQuery] ProjectCsvRequestDTO projectQueryDto)
     {
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null)
             return Unauthorized();
-
+        
         string csv = await _projectsService.ExportProjectsToCsvAsync(projectQueryDto);
         string fileName = $"projects_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
         return File(Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
     }
-
+    
     /// <summary>
     /// Gets all projects
     /// </summary>
@@ -116,7 +116,7 @@ public class ProjectsController : ControllerBase
             return Unauthorized();
         return await _projectsService.GetAllProjectsAsync();
     }
-
+    
     /// <summary>
     /// Gets a project by its GUID.
     /// </summary>
@@ -143,7 +143,7 @@ public class ProjectsController : ControllerBase
         await _projectsService.FavoriteProjectAsync(id, favorite);
         return Ok();
     }
-
+    
     /// <summary>
     /// Puts a project by its GUID
     /// </summary>
@@ -157,7 +157,7 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(typeof(ProjectResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProjectResponseDTO>> PutProject([FromRoute] Guid id, ProjectRequestDTO projectDto) =>
         await _projectsService.PutProjectAsync(id, projectDto);
-
+    
     [HttpPost]
     [Route("{id:guid}/sync")]
     [RouteParamName("id")]
@@ -168,14 +168,12 @@ public class ProjectsController : ControllerBase
         await _iSRAMProjectSyncService.SyncProjectAsync(id);
         return Ok();
     }
-
+    
     /// <summary>
     /// Gets the list of lectorates from the configuration.
     /// </summary>
     [HttpGet]
     [Route("lectorates")]
-    public List<string> GetLectorates()
-    {
-        return _configuration.GetSection("Lectorates").Get<List<string>>() ?? new List<string>();
-    }
+    public List<string> GetLectorates() =>
+        _configuration.GetSection("Lectorates").Get<List<string>>() ?? new List<string>();
 }

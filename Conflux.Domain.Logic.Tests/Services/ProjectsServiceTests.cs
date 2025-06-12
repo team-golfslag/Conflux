@@ -208,7 +208,10 @@ public class ProjectsServiceTests : IDisposable
         _context.Contributors.Add(contributor);
         await _context.SaveChangesAsync();
 
-        var queryDto = new ProjectQueryDTO { Query = "Test", };
+        ProjectCsvRequestDTO queryDto = new()
+        {
+            Query = "Test",
+        };
 
         // Act
         string csvContent = await _service.ExportProjectsToCsvAsync(queryDto);
@@ -216,7 +219,7 @@ public class ProjectsServiceTests : IDisposable
         // Assert
         Assert.NotNull(csvContent);
         Assert.NotEmpty(csvContent);
-        Assert.Contains("Id", csvContent);
+        Assert.Contains("id", csvContent);
         Assert.Contains(project.Id.ToString(), csvContent);
         Assert.Contains(user.Person.Name, csvContent);
         Assert.Contains(organisation.Name, csvContent);

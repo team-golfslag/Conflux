@@ -3,6 +3,7 @@
 //
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Conflux.Data;
@@ -11,6 +12,7 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Session;
+using CsvHelper;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
@@ -28,48 +30,7 @@ public class ProjectsService : IProjectsService
         _context = context;
         _userSessionService = userSessionService;
     }
-
-    /// <summary>
-    /// Creates a base query for Projects with all related entities included.
-    /// This helper method centralizes the query logic to avoid duplication.
-    /// </summary>
-    /// <returns>An IQueryable of Project with all includes.</returns>
-    private IQueryable<Project> GetProjectsWithIncludes()
-    {
-        return _context.Projects
-            .AsNoTracking()
-            .Include(p => p.Titles)
-            .Include(p => p.Descriptions)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Roles)
-            .Include(p => p.Users)
-            .ThenInclude(user => user.Person)
-            .Include(p => p.Products)
-            .Include(p => p.Organisations)
-            .ThenInclude(o => o.Roles)
-            .Include(p => p.Organisations)
-            .ThenInclude(o => o.Organisation)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Person)
-            .ThenInclude(p => p!.User)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Roles)
-            .Include(p => p.Contributors)
-            .ThenInclude(c => c.Positions);
-    }
-
-    /// <summary>
-    /// Filters the roles for each user in a project to only include roles for that specific project.
-    /// </summary>
-    /// <param name="project">The project to filter roles for.</param>
-    private static void FilterRolesForProject(Project project)
-    {
-        foreach (User user in project.Users)
-        {
-            user.Roles = user.Roles.Where(r => r.ProjectId == project.Id).ToList();
-        }
-    }
-
+    
     /// <summary>
     /// Gets all roles for a project that the current user has access to through their SRAM collaborations.
     /// </summary>
@@ -112,7 +73,7 @@ public class ProjectsService : IProjectsService
         if (userSession.User is null)
             return;
         
-        var user = await _context.Users.FindAsync(userSession.User.Id);
+        User? user = await _context.Users.FindAsync(userSession.User.Id);
         if (user is null)
             return;
         
@@ -243,27 +204,67 @@ public class ProjectsService : IProjectsService
 
         return projects.ToList();
     }
-
+    
     /// <summary>
     /// Exports a list of <see cref="Project" />s matching the specified query criteria into a CSV format.
     /// </summary>
     /// <param name="dto">The query criteria used to filter the projects to be exported.</param>
     /// <returns>A string containing the CSV representation of the filtered projects.</returns>
-    public async Task<string> ExportProjectsToCsvAsync(ProjectQueryDTO dto)
+    public async Task<string> ExportProjectsToCsvAsync(ProjectCsvRequestDTO dto)
     {
         List<ProjectResponseDTO> projects = await GetProjectsByQueryAsync(dto);
-
-        var exportData = projects.Select(p => new
+        
+        // 2) Build CSV
+        await using StringWriter writer = new();
+        await using CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
+        
+        // 2a) Header row
+        List<string> headers = ["id"];
+        if (dto.IncludeStartDate) headers.Add("start_date");
+        if (dto.IncludeEndDate) headers.Add("end_date");
+        if (dto.IncludeUsers) headers.Add("users");
+        if (dto.IncludeContributors) headers.Add("contributors");
+        if (dto.IncludeProducts) headers.Add("products");
+        if (dto.IncludeOrganisations) headers.Add("organisations");
+        if (dto.IncludeTitle) headers.Add("titles");
+        if (dto.IncludeDescription) headers.Add("descriptions");
+        if (dto.IncludeLectorate) headers.Add("lectorate");
+        if (dto.IncludeOwnerOrganisation) headers.Add("owner_organisation");
+        
+        foreach (string h in headers)
+            csv.WriteField(h);
+        await csv.NextRecordAsync();
+        
+        // 2b) Data rows
+        foreach (ProjectResponseDTO p in projects)
         {
-            p.Id,
-            StartDate = p.StartDate.ToString("yyyy MMMM dd"),
-            EndDate = p.EndDate?.ToString("yyyy MMMM dd") ?? string.Empty,
-            OrganisationNames = string.Join("; ", p.Organisations.Select(o => o.Organisation.Name)),
-            Contributors = string.Join("; ", p.Contributors.Select(c => c.Person.Name)),
-            Products = string.Join("; ", p.Products.Select(pr => pr.Title)),
-        });
-
-        return GenerateCsv(exportData);
+            // always write Id
+            csv.WriteField(p.Id);
+            
+            if (dto.IncludeStartDate) csv.WriteField(p.StartDate);
+            if (dto.IncludeEndDate) csv.WriteField(p.EndDate);
+            if (dto.IncludeUsers)
+                csv.WriteField(string.Join(";", p.Users.Select(u => u.Person?.Name)));
+            if (dto.IncludeContributors)
+                csv.WriteField(string.Join(";", p.Contributors.Select(c => c.Person.Name)));
+            if (dto.IncludeProducts)
+                csv.WriteField(string.Join(";", p.Products.Select(x => x.Title)));
+            if (dto.IncludeOrganisations)
+                csv.WriteField(string.Join(";", p.Organisations.Select(o => o.Organisation.Name)));
+            if (dto.IncludeTitle)
+                csv.WriteField(p.Titles.SingleOrDefault(t =>
+                    t.Type == TitleType.Primary && t.StartDate.Date <= DateTime.UtcNow.Date &&
+                    (t.EndDate == null || DateTime.UtcNow.Date <= t.EndDate.Value.Date))?.Text ?? string.Empty);
+            if (dto.IncludeDescription)
+                csv.WriteField(p.Descriptions.SingleOrDefault(d => d.Type == DescriptionType.Primary)?.Text ??
+                    string.Empty);
+            if (dto.IncludeLectorate) csv.WriteField(p.Lectorate);
+            if (dto.IncludeOwnerOrganisation) csv.WriteField(p.OwnerOrganisation);
+            
+            await csv.NextRecordAsync();
+        }
+        
+        return writer.ToString();
     }
 
     /// <summary>
@@ -305,7 +306,45 @@ public class ProjectsService : IProjectsService
 
         return MapToProjectDTO(loadedProject);
     }
-
+    
+    /// <summary>
+    /// Creates a base query for Projects with all related entities included.
+    /// This helper method centralizes the query logic to avoid duplication.
+    /// </summary>
+    /// <returns>An IQueryable of Project with all includes.</returns>
+    private IQueryable<Project> GetProjectsWithIncludes()
+    {
+        return _context.Projects
+            .AsNoTracking()
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
+            .Include(p => p.Products)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Roles)
+            .Include(p => p.Organisations)
+            .ThenInclude(o => o.Organisation)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Roles)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Positions);
+    }
+    
+    /// <summary>
+    /// Filters the roles for each user in a project to only include roles for that specific project.
+    /// </summary>
+    /// <param name="project">The project to filter roles for.</param>
+    private static void FilterRolesForProject(Project project)
+    {
+        foreach (User user in project.Users) user.Roles = user.Roles.Where(r => r.ProjectId == project.Id).ToList();
+    }
+    
     /// <summary>
     /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
     /// </summary>
@@ -421,7 +460,7 @@ public class ProjectsService : IProjectsService
             Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
             {
                 ProjectId = project.Id,
-                Organisation = new OrganisationResponseDTO
+                Organisation = new()
                 {
                     Id = o.Id,
                     Name = o.Name,

@@ -19,6 +19,9 @@ public class CollaborationMapper : ICollaborationMapper
     private readonly ISCIMApiClient _scimApiClient;
     private readonly List<string> GroupNames = ["conflux-admin", "conflux-contributor", "conflux-user"];
 
+    // Cache for individual SCIM groups, keyed by their ID.
+    private readonly Dictionary<string, SCIMGroup?> _scimGroupCache = new();
+
     public CollaborationMapper(ConfluxContext context, ISCIMApiClient scimApiClient)
     {
         _context = context;
@@ -59,6 +62,7 @@ public class CollaborationMapper : ICollaborationMapper
     /// <summary>
     /// Retrieves all groups from the SCIM API and maps them to collaborations.
     /// This method is called when not all URNs are found in the database cache.
+    /// It now uses a cache to avoid repeated API calls.
     /// </summary>
     /// <param name="collaborationDtos">The list of CollaborationDTOs to map</param>
     /// <returns>A list of domain Collaboration objects</returns>
@@ -85,6 +89,7 @@ public class CollaborationMapper : ICollaborationMapper
 
         // Add all connections to the database by first removing all existing connections 
         await _context.SaveChangesAsync();
+
         _context.SRAMGroupIdConnections.RemoveRange(_context.SRAMGroupIdConnections);
         _context.SRAMGroupIdConnections.AddRange(allConnections);
         await _context.SaveChangesAsync();
@@ -146,7 +151,7 @@ public class CollaborationMapper : ICollaborationMapper
     }
 
     /// <summary>
-    /// Retrieves a group from the SCIM API based on its URN.
+    /// Retrieves a group from the SCIM API based on its URN, using a cache to improve performance.
     /// </summary>
     /// <param name="groupUrn">The URN of the group to retrieve</param>
     /// <returns>A domain Group object</returns>
@@ -160,8 +165,15 @@ public class CollaborationMapper : ICollaborationMapper
         if (connection == null)
             throw new GroupNotFoundException($"Group with URN {groupUrn} not found");
 
-        // Get the group from the SCIM API
-        SCIMGroup? scimGroup = await _scimApiClient.GetSCIMGroup(connection.Id);
+        // Check cache first
+        if (!_scimGroupCache.TryGetValue(connection.Id, out SCIMGroup? scimGroup))
+        {
+            // If not in cache, get the group from the SCIM API
+            scimGroup = await _scimApiClient.GetSCIMGroup(connection.Id);
+            // Add to cache for subsequent requests (even if the result is null)
+            _scimGroupCache[connection.Id] = scimGroup;
+        }
+
         if (scimGroup == null)
             throw new GroupNotFoundException($"Group with ID {connection.Id} not found in SCIM API");
 

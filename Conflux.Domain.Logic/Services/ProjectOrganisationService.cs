@@ -276,7 +276,7 @@ public class ProjectOrganisationsService : IProjectOrganisationsService
 
         return new OrganisationResponseDTO()
         {
-            Name = org.Names[0].Value,
+            Name = org.Name,
             RORId = org.Id,
         };
 

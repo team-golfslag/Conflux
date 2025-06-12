@@ -141,5 +141,5 @@ public class ProjectOrganisationsController : ControllerBase
     [ProducesResponseType(typeof(List<OrganisationResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<OrganisationResponseDTO>>> FindOrganisationByName([FromQuery] string query) =>
-        Ok(await _projectOrganisationsService.FindOrganisationsByName(query));
+        await _projectOrganisationsService.FindOrganisationsByName(query);
 }

@@ -4,26 +4,29 @@ using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 
-public class ProductsServiceTests : IAsyncLifetime
+public class ProductsServiceTests : IDisposable
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().Build();
-    private ConfluxContext _context = null!;
-    private Project _project;
+    private readonly ConfluxContext _context = null!;
+    private readonly Project _project;
 
-    public async Task InitializeAsync()
+    public ProductsServiceTests()
     {
-        await _postgres.StartAsync();
+        ServiceProvider serviceProvider = new ServiceCollection()
+            .AddEntityFrameworkInMemoryDatabase()
+            .BuildServiceProvider();
+
         DbContextOptions<ConfluxContext> options = new DbContextOptionsBuilder<ConfluxContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
+            .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
+            .UseInternalServiceProvider(serviceProvider)
             .Options;
 
         ConfluxContext context = new(options);
-        await context.Database.EnsureCreatedAsync();
+        context.Database.EnsureCreated();
         _context = context;
 
         // Seed a sample project
@@ -48,9 +51,11 @@ public class ProductsServiceTests : IAsyncLifetime
         _context.Projects.Add(_project);
     }
 
-    public async Task DisposeAsync()
+    public void Dispose()
     {
-        await _postgres.DisposeAsync();
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

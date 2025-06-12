@@ -8,7 +8,6 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Moq;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Conflux.Domain.Logic.Tests.Services;
 

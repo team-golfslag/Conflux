@@ -21,6 +21,9 @@ public class SessionMappingService : ISessionMappingService
     private readonly IVariantFeatureManager _featureManager;
     private readonly ISCIMApiClient _sramApiClient;
 
+    // Cache for SCIM users, keyed by their external ID, to avoid repeated API calls.
+    private readonly Dictionary<string, SCIMUser?> _scimUserCache = new();
+
     /// <summary>
     /// Constructs a new <see cref="SessionMappingService" />.
     /// </summary>
@@ -54,7 +57,7 @@ public class SessionMappingService : ISessionMappingService
         await CoupleUsersToProject(userSession);
 
         await CoupleRolesToUsers(userSession);
-        
+
         await CollectAndAddContributors(userSession);
 
         await _context.SaveChangesAsync();
@@ -80,14 +83,14 @@ public class SessionMappingService : ISessionMappingService
             {
                 if (user.Person is null)
                     continue;
-                
+
                 if (user.Roles.All(r => r.Type != UserRoleType.Contributor || r.ProjectId != project.Id))
                     continue;
-                
+
                 Contributor? existingContributor = project.Contributors
                     .SingleOrDefault(c => c.Person?.User?.Id == user.Id);
                 if (existingContributor is not null) continue;
-                
+
                 Contributor newContributor = new()
                 {
                     PersonId = user.Person.Id,
@@ -99,7 +102,7 @@ public class SessionMappingService : ISessionMappingService
                     Leader = false,
                     Contact = false,
                 };
-                
+
                 _context.Contributors.Add(newContributor);
                 project.Contributors.Add(newContributor);
                 _context.Projects.Update(project);
@@ -168,7 +171,15 @@ public class SessionMappingService : ISessionMappingService
 
     private async Task ProcessGroupMember(GroupMember member, UserSession userSession)
     {
-        SCIMUser? scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
+        // Check cache first before making an API call.
+        if (!_scimUserCache.TryGetValue(member.SCIMId, out SCIMUser? scimUser))
+        {
+            // If not in cache, get from SRAM API.
+            scimUser = await _sramApiClient.GetSCIMMemberByExternalId(member.SCIMId);
+            // Add to cache for subsequent requests (even if the result is null).
+            _scimUserCache[member.SCIMId] = scimUser;
+        }
+
         if (scimUser is null)
             return;
 
@@ -182,10 +193,10 @@ public class SessionMappingService : ISessionMappingService
             _context.Users.Update(existingPerson);
             return;
         }
-        
+
         Guid personId = Guid.CreateVersion7();
         Guid userId = Guid.CreateVersion7();
-        
+
         Person newPerson = new()
         {
             Id = personId,
@@ -223,13 +234,13 @@ public class SessionMappingService : ISessionMappingService
                 .SingleOrDefaultAsync(p => p.SCIMId == collaboration.CollaborationGroup.SCIMId);
             if (projects is null) continue;
             foreach (UserRole newRole in collaboration.Groups.Select(group => new UserRole
-                {
-                    Id = Guid.CreateVersion7(),
-                    ProjectId = projects.Id,
-                    Type = GroupUrnToUserRoleType(group.Urn),
-                    SCIMId = group.SCIMId,
-                    Urn = group.Urn,
-                }))
+            {
+                Id = Guid.CreateVersion7(),
+                ProjectId = projects.Id,
+                Type = GroupUrnToUserRoleType(group.Urn),
+                SCIMId = group.SCIMId,
+                Urn = group.Urn,
+            }))
             {
                 UserRole? existingRole = await _context.UserRoles
                     .SingleOrDefaultAsync(r => r.Urn == newRole.Urn);

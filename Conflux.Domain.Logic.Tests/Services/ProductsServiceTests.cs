@@ -3,8 +3,12 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Crossref.Net.Models;
+using Crossref.Net.Services;
+using DoiTools.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -12,6 +16,7 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProductsServiceTests : IDisposable
 {
     private readonly ConfluxContext _context = null!;
+    private readonly Mock<ICrossrefService> _mockCrossrefService = new();
     private readonly Project _project;
 
     public ProductsServiceTests()
@@ -49,6 +54,13 @@ public class ProductsServiceTests : IDisposable
         };
 
         _context.Projects.Add(_project);
+        
+        _mockCrossrefService.Setup(s => s.GetWorkAsync(It.IsAny<Doi>()))
+            .ReturnsAsync(new Work
+            {
+                Type = "journal-article",
+                Title = ["Sample Title"],
+            });
     }
 
     public void Dispose()
@@ -62,7 +74,7 @@ public class ProductsServiceTests : IDisposable
     public async Task GetProductByIdAsync_ShouldReturnProduct_WhenProductExists()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
 
         // Add product to the context
         Guid projectId = _project.Id;
@@ -102,7 +114,7 @@ public class ProductsServiceTests : IDisposable
     public async Task GetProductByIdAsync_ShouldThrowException_WhenProductDoesNotExist()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
         Guid projectId = _project.Id;
         Guid nonExistentProductId = Guid.CreateVersion7();
 
@@ -115,7 +127,7 @@ public class ProductsServiceTests : IDisposable
     public async Task CreateProductAsync_ShouldCreateProduct()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
 
         ProductRequestDTO dto = new()
         {
@@ -154,7 +166,7 @@ public class ProductsServiceTests : IDisposable
     public async Task UpdateProductAsync_ShouldUpdateProduct()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
 
         // Add project to the context
         Guid projectId = _project.Id;
@@ -229,7 +241,7 @@ public class ProductsServiceTests : IDisposable
     public async Task UpdateProductAsync_ShouldThrowException_WhenProductDoesNotExist()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
         Guid projectId = _project.Id;
         Guid nonExistentProductId = Guid.CreateVersion7();
 
@@ -254,7 +266,7 @@ public class ProductsServiceTests : IDisposable
     public async Task DeleteProductAsync_ShouldDeleteProduct()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
 
         Guid projectId = _project.Id;
 
@@ -289,12 +301,29 @@ public class ProductsServiceTests : IDisposable
     public async Task DeleteProductAsync_ShouldThrowException_WhenProductDoesNotExist()
     {
         // Arrange
-        ProductsService productsService = new(_context);
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
         Guid projectId = Guid.CreateVersion7();
         Guid nonExistentProductId = Guid.CreateVersion7();
 
         // Act & Assert
         await Assert.ThrowsAsync<ProductNotFoundException>(() =>
             productsService.DeleteProductAsync(projectId, nonExistentProductId));
+    }
+    
+    [Fact]
+    public async Task GetInfoFromDoi_ShouldReturnProduct_WhenDoiExists()
+    {
+        // Arrange
+        ProductsService productsService = new(_context, _mockCrossrefService.Object);
+        string testDoi = "10.1234/test-doi";
+
+        // Act
+        ProductResponseDTO product = await productsService.GetInfoFromDoi(testDoi);
+
+        // Assert
+        Assert.NotNull(product);
+        Assert.Equal("Sample Title", product.Title);
+        Assert.Equal(ProductSchema.Doi, product.Schema);
+        Assert.Equal(ProductType.JournalArticle, product.Type);
     }
 }

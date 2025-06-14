@@ -12,6 +12,7 @@ using Conflux.Domain.Logic.Services;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
+using Crossref.Net.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -126,6 +127,8 @@ public class Program
         builder.Services.AddScoped<AccessControlFilterFactory>();
         
         ConfigureRorServices(builder);
+        ConfigureCrossrefServices(builder);
+
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
 
@@ -144,6 +147,22 @@ public class Program
             // Be careful with this in production; ideally, configure KnownProxies/KnownNetworks.
             options.KnownNetworks.Clear();
             options.KnownProxies.Clear();
+        });
+    }
+
+    private static void ConfigureCrossrefServices(WebApplicationBuilder builder)
+    {
+        builder.Services.Configure<CrossrefServiceOptions>(builder.Configuration.GetSection("ROR"));
+        
+        builder.Services.AddHttpClient("Crossref");
+        builder.Services.AddScoped<ICrossrefService, CrossrefService>(provider =>
+        {
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("Crossref");
+            IOptions<CrossrefServiceOptions> optionsAccessor =
+                provider.GetRequiredService<IOptions<CrossrefServiceOptions>>();
+            ILogger<CrossrefService> logger = provider.GetRequiredService<ILogger<CrossrefService>>();
+
+            return new CrossrefService(httpClient, optionsAccessor, logger);
         });
     }
 
@@ -230,7 +249,6 @@ public class Program
 
             return new OrganizationService(httpClient, optionsAccessor, logger);
         });
-        
     }
 
     private static async Task ConfigureAuthentication(WebApplicationBuilder builder,

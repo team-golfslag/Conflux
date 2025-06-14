@@ -7,6 +7,10 @@ using Conflux.Data;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
+using Crossref.Net.Exceptions;
+using Crossref.Net.Models;
+using Crossref.Net.Services;
+using DoiTools.Net;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
@@ -18,10 +22,12 @@ namespace Conflux.Domain.Logic.Services;
 public class ProductsService : IProductsService
 {
     private readonly ConfluxContext _context;
+    private readonly ICrossrefService _crossrefService;
 
-    public ProductsService(ConfluxContext context)
+    public ProductsService(ConfluxContext context, ICrossrefService crossrefService)
     {
         _context = context;
+        _crossrefService = crossrefService;
     }
 
     /// <summary>
@@ -118,6 +124,62 @@ public class ProductsService : IProductsService
         _context.Products.Remove(product);
 
         await _context.SaveChangesAsync();
+    }
+
+    private static readonly Dictionary<string, ProductType?> CrossrefTypeMapping = new()
+    {
+        // Direct Mappings
+        ["journal-article"] = ProductType.JournalArticle,
+        ["book"] = ProductType.Book,
+        ["book-chapter"] = ProductType.BookChapter,
+        ["proceedings-article"] = ProductType.ConferencePaper,
+        ["proceedings"] = ProductType.ConferenceProceeding,
+        ["dataset"] = ProductType.Dataset,
+        ["dissertation"] = ProductType.Dissertation,
+        ["grant"] = ProductType.Funding,
+        ["report"] = ProductType.Report,
+        ["standard"] = ProductType.Standard,
+        ["book-section"] = ProductType.BookChapter,
+        ["book-part"] = ProductType.BookChapter,
+        ["monograph"] = ProductType.Book,
+        ["edited-book"] = ProductType.Book,
+        ["reference-book"] = ProductType.Book,
+        ["posted-content"] = ProductType.Preprint,
+        ["database"] = ProductType.Dataset,
+        ["report-component"] = null,
+        ["peer-review"] = null,
+        ["book-track"] = null,
+        ["other"] = null,
+        ["journal-volume"] = null,
+        ["book-set"] = null,
+        ["reference-entry"] = null,
+        ["journal"] = null,
+        ["component"] = null,
+        ["proceedings-series"] = null,
+        ["report-series"] = null,
+        ["journal-issue"] = null,
+        ["book-series"] = null,
+    };
+    
+    public async Task<ProductResponseDTO> GetInfoFromDoi(string doi)
+    {
+        if (!Doi.TryParse(doi, out Doi? doiParsed))
+            throw new ArgumentException("Invalid DOI format.", nameof(doi));
+
+        Work? response = await _crossrefService.GetWorkAsync(doiParsed!);
+        if (response == null)
+            throw new CrossrefException($"No work found for DOI: {doi}");
+
+        ProductResponseDTO productResponse = new()
+        {
+            Schema = ProductSchema.Doi,
+            Title = response.Title?.FirstOrDefault() ?? "No title available",
+            Type = CrossrefTypeMapping.TryGetValue(response.Type?.ToLowerInvariant() ?? string.Empty, out var productType)
+                ? productType
+                : ProductType.Report,
+        };
+
+        return productResponse;
     }
 
     /// <summary>

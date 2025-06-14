@@ -10,6 +10,7 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain;
+using Crossref.Net.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.API.Controllers;
@@ -19,13 +20,15 @@ namespace Conflux.API.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
-[RouteParamName("projectId")]
-[Route("projects/{projectId:guid}/products")]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+[Route("products")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductsService _productService;
 
-    public ProductsController(IProductsService productService)
+    public ProductsController(IProductsService productService, ICrossrefService crossrefService)
     {
         _productService = productService;
     }
@@ -37,7 +40,8 @@ public class ProductsController : ControllerBase
     /// <param name="productId">The unique identifier of the product to retrieve.</param>
     /// <returns>A <see cref="ProductResponseDTO" /> object representing the product with the specified ID.</returns>
     [HttpGet]
-    [Route("{productId:guid}")]
+    [RouteParamName("projectId")]
+    [Route("{projectId:guid}/{productId:guid}")]
     [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> GetProductByIdAsync([FromRoute] Guid projectId,
@@ -57,6 +61,8 @@ public class ProductsController : ControllerBase
     /// unique identifier.
     /// </returns>
     [HttpPost]
+    [RouteParamName("projectId")]
+    [Route("{projectId:guid}")]
     [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> CreateProductAsync([FromRoute] Guid projectId,
@@ -71,7 +77,8 @@ public class ProductsController : ControllerBase
     /// <param name="productDTO">The updated product details encapsulated in a <see cref="ProductRequestDTO" /> object.</param>
     /// <returns>A <see cref="ProductResponseDTO" /> object representing the updated product.</returns>
     [HttpPut]
-    [Route("{productId:guid}")]
+    [RouteParamName("projectId")]
+    [Route("{projectId:guid}/{productId:guid}")]
     [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> UpdateProductAsync([FromRoute] Guid projectId,
@@ -86,7 +93,8 @@ public class ProductsController : ControllerBase
     /// <param name="productId">The unique identifier of the product to be deleted.</param>
     /// <returns>The request response. Returns a 404 status if the product is not found or a 200 status on successful deletion.</returns>
     [HttpDelete]
-    [Route("{productId:guid}")]
+    [RouteParamName("projectId")]
+    [Route("{projectId:guid}/{productId:guid}")]
     [RequireProjectRole(UserRoleType.Admin)]
     [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
     public async Task<ActionResult> DeleteProductAsync([FromRoute] Guid projectId, [FromRoute] Guid productId)
@@ -102,4 +110,18 @@ public class ProductsController : ControllerBase
 
         return Ok();
     }
+
+    /// <summary>
+    /// Retrieves product information based on the provided DOI (Digital Object Identifier).
+    /// </summary>
+    /// <param name="doi">The DOI of the product to retrieve information for.</param>
+    /// <returns>
+    /// An <see cref="ActionResult{ProductResponseDTO}" /> containing the product information if found, or a 404 status if not found.
+    /// </returns>
+    [HttpGet]
+    [Route("doi")]
+    [RequireProjectRole(UserRoleType.User)]
+    [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProductResponseDTO>> GetInfoFromDoi([FromQuery] string doi) =>
+        await _productService.GetInfoFromDoi(doi);
 }

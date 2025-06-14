@@ -17,4 +17,5 @@ public interface IProductsService
         ProductRequestDTO productDTO);
 
     public Task DeleteProductAsync(Guid projectId, Guid productId);
+    public Task<ProductResponseDTO> GetInfoFromDoi(string doi);
 }

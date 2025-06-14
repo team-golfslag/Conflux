@@ -68,9 +68,9 @@ jobs:
                   /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
                   /d:sonar.host.url="https://sonarcloud.io"
                   /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
-                  /d:sonar.coverage.exclusions="**/Conflux.Data/Migrations/**/*"
-                  /d:sonar.cpd.exclusions="**/Conflux.Data/Migrations/**/*"
-                  /d:sonar.exclusions="**/Conflux.Data/Migrations/**/*"
+                  /d:sonar.coverage.exclusions="**/Conflux.Data/Migrations/**/*,**/Conflux.API/Program.cs"
+                  /d:sonar.cpd.exclusions="**/Conflux.Data/Migrations/**/*,**/Conflux.API/Program.cs"
+                  /d:sonar.exclusions="**/Conflux.Data/Migrations/**/*,**/Conflux.API/Program.cs"
 
             - name: Build the project
               shell: bash

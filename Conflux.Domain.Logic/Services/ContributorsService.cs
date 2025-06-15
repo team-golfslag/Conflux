@@ -43,7 +43,7 @@ public class ContributorsService : IContributorsService
         ContributorPosition? currentActivePosition = contributor.Positions
             .FirstOrDefault(p => p.EndDate == null);
 
-        if (currentActivePosition != null && contributorDTO.Position.HasValue && currentActivePosition.Position != contributorDTO.Position.Value)
+        if (currentActivePosition != null && (contributorDTO.Position.HasValue && currentActivePosition.Position != contributorDTO.Position.Value || !contributorDTO.Position.HasValue))
             currentActivePosition.EndDate = DateTime.UtcNow.Date;
 
         if (contributorDTO.Position.HasValue && (currentActivePosition == null || currentActivePosition.Position != contributorDTO.Position))

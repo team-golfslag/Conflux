@@ -18,5 +18,5 @@ public interface IProductsService
 
     public Task DeleteProductAsync(Guid projectId, Guid productId);
     public Task<ProductResponseDTO> GetInfoFromDoi(string doi);
-    public Task<ProductResponseDTO> GetArchiveLinkForUrl(string url);
+    public Task<string> GetArchiveLinkForUrl(string url);
 }

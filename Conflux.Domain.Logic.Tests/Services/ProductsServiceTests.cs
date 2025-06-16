@@ -342,10 +342,9 @@ public class ProductsServiceTests : IDisposable
         string testUrl = "https://doi.org/sample-doi";
 
         // Act
-        ProductResponseDTO product = await productsService.GetArchiveLinkForUrl(testUrl);
+        string archiveUrl = await productsService.GetArchiveLinkForUrl(testUrl);
 
         // Assert
-        Assert.NotNull(product);
-        Assert.Equal("https://web.archive.org/web/20231001000000/https://doi.org/sample-doi", product.Url);
+        Assert.Equal("https://web.archive.org/web/20231001000000/https://doi.org/sample-doi", archiveUrl);
     }
 }

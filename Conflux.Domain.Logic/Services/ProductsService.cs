@@ -185,7 +185,7 @@ public class ProductsService : IProductsService
         return productResponse;
     }
 
-    public async Task<ProductResponseDTO> GetArchiveLinkForUrl(string url)
+    public async Task<string> GetArchiveLinkForUrl(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
             throw new ArgumentException("URL cannot be null or empty.", nameof(url));
@@ -194,13 +194,7 @@ public class ProductsService : IProductsService
         if (string.IsNullOrEmpty(archiveLink))
             throw new ArchiveException($"Failed to create archive link for URL: {url}");
 
-        return new()
-        {
-            Schema = ProductSchema.Archive,
-            Url = archiveLink,
-            Title = "",
-            Type = ProductType.Book, // Should not be used but has to be set
-        };
+        return archiveLink;
     }
 
     /// <summary>

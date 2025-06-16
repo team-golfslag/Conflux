@@ -51,11 +51,11 @@ public class ProductInfoController : ControllerBase
     /// </summary>
     /// <param name="url">The URL of the product to retrieve the archive link for.</param>
     /// <returns>
-    /// An <see cref="ActionResult{ProductResponseDTO}" /> containing the product information with the archive link if found, or a 404 status if not found.
+    /// An <see cref="ActionResult{string}" /> containing the archive link if found, or a 404 status if not found.
     /// </returns>
     [HttpGet]
     [Route("archive")]
-    [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ProductResponseDTO>> GetArchiveLinkForUrl([FromQuery] string url) =>
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    public async Task<ActionResult<string>> GetArchiveLinkForUrl([FromQuery] string url) =>
         await _productService.GetArchiveLinkForUrl(url);
 }

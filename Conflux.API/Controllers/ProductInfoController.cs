@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Conflux.API.Controllers;
 
 /// <summary>
-/// Controller responsible for handling product-related operations.
+/// Controller for getting product information for DOI and archive links.
 /// </summary>
 [ApiController]
 [Authorize]

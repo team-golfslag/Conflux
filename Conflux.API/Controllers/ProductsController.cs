@@ -10,7 +10,6 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain;
-using Crossref.Net.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.API.Controllers;
@@ -24,7 +23,7 @@ namespace Conflux.API.Controllers;
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 [RouteParamName("projectId")]
-[Route("{projectId:guid}/products")]
+[Route("projects/{projectId:guid}/products")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductsService _productService;

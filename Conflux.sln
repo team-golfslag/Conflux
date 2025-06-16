@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Domain.Logic.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.RAiD.Tests", "Conflux.Integrations.RAiD.Tests\Conflux.Integrations.RAiD.Tests.csproj", "{1D0B1ADA-11D2-4B25-8BC4-A8AB6ED680D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Integrations.Archive", "Conflux.Integrations.Archive\Conflux.Integrations.Archive.csproj", "{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{1D0B1ADA-11D2-4B25-8BC4-A8AB6ED680D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D0B1ADA-11D2-4B25-8BC4-A8AB6ED680D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1D0B1ADA-11D2-4B25-8BC4-A8AB6ED680D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{616A6D06-793B-4209-8D5E-D5ACB62B6E0F} = {35EC3A20-F7D5-4CA4-B9FF-8C020891A2C3}
@@ -103,5 +109,6 @@ Global
 		{F471B132-7E3C-41DC-815C-0E0FF27E273F} = {F4082EE5-089C-4FED-A12E-7223FDE6D994}
 		{4741A06D-5D32-405F-92CF-069ED26C4678} = {40F4DB12-9CD5-4BAD-9D33-9B9644FFCDDB}
 		{1D0B1ADA-11D2-4B25-8BC4-A8AB6ED680D0} = {F4082EE5-089C-4FED-A12E-7223FDE6D994}
+		{3A94C09B-3BE0-40E0-BE7A-E5E337CE821D} = {F4082EE5-089C-4FED-A12E-7223FDE6D994}
 	EndGlobalSection
 EndGlobal

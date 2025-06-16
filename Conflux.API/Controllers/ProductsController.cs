@@ -120,8 +120,20 @@ public class ProductsController : ControllerBase
     /// </returns>
     [HttpGet]
     [Route("doi")]
-    [RequireProjectRole(UserRoleType.User)]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     public async Task<ActionResult<ProductResponseDTO>> GetInfoFromDoi([FromQuery] string doi) =>
         await _productService.GetInfoFromDoi(doi);
+    
+    /// <summary>
+    /// Retrieves an archive link for a product based on the provided URL.
+    /// </summary>
+    /// <param name="url">The URL of the product to retrieve the archive link for.</param>
+    /// <returns>
+    /// An <see cref="ActionResult{ProductResponseDTO}" /> containing the product information with the archive link if found, or a 404 status if not found.
+    /// </returns>
+    [HttpGet]
+    [Route("archive")]
+    [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProductResponseDTO>> GetArchiveLinkForUrl([FromQuery] string url) =>
+        await _productService.GetArchiveLinkForUrl(url);
 }

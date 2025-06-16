@@ -3,12 +3,14 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Conflux.API.Filters;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Integrations.Archive;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
 using Conflux.Integrations.SRAM;
@@ -128,6 +130,7 @@ public class Program
         
         ConfigureRorServices(builder);
         ConfigureCrossrefServices(builder);
+        ConfigureArchiveServices(builder);
 
         await ConfigureSRAMServices(builder, featureManager);
         await ConfigureRAiDServices(builder, featureManager);
@@ -163,6 +166,24 @@ public class Program
             ILogger<CrossrefService> logger = provider.GetRequiredService<ILogger<CrossrefService>>();
 
             return new CrossrefService(httpClient, optionsAccessor, logger);
+        });
+    }
+    
+    private static void ConfigureArchiveServices(WebApplicationBuilder builder)
+    {
+        string? accessKey = Environment.GetEnvironmentVariable("S3_ACCESS_KEY");
+        string? secretKey = Environment.GetEnvironmentVariable("S3_SECRET_KEY");
+        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey)) 
+            Console.WriteLine("Warning: S3_ACCESS_KEY and S3_SECRET_KEY not set. Continuing without authentication.");
+
+        builder.Services.AddHttpClient("WebArchive");
+        builder.Services.AddScoped<IWebArchiveService, WebArchiveService>(provider =>
+        {
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("WebArchive");
+            if (!string.IsNullOrEmpty(accessKey) && !string.IsNullOrEmpty(secretKey))
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new("LOW", $"{accessKey}:{secretKey}");
+            return new(httpClient);
         });
     }
 

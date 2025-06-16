@@ -171,10 +171,10 @@ public class Program
     
     private static void ConfigureArchiveServices(WebApplicationBuilder builder)
     {
-        string? accessKey = Environment.GetEnvironmentVariable("S3_ACCESS_KEY");
-        string? secretKey = Environment.GetEnvironmentVariable("S3_SECRET_KEY");
+        string? accessKey = Environment.GetEnvironmentVariable("WEBARCHIVE_ACCESS_KEY");
+        string? secretKey = Environment.GetEnvironmentVariable("WEBARCHIVE_SECRET_KEY");
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey)) 
-            Console.WriteLine("Warning: S3_ACCESS_KEY and S3_SECRET_KEY not set. Continuing without authentication.");
+            Console.WriteLine("Warning: WEBARCHIVE_ACCESS_KEY and WEBARCHIVE_SECRET_KEY not set. Continuing without authentication.");
 
         builder.Services.AddHttpClient("WebArchive");
         builder.Services.AddScoped<IWebArchiveService, WebArchiveService>(provider =>

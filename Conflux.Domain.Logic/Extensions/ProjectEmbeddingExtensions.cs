@@ -34,13 +34,13 @@ public static class ProjectEmbeddingExtensions
 
         // Add primary descriptions
         var primaryDescriptions = project.Descriptions
-            .Where(d => d.Type == DescriptionType.Primary && !string.IsNullOrWhiteSpace(d.Text) && d.EndDate == null)
+            .Where(d => d.Type == DescriptionType.Primary && !string.IsNullOrWhiteSpace(d.Text))
             .Select(d => d.Text);
         textParts.AddRange(primaryDescriptions);
 
         // Add brief descriptions and objectives
         var additionalDescriptions = project.Descriptions
-            .Where(d => (d.Type == DescriptionType.Brief || d.Type == DescriptionType.Objectives) && !string.IsNullOrWhiteSpace(d.Text) && d.EndDate == null)
+            .Where(d => (d.Type == DescriptionType.Brief || d.Type == DescriptionType.Objectives) && !string.IsNullOrWhiteSpace(d.Text))
             .Select(d => d.Text);
         textParts.AddRange(additionalDescriptions);
 

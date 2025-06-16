@@ -117,29 +117,43 @@ public class ProjectTitlesServiceTests : IDisposable
     [Fact]
     public async Task GetTitleByIdAsync_ShouldThrow_WhenProjectDoesNotExist()
     {
-        Project project = await SetupDatabase();
+        // Arrange
+        Guid nonExistentProjectId = Guid.CreateVersion7();
+        Guid titleId = Guid.CreateVersion7();
 
+        // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(async () =>
-            await _service.GetTitleByIdAsync(Guid.Empty, project.Titles[0].Id));
+            await _service.GetTitleByIdAsync(nonExistentProjectId, titleId));
     }
 
     [Fact]
     public async Task GetTitleByIdAsync_ShouldThrow_WhenTitleDoesNotExist()
     {
+        // Arrange
         Project project = await SetupDatabase();
+        Guid nonExistentTitleId = Guid.CreateVersion7();
 
+        // Act & Assert
         await Assert.ThrowsAsync<ProjectTitleNotFoundException>(async () =>
-            await _service.GetTitleByIdAsync(project.Id, Guid.Empty));
+            await _service.GetTitleByIdAsync(project.Id, nonExistentTitleId));
     }
 
     [Fact]
-    public async Task GetTitleByIdAsync_ShouldReturnTitle()
+    public async Task GetTitleByIdAsync_ShouldReturnTitle_WhenTitleExists()
     {
+        // Arrange
         Project project = await SetupDatabase();
+        ProjectTitle expectedTitle = project.Titles[0];
 
-        ProjectTitleResponseDTO response = await _service.GetTitleByIdAsync(project.Id, project.Titles[0].Id);
+        // Act
+        ProjectTitleResponseDTO result = await _service.GetTitleByIdAsync(project.Id, expectedTitle.Id);
 
-        Assert.Equal(project.Titles[0].Id, response.Id);
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(expectedTitle.Id, result.Id);
+        Assert.Equal(expectedTitle.Text, result.Text);
+        Assert.Equal(expectedTitle.Type, result.Type);
+        Assert.Equal(expectedTitle.Language, result.Language);
     }
 
     [Fact]
@@ -637,5 +651,242 @@ public class ProjectTitlesServiceTests : IDisposable
         await _service.DeleteTitleAsync(project.Id, title.Id);
         
         Assert.Null(await _context.ProjectTitles.FindAsync(title.Id));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ShouldThrow_WhenProjectDoesNotExist()
+    {
+        // Arrange
+        Guid nonExistentProjectId = Guid.CreateVersion7();
+        Guid titleId = Guid.CreateVersion7();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(async () =>
+            await _service.DeleteTitleAsync(nonExistentProjectId, titleId));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ShouldThrow_WhenTitleDoesNotExist()
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        Guid nonExistentTitleId = Guid.CreateVersion7();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectTitleNotFoundException>(async () =>
+            await _service.DeleteTitleAsync(project.Id, nonExistentTitleId));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ShouldThrow_WhenTitleIsOlderThanYesterday()
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        ProjectTitle oldTitle = project.Titles.First(t => t.StartDate < DateTime.UtcNow.Date.AddDays(-1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<CantDeleteTitleException>(async () =>
+            await _service.DeleteTitleAsync(project.Id, oldTitle.Id));
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ShouldRestorePreviousTitle_WhenDeletingRecentTitle()
+    {
+        // Arrange - Create a project with titles that have succession pattern
+        Project project = new()
+        {
+            Id = Guid.CreateVersion7(),
+            SCIMId = null,
+            RAiDInfo = null,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = null,
+            Users = null,
+            Contributors = null,
+            Products = null,
+            Organisations = null,
+            Titles = new List<ProjectTitle>(),
+            Descriptions = null,
+            LastestEdit = default,
+        };
+
+        DateTime today = DateTime.UtcNow.Date;
+        DateTime yesterday = today.AddDays(-1);
+        DateTime twoDaysAgo = today.AddDays(-2);
+
+        // Old title that was ended yesterday
+        ProjectTitle oldTitle = new()
+        {
+            Id = Guid.CreateVersion7(),
+            ProjectId = project.Id,
+            Text = "Old Title",
+            Language = new() { Id = "eng" },
+            Type = TitleType.Alternative,
+            StartDate = twoDaysAgo,
+            EndDate = yesterday, // This should match newTitle.StartDate
+        };
+
+        // New title created today - but we need it to start yesterday for the logic to work
+        ProjectTitle newTitle = new()
+        {
+            Id = Guid.CreateVersion7(),
+            ProjectId = project.Id,
+            Text = "New Title",
+            Language = new() { Id = "eng" },
+            Type = TitleType.Alternative,
+            StartDate = yesterday, // This should match oldTitle.EndDate
+            EndDate = null,
+        };
+
+        project.Titles.Add(oldTitle);
+        project.Titles.Add(newTitle);
+
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync();
+
+        // Act - Delete the new title
+        await _service.DeleteTitleAsync(project.Id, newTitle.Id);
+
+        // Assert - Old title should be restored (EndDate set to null)
+        ProjectTitle? restoredTitle = await _context.ProjectTitles.FindAsync(oldTitle.Id);
+        Assert.NotNull(restoredTitle);
+        Assert.Null(restoredTitle.EndDate);
+
+        // New title should be deleted
+        ProjectTitle? deletedTitle = await _context.ProjectTitles.FindAsync(newTitle.Id);
+        Assert.Null(deletedTitle);
+    }
+
+    [Fact]
+    public async Task DeleteTitleAsync_ShouldThrow_WhenDeletingPrimaryTitleWithoutPredecessor()
+    {
+        // Arrange - Create project with only a primary title created today
+        Project project = new()
+        {
+            Id = Guid.CreateVersion7(),
+            SCIMId = null,
+            RAiDInfo = null,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = null,
+            Users = null,
+            Contributors = null,
+            Products = null,
+            Organisations = null,
+            Titles = new List<ProjectTitle>(),
+            Descriptions = null,
+            LastestEdit = default,
+        };
+
+        DateTime today = DateTime.UtcNow.Date;
+
+        ProjectTitle primaryTitle = new()
+        {
+            Id = Guid.CreateVersion7(),
+            ProjectId = project.Id,
+            Text = "Primary Title",
+            Language = new() { Id = "eng" },
+            Type = TitleType.Primary,
+            StartDate = today,
+            EndDate = null,
+        };
+
+        project.Titles.Add(primaryTitle);
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<CantDeleteTitleException>(async () =>
+            await _service.DeleteTitleAsync(project.Id, primaryTitle.Id));
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldCreateNewTitle_WhenNoCurrentTitleOfType()
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = "New Acronym Title",
+            Language = new() { Id = "eng" },
+            Type = TitleType.Acronym,
+        };
+
+        int initialTitleCount = project.Titles.Count;
+
+        // Act
+        List<ProjectTitleResponseDTO> result = await _service.UpdateTitleAsync(project.Id, dto);
+
+        // Assert
+        Assert.Equal(initialTitleCount + 1, result.Count);
+        Assert.Contains(result, t => t.Type == TitleType.Acronym && t.Text == "New Acronym Title");
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_ShouldEndPreviousAndCreateNew_WhenCurrentTitleExists()
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = "Updated Primary Title",
+            Language = new() { Id = "nld" },
+            Type = TitleType.Primary,
+        };
+
+        ProjectTitle currentPrimaryTitle = project.Titles.First(t => t.Type == TitleType.Primary && !t.EndDate.HasValue);
+
+        // Act
+        List<ProjectTitleResponseDTO> result = await _service.UpdateTitleAsync(project.Id, dto);
+
+        // Assert
+        Assert.Contains(result, t => t.Type == TitleType.Primary && t.Text == "Updated Primary Title");
+
+        // Check that the previous title was ended
+        ProjectTitle? previousTitle = await _context.ProjectTitles.FindAsync(currentPrimaryTitle.Id);
+        Assert.NotNull(previousTitle);
+        Assert.NotNull(previousTitle.EndDate);
+        Assert.Equal(DateTime.UtcNow.Date, previousTitle.EndDate.Value.Date);
+    }
+
+    [Theory]
+    [InlineData(TitleType.Primary)]
+    [InlineData(TitleType.Alternative)]
+    [InlineData(TitleType.Short)]
+    [InlineData(TitleType.Acronym)]
+    public async Task UpdateTitleAsync_ShouldHandleAllTitleTypes(TitleType titleType)
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        ProjectTitleRequestDTO dto = new()
+        {
+            Text = $"Test {titleType} Title",
+            Language = new() { Id = "eng" },
+            Type = titleType,
+        };
+
+        // Act
+        List<ProjectTitleResponseDTO> result = await _service.UpdateTitleAsync(project.Id, dto);
+
+        // Assert
+        Assert.Contains(result, t => t.Type == titleType && t.Text == $"Test {titleType} Title");
+    }
+
+    [Fact]
+    public async Task MapToTitleResponseDTO_ShouldMapAllProperties()
+    {
+        // Arrange
+        Project project = await SetupDatabase();
+        ProjectTitle title = project.Titles[0];
+
+        // Act
+        ProjectTitleResponseDTO result = await _service.GetTitleByIdAsync(project.Id, title.Id);
+
+        // Assert
+        Assert.Equal(title.Id, result.Id);
+        Assert.Equal(title.ProjectId, result.ProjectId);
+        Assert.Equal(title.Text, result.Text);
+        Assert.Equal(title.Language, result.Language);
+        Assert.Equal(title.Type, result.Type);
+        Assert.Equal(title.StartDate, result.StartDate);
+        Assert.Equal(title.EndDate, result.EndDate);
     }
 }

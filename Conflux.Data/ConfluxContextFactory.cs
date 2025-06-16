@@ -25,6 +25,22 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
         string environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
         string basePath = Path.Combine(Directory.GetCurrentDirectory(), "../Conflux.API");
+        
+        // Recursively find solution root if the base path does not exist (for testing)
+        if (!Directory.Exists(basePath))
+        {
+            // Try from the solution root
+            var solutionRoot = Directory.GetCurrentDirectory();
+            while (solutionRoot != null && !File.Exists(Path.Combine(solutionRoot, "Conflux.sln")))
+            {
+                solutionRoot = Directory.GetParent(solutionRoot)?.FullName;
+            }
+            
+            if (solutionRoot != null)
+            {
+                basePath = Path.Combine(solutionRoot, "Conflux.API");
+            }
+        }
 
         IConfiguration config = new ConfigurationBuilder()
             .SetBasePath(basePath)

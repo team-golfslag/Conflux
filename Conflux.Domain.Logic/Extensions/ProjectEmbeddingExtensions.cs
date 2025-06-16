@@ -22,26 +22,25 @@ public static class ProjectEmbeddingExtensions
 
         // Add primary titles
         var primaryTitles = project.Titles
-            .Where(t => t.Type == TitleType.Primary && !string.IsNullOrWhiteSpace(t.Text))
+            .Where(t => t.Type == TitleType.Primary && !string.IsNullOrWhiteSpace(t.Text) && t.EndDate == null)
             .Select(t => t.Text);
         textParts.AddRange(primaryTitles);
 
         // Add alternative titles
         var altTitles = project.Titles
-            .Where(t => t.Type == TitleType.Alternative && !string.IsNullOrWhiteSpace(t.Text))
+            .Where(t => t.Type == TitleType.Alternative && !string.IsNullOrWhiteSpace(t.Text) && t.EndDate == null)
             .Select(t => t.Text);
         textParts.AddRange(altTitles);
 
         // Add primary descriptions
         var primaryDescriptions = project.Descriptions
-            .Where(d => d.Type == DescriptionType.Primary && !string.IsNullOrWhiteSpace(d.Text))
+            .Where(d => d.Type == DescriptionType.Primary && !string.IsNullOrWhiteSpace(d.Text) && d.EndDate == null)
             .Select(d => d.Text);
         textParts.AddRange(primaryDescriptions);
 
         // Add brief descriptions and objectives
         var additionalDescriptions = project.Descriptions
-            .Where(d => (d.Type == DescriptionType.Brief || d.Type == DescriptionType.Objectives) 
-                       && !string.IsNullOrWhiteSpace(d.Text))
+            .Where(d => (d.Type == DescriptionType.Brief || d.Type == DescriptionType.Objectives) && !string.IsNullOrWhiteSpace(d.Text) && d.EndDate == null)
             .Select(d => d.Text);
         textParts.AddRange(additionalDescriptions);
 

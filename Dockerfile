@@ -19,4 +19,14 @@ RUN dotnet publish "Conflux.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Create Models directory and copy embedding model files
+RUN mkdir -p /app/Models
+COPY Models/ /app/Models/
+
+# Ensure the app user has read access to the models
+USER root
+RUN chown -R $APP_UID:$APP_UID /app/Models && chmod -R 755 /app/Models
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "Conflux.API.dll"]

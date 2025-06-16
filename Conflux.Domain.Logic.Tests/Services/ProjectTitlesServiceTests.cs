@@ -10,6 +10,9 @@ using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
+using Moq;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -33,7 +36,12 @@ public class ProjectTitlesServiceTests : IDisposable
         ConfluxContext context = new(options);
         context.Database.EnsureCreated();
         _context = context;
-        _service = new(_context);
+        
+        // Create mocks for dependencies
+        var mockProjectsService = new Mock<IProjectsService>();
+        var mockLogger = new Mock<ILogger<ProjectTitlesService>>();
+        
+        _service = new(_context, mockProjectsService.Object, mockLogger.Object);
     }
 
     public void Dispose()

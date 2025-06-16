@@ -7,6 +7,7 @@ using Conflux.Domain;
 using Conflux.Domain.Session;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Pgvector.EntityFrameworkCore;
 
 namespace Conflux.Data;
 
@@ -49,6 +50,20 @@ public class ConfluxContext : DbContext, IConfluxContext
     /// <param name="modelBuilder">The model builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Check if we're using PostgreSQL or InMemory provider
+        bool isPostgreSQL = Database.IsNpgsql();
+        bool isInMemory = Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
+
+        // Only configure PostgreSQL-specific features when using PostgreSQL
+        if (isPostgreSQL)
+        {
+            // Register the Pgvector extension for vector support
+            modelBuilder.HasPostgresExtension("vector");
+            // Enable trigram extension for text search
+            modelBuilder.HasPostgresExtension("pg_trgm");
+        }
+
+        // Configure basic entity relationships (works for all providers)
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Products)
             .WithOne(p => p.Project)
@@ -129,6 +144,68 @@ public class ConfluxContext : DbContext, IConfluxContext
                     c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
                     c => c.ToList()));
         });
+
+        modelBuilder.Entity<Project>(entity =>
+        {
+            if (isPostgreSQL)
+            {
+                // Create HNSW index on embedding column for fast vector similarity search
+                entity.HasIndex(p => p.Embedding)
+                    .HasMethod("hnsw")
+                    .HasOperators("vector_cosine_ops")
+                    .HasStorageParameter("m", 16)
+                    .HasStorageParameter("ef_construction", 64);
+            }
+            else if (isInMemory)
+            {
+                // Ignore vector properties for InMemory provider since it doesn't support them
+                entity.Ignore(p => p.Embedding);
+                entity.Ignore(p => p.EmbeddingContentHash);
+                entity.Ignore(p => p.EmbeddingLastUpdated);
+            }
+                
+            // Index on SCIMId for faster access control queries (works for all providers)
+            entity.HasIndex(p => p.SCIMId);
+        });
+
+        if (isPostgreSQL)
+        {
+            // Add indexes for text search performance (PostgreSQL specific)
+            modelBuilder.Entity<ProjectTitle>(entity =>
+            {
+                // GIN index on Text column for fast text search using LIKE operations
+                entity.HasIndex(pt => pt.Text)
+                    .HasMethod("gin")
+                    .HasOperators("gin_trgm_ops");
+                    
+                // Regular index for foreign key lookups
+                entity.HasIndex(pt => pt.ProjectId);
+            });
+
+            modelBuilder.Entity<ProjectDescription>(entity =>
+            {
+                // GIN index on Text column for fast text search using LIKE operations
+                entity.HasIndex(pd => pd.Text)
+                    .HasMethod("gin")
+                    .HasOperators("gin_trgm_ops");
+                    
+                // Regular index for foreign key lookups
+                entity.HasIndex(pd => pd.ProjectId);
+            });
+        }
+        else
+        {
+            // Add basic indexes for other providers
+            modelBuilder.Entity<ProjectTitle>(entity =>
+            {
+                entity.HasIndex(pt => pt.ProjectId);
+            });
+
+            modelBuilder.Entity<ProjectDescription>(entity =>
+            {
+                entity.HasIndex(pd => pd.ProjectId);
+            });
+        }
 
         base.OnModelCreating(modelBuilder);
     }

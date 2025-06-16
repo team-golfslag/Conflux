@@ -10,6 +10,7 @@ using Conflux.API.Filters;
 using Conflux.Data;
 using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
+using Conflux.Domain.Logic.Services;
 using Conflux.Integrations.Archive;
 using Conflux.Integrations.NWOpen;
 using Conflux.Integrations.RAiD;
@@ -31,6 +32,7 @@ using RAiD.Net;
 using ROR.Net.Services;
 using SRAM.SCIM.Net;
 using SwaggerThemes;
+using Pgvector.EntityFrameworkCore;
 
 namespace Conflux.API;
 
@@ -108,6 +110,8 @@ public class Program
         builder.Services.AddScoped<ITimelineService, TimelineService>();
         builder.Services.AddScoped<IAdminService, AdminService>();
         builder.Services.AddScoped<ILanguageService, LanguageService>();
+
+        builder.Services.AddScoped<IEmbeddingService, OnnxEmbeddingService>();
 
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))
@@ -200,7 +204,8 @@ public class Program
         builder.Services.AddDbContextPool<ConfluxContext>(opt =>
             opt.UseNpgsql(connectionString,
                 npgsql => npgsql.MigrationsAssembly("Conflux.Data")
-                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
+                    .UseVector()));
     }
 
     private static async Task ConfigureSRAMServices(WebApplicationBuilder builder,
@@ -504,6 +509,13 @@ public class Program
         await context.People.AddRangeAsync(seedData.People);
 
         await context.SaveChangesAsync();
+
+        // Generate embeddings for all seeded projects
+        IProjectsService projectsService = services.GetRequiredService<IProjectsService>();
+        int embeddingUpdateCount = await projectsService.UpdateProjectEmbeddingsAsync();
+        
+        ILogger<Program> logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Database seeded successfully. Generated embeddings for {Count} projects.", embeddingUpdateCount);
     }
 
     private static void SetupDevelopmentAuth(WebApplicationBuilder builder)

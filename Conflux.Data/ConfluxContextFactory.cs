@@ -6,6 +6,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Pgvector.EntityFrameworkCore;
 
 namespace Conflux.Data;
 
@@ -37,7 +38,7 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
             connectionString = ConnectionStringHelper.GetConnectionStringFromEnvironment();
 
         DbContextOptionsBuilder<ConfluxContext> optionsBuilder = new();
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(connectionString, o => o.UseVector());
 
         return new(optionsBuilder.Options);
     }

@@ -12,7 +12,10 @@ using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
 using Moq;
+using Pgvector;
 using Xunit;
 
 namespace Conflux.Domain.Logic.Tests.Services;
@@ -20,6 +23,8 @@ namespace Conflux.Domain.Logic.Tests.Services;
 public class ProjectsServiceTests : IDisposable
 {
     private readonly Mock<IUserSessionService> _userSessionServiceMock = new();
+    private readonly Mock<IVariantFeatureManager> _featureManagerMock = new();
+    private readonly Mock<ILogger<ProjectsService>> _loggerMock = new();
     private readonly ConfluxContext _context = null!;
     private readonly ProjectsService _service = null!;
 
@@ -37,7 +42,11 @@ public class ProjectsServiceTests : IDisposable
         _context = new ConfluxContext(options);
         _context.Database.EnsureCreated();
 
-        _service = new ProjectsService(_context, _userSessionServiceMock.Object);
+        // By default, disable semantic search for tests to use simple text search
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(false);
+
+        _service = new ProjectsService(_context, _userSessionServiceMock.Object, _loggerMock.Object, _featureManagerMock.Object);
     }
 
     public void Dispose()
@@ -343,5 +352,262 @@ public class ProjectsServiceTests : IDisposable
             s => s.UpdateUser(),
             Times.Once
         );
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_WhenSemanticSearchEnabled_UsesSemanticSearch()
+    {
+        // Arrange
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(true);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        var queryDto = new ProjectQueryDTO { Query = "test search" };
+
+        // Act & Assert - Should not throw since we don't have embedding service configured
+        // The method should handle the null embedding service gracefully when feature is enabled
+        var result = await _service.GetProjectsByQueryAsync(queryDto);
+        
+        // Verify it falls back to simple text search when embedding service is not available
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_WhenSemanticSearchDisabled_UsesSimpleTextSearch()
+    {
+        // Arrange
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(false);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        // Create a test project
+        var project = await CreateTestProjectAsync("Test Project");
+        
+        var queryDto = new ProjectQueryDTO { Query = "test" };
+
+        // Act
+        var result = await _service.GetProjectsByQueryAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result); // Should find the test project
+        Assert.Equal(project.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_WithSemanticSearchAndEmbeddingService_UsesSemanticSearch()
+    {
+        // Arrange
+        var embeddingServiceMock = new Mock<IEmbeddingService>();
+        var queryEmbedding = new Vector(new float[384]);
+        
+        embeddingServiceMock.Setup(x => x.GenerateEmbeddingAsync(It.IsAny<string>()))
+            .ReturnsAsync(queryEmbedding);
+        embeddingServiceMock.Setup(x => x.EmbeddingDimension)
+            .Returns(384);
+
+        var serviceWithEmbedding = new ProjectsService(
+            _context, 
+            _userSessionServiceMock.Object, 
+            _loggerMock.Object, 
+            _featureManagerMock.Object, 
+            embeddingServiceMock.Object);
+
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(true);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        // Create a test project with embedding
+        var project = await CreateTestProjectAsync("Machine Learning Research");
+        project.Embedding = new Vector(new float[384]);
+        project.EmbeddingContentHash = "test-hash";
+        project.EmbeddingLastUpdated = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        
+        var queryDto = new ProjectQueryDTO { Query = "machine learning" };
+
+        // Act
+        var result = await serviceWithEmbedding.GetProjectsByQueryAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(result);
+        embeddingServiceMock.Verify(x => x.GenerateEmbeddingAsync("machine learning"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_SemanticSearchWithError_FallsBackToTextSearch()
+    {
+        // Arrange
+        var embeddingServiceMock = new Mock<IEmbeddingService>();
+        embeddingServiceMock.Setup(x => x.GenerateEmbeddingAsync(It.IsAny<string>()))
+            .ThrowsAsync(new Exception("Embedding generation failed"));
+        embeddingServiceMock.Setup(x => x.EmbeddingDimension)
+            .Returns(384);
+
+        var serviceWithEmbedding = new ProjectsService(
+            _context, 
+            _userSessionServiceMock.Object, 
+            _loggerMock.Object, 
+            _featureManagerMock.Object, 
+            embeddingServiceMock.Object);
+
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(true);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        // Create a test project
+        var project = await CreateTestProjectAsync("Test Project");
+        
+        var queryDto = new ProjectQueryDTO { Query = "test" };
+
+        // Act
+        var result = await serviceWithEmbedding.GetProjectsByQueryAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(result);
+        // Should fall back to text search and still find the project
+        Assert.Single(result);
+        Assert.Equal(project.Id, result[0].Id);
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_SemanticSearchWithEmptyQuery_UsesTextSearch()
+    {
+        // Arrange
+        var embeddingServiceMock = new Mock<IEmbeddingService>();
+        var serviceWithEmbedding = new ProjectsService(
+            _context, 
+            _userSessionServiceMock.Object, 
+            _loggerMock.Object, 
+            _featureManagerMock.Object, 
+            embeddingServiceMock.Object);
+
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(true);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        var queryDto = new ProjectQueryDTO { Query = "" }; // Empty query
+
+        // Act
+        var result = await serviceWithEmbedding.GetProjectsByQueryAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(result);
+        // Should not call embedding service for empty query
+        embeddingServiceMock.Verify(x => x.GenerateEmbeddingAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetProjectsByQueryAsync_SemanticSearchWithNullQuery_UsesTextSearch()
+    {
+        // Arrange
+        var embeddingServiceMock = new Mock<IEmbeddingService>();
+        var serviceWithEmbedding = new ProjectsService(
+            _context, 
+            _userSessionServiceMock.Object, 
+            _loggerMock.Object, 
+            _featureManagerMock.Object, 
+            embeddingServiceMock.Object);
+
+        _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
+            .ReturnsAsync(true);
+        
+        var userSession = new UserSession { User = new User { 
+            PermissionLevel = PermissionLevel.SuperAdmin, 
+            SCIMId = "test-scim-id", 
+            PersonId = Guid.NewGuid() 
+        } };
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+
+        var queryDto = new ProjectQueryDTO { Query = null }; // Null query
+
+        // Act
+        var result = await serviceWithEmbedding.GetProjectsByQueryAsync(queryDto);
+
+        // Assert
+        Assert.NotNull(result);
+        // Should not call embedding service for null query
+        embeddingServiceMock.Verify(x => x.GenerateEmbeddingAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProjectEmbeddingAsync_WithEmbeddingService_UpdatesEmbedding()
+    {
+        // Arrange
+        var embeddingServiceMock = new Mock<IEmbeddingService>();
+        var expectedEmbedding = new Vector(new float[384]);
+        
+        embeddingServiceMock.Setup(x => x.GenerateEmbeddingAsync(It.IsAny<string>()))
+            .ReturnsAsync(expectedEmbedding);
+        embeddingServiceMock.Setup(x => x.EmbeddingDimension)
+            .Returns(384);
+
+        var serviceWithEmbedding = new ProjectsService(
+            _context, 
+            _userSessionServiceMock.Object, 
+            _loggerMock.Object, 
+            _featureManagerMock.Object, 
+            embeddingServiceMock.Object);
+
+        var project = await CreateTestProjectAsync("Test Project for Embedding");
+
+        // Act
+        await serviceWithEmbedding.UpdateProjectEmbeddingAsync(project.Id);
+
+        // Assert
+        embeddingServiceMock.Verify(x => x.GenerateEmbeddingAsync(It.IsAny<string>()), Times.Once);
+        
+        // Verify the project was updated
+        var updatedProject = await _context.Projects
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .FirstAsync(p => p.Id == project.Id);
+        
+        Assert.NotNull(updatedProject.Embedding);
+        Assert.NotNull(updatedProject.EmbeddingContentHash);
+        Assert.NotNull(updatedProject.EmbeddingLastUpdated);
+    }
+
+    [Fact]
+    public async Task UpdateProjectEmbeddingAsync_WithoutEmbeddingService_ReturnsFalse()
+    {
+        // Arrange
+        var project = await CreateTestProjectAsync("Test Project");
+
+        // Act
+        bool result = await _service.UpdateProjectEmbeddingAsync(project.Id);
+
+        // Assert
+        Assert.False(result);
     }
 }

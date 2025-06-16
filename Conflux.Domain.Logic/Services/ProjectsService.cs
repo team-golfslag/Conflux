@@ -4,16 +4,19 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using System.Globalization;
-using System.Reflection;
-using System.Text;
 using Conflux.Data;
 using Conflux.Domain.Logic.DTOs.Queries;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Domain.Logic.Extensions;
 using Conflux.Domain.Session;
 using CsvHelper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -22,15 +25,34 @@ namespace Conflux.Domain.Logic.Services;
 /// </summary>
 public class ProjectsService : IProjectsService
 {
+    // Hybrid search configuration constants
+    private const double TitleWeight = 0.75;       // Weight for title matches in text scoring
+    private const double DescriptionWeight = 0.25; // Weight for description matches in text scoring
+    private const double PerfectMatchBoost = 0.8;  // Score boost for perfect text matches
+    private const double TextMatchWeight = 0.6;    // Weight for text matching in hybrid score
+    private const double SemanticWeight = 0.4;     // Weight for semantic similarity in hybrid score
+    private const double NoMatchPenalty = 0.5;     // Penalty when no exact matches found
+
     private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
+    private readonly IEmbeddingService? _embeddingService;
+    private readonly ILogger<ProjectsService> _logger;
+    private readonly IVariantFeatureManager _featureManager;
 
-    public ProjectsService(ConfluxContext context, IUserSessionService userSessionService)
+    public ProjectsService(
+        ConfluxContext context,
+        IUserSessionService userSessionService,
+        ILogger<ProjectsService> logger,
+        IVariantFeatureManager featureManager,
+        IEmbeddingService? embeddingService = null)
     {
         _context = context;
         _userSessionService = userSessionService;
+        _logger = logger;
+        _featureManager = featureManager;
+        _embeddingService = embeddingService;
     }
-    
+
     /// <summary>
     /// Gets all roles for a project that the current user has access to through their SRAM collaborations.
     /// </summary>
@@ -66,22 +88,22 @@ public class ProjectsService : IProjectsService
             .Include(p => p.Users)
             .ThenInclude(u => u.Person)
             .SingleOrDefaultAsync(p => p.Id == projectId);
-        
+
         if (project is null)
             throw new ProjectNotFoundException(projectId);
 
         if (userSession.User is null)
             return;
-        
+
         User? user = await _context.Users.FindAsync(userSession.User.Id);
         if (user is null)
             return;
-        
+
         if (favorite && !user.FavoriteProjectIds.Contains(projectId))
             user.FavoriteProjectIds.Add(projectId);
         else if (!favorite && user.FavoriteProjectIds.Contains(projectId))
             user.FavoriteProjectIds.Remove(projectId);
-        
+
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
         await _userSessionService.UpdateUser();
@@ -112,13 +134,13 @@ public class ProjectsService : IProjectsService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession?.User is null)
             throw new UserNotAuthenticatedException();
-        
+
         Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         FilterRolesForProject(project);
 
-        
+
         userSession.User.RecentlyAccessedProjectIds =
             userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
         await _context.SaveChangesAsync();
@@ -137,12 +159,13 @@ public class ProjectsService : IProjectsService
             default:
                 throw new ProjectNotFoundException(id);
         }
-
     }
 
     /// <summary>
     /// Gets all projects whose title or description contain the query (case-insensitive),
     /// and optionally filters by start and/or end date.
+    /// Uses semantic search if the "SemanticSearch" feature flag is enabled and an embedding service is available,
+    /// otherwise falls back to simple text search.
     /// </summary>
     /// <param name="dto">
     /// The <see cref="ProjectQueryDTO" /> that contains the query term, filters and 'order by' method for
@@ -154,27 +177,174 @@ public class ProjectsService : IProjectsService
         UserSession? userSession = await _userSessionService.GetUser();
         if (userSession is null || userSession.User is null)
             throw new UserNotAuthenticatedException();
-        
-        IEnumerable<ProjectResponseDTO> projects = await GetAvailableProjects();
 
+        // Check if semantic search is enabled via feature flag
+        bool useSemanticSearch = await _featureManager.IsEnabledAsync("SemanticSearch");
+
+        if (useSemanticSearch && _embeddingService != null && !string.IsNullOrWhiteSpace(dto.Query))
+        {
+            _logger.LogDebug("Using semantic search for query: {Query}", dto.Query);
+            return await GetProjectsBySemanticSearchAsync(dto, userSession);
+        }
+        else
+        {
+            _logger.LogDebug("Using simple text search for query: {Query}", dto.Query);
+            return await GetProjectsBySimpleTextSearchAsync(dto, userSession);
+        }
+    }
+
+    private async Task<List<ProjectResponseDTO>> GetProjectsBySemanticSearchAsync(ProjectQueryDTO dto,
+        UserSession userSession)
+    {
+        try
+        {
+            _logger.LogDebug("Performing hybrid semantic search for query: {Query}", dto.Query);
+
+            // Generate embedding and words for the query
+            Vector queryEmbedding = await _embeddingService!.GenerateEmbeddingAsync(dto.Query!);
+            string[] queryWords = dto.Query!.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            // Get IDs of projects the user can access
+            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+
+            // Perform a pure vector search on the database.
+            var vectorResults = await _context.Projects
+                .Where(p => accessibleProjectIds.Contains(p.Id) && p.Embedding != null)
+                .OrderBy(p => p.Embedding!.CosineDistance(queryEmbedding))
+                .Take(50) // Limit initial semantic results for performance
+                .Select(p => new
+                {
+                    p.Id,
+                    Distance = (double)p.Embedding!.CosineDistance(queryEmbedding)
+                })
+                .ToListAsync();
+
+            // Convert distance to a similarity score for later use
+            Dictionary<Guid, double> semanticScores = vectorResults.ToDictionary(
+                r => r.Id,
+                r => 1.0 - r.Distance
+            );
+
+            // Perform a separate text search to find exact matches.
+            string loweredQuery = dto.Query.ToLowerInvariant();
+            List<Guid> textResultIds = await _context.Projects
+                .Where(p => accessibleProjectIds.Contains(p.Id) &&
+                    (p.Titles.Any(t => EF.Functions.ILike(t.Text, $"%{loweredQuery}%")) ||
+                        p.Descriptions.Any(d => EF.Functions.ILike(d.Text, $"%{loweredQuery}%"))))
+                .Select(p => p.Id)
+                .Distinct()
+                .Take(50)
+                .ToListAsync();
+
+            // Combine the candidate IDs from both searches.
+            List<Guid> allCandidateIds = semanticScores.Keys.Union(textResultIds).ToList();
+
+            if (allCandidateIds.Count == 0) return [];
+
+            // Fetch the full data for the combined candidate projects.
+            List<Project> candidateProjects = await GetProjectsWithIncludes()
+                .Where(p => allCandidateIds.Contains(p.Id))
+                .ToListAsync();
+
+            // Create a dictionary for fast lookups
+            Dictionary<Guid, Project> projectDict = candidateProjects.ToDictionary(p => p.Id);
+
+            // Calculate hybrid score and rank the results in memory.
+            List<Project> finalScoredProjects = allCandidateIds
+                .Select(id =>
+                {
+                    Project project = projectDict[id];
+                    double semanticSimilarity = semanticScores.GetValueOrDefault(id, 0.0);
+                    double textMatchScore = CalculateTextMatchScore(project, queryWords);
+                    double hybridScore = CalculateHybridScoreOptimized(semanticSimilarity, textMatchScore);
+                    return new
+                    {
+                        Project = project,
+                        Score = hybridScore
+                    };
+                })
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Project)
+                .ToList();
+
+            _logger.LogInformation("Hybrid search returned {Count} results for query: {Query}",
+                finalScoredProjects.Count, dto.Query);
+
+            // Convert to DTOs and apply final filters
+            List<ProjectResponseDTO> projectDtos = finalScoredProjects.Select(MapToProjectDTO).ToList();
+            return ApplyFiltersAndOrdering(projectDtos, dto, userSession).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to perform semantic search for query: {Query}. Falling back to simple text search.",
+                dto.Query);
+
+            // Fallback to simple text search on any error
+            return await GetProjectsBySimpleTextSearchAsync(dto, userSession);
+        }
+    }
+
+    private async Task<List<ProjectResponseDTO>> GetProjectsBySimpleTextSearchAsync(ProjectQueryDTO dto,
+        UserSession userSession)
+    {
+        _logger.LogDebug("Performing optimized simple text search for query: {Query}", dto.Query);
+
+        // Get accessible project IDs efficiently
+        HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+
+        // Build the base query with access filters
+        IQueryable<Project> baseQuery = GetProjectsWithIncludes()
+            .Where(p => accessibleProjectIds.Contains(p.Id));
+
+        // Apply text filtering at database level if query is provided
         if (!string.IsNullOrWhiteSpace(dto.Query))
         {
             string loweredQuery = dto.Query.ToLowerInvariant();
-#pragma warning disable CA1862 // CultureInfo.IgnoreCase cannot by converted to a SQL query, hence we ignore this warning
-            projects = projects.Where(project =>
-                project.Titles.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)) ||
-                project.Descriptions.Any(t => t.Text.ToLowerInvariant().Contains(loweredQuery)));
-#pragma warning restore CA1862
+
+            // Use different approaches based on the database provider
+            bool isInMemory = _context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
+
+            if (isInMemory)
+                // InMemory provider doesn't support ILike, use Contains instead
+                baseQuery = baseQuery.Where(p =>
+                    p.Titles.Any(t => t.Text.ToLower().Contains(loweredQuery)) ||
+                    p.Descriptions.Any(d => d.Text.ToLower().Contains(loweredQuery)));
+            else
+                // Use PostgreSQL ILike for better performance with GIN indexes
+                baseQuery = baseQuery.Where(p =>
+                    p.Titles.Any(t => NpgsqlDbFunctionsExtensions.ILike(EF.Functions, t.Text, $"%{loweredQuery}%")) ||
+                    p.Descriptions.Any(d =>
+                        NpgsqlDbFunctionsExtensions.ILike(EF.Functions, d.Text, $"%{loweredQuery}%")));
         }
 
+        // Execute the query and load projects
+        List<Project> projects = await baseQuery.ToListAsync();
+
+        // Filter roles per project per user for the retrieved projects
+        projects.ForEach(FilterRolesForProject);
+
+        // Convert to DTOs
+        List<ProjectResponseDTO> projectDtos = projects.Select(MapToProjectDTO).ToList();
+
+        _logger.LogInformation("Simple text search returned {Count} results for query: {Query}",
+            projectDtos.Count, dto.Query);
+
+        return ApplyFiltersAndOrdering(projectDtos, dto, userSession).ToList();
+    }
+
+    private static IEnumerable<ProjectResponseDTO> ApplyFiltersAndOrdering(
+        IEnumerable<ProjectResponseDTO> projects,
+        ProjectQueryDTO dto, UserSession userSession)
+    {
         DateTime? startDate;
         if (dto.StartDate.HasValue)
         {
             startDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
             projects = projects.Where(project => project.StartDate >= startDate);
         }
-        
-        if (dto.Lectorate is not null) 
+
+        if (dto.Lectorate is not null)
             projects = projects.Where(project => project.Lectorate == dto.Lectorate);
 
         DateTime? endDate;
@@ -187,24 +357,26 @@ public class ProjectsService : IProjectsService
         if (dto is { StartDate: not null, EndDate: not null })
             projects = projects.Where(project => project.StartDate <= dto.EndDate && project.EndDate >= dto.StartDate);
 
-        projects = dto.OrderByType switch
-        {
-            OrderByType.TitleAsc => projects.OrderBy(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
-            OrderByType.TitleDesc => projects.OrderByDescending(project =>
-                project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
-            OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
-            OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
-            OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
-            OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
-            // Default case = relevance, check if the project is contained in the users recently accessed projects
-            _                         => projects.OrderByDescending(project =>
-                userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id))
-        };
+        // If the order type is default, we rely on the hybrid score ranking.
+        // Otherwise, we apply the requested ordering.
+        if (dto.OrderByType.HasValue)
+            projects = dto.OrderByType switch
+            {
+                OrderByType.TitleAsc => projects.OrderBy(project =>
+                    project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
+                OrderByType.TitleDesc => projects.OrderByDescending(project =>
+                    project.Titles.FirstOrDefault(t => t.Type == TitleType.Primary && t.EndDate == null)?.Text),
+                OrderByType.StartDateAsc  => projects.OrderBy(project => project.StartDate),
+                OrderByType.StartDateDesc => projects.OrderByDescending(project => project.StartDate),
+                OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
+                OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
+                _ => projects.OrderByDescending(project =>
+                    userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id))
+            };
 
-        return projects.ToList();
+        return projects;
     }
-    
+
     /// <summary>
     /// Exports a list of <see cref="Project" />s matching the specified query criteria into a CSV format.
     /// </summary>
@@ -213,11 +385,11 @@ public class ProjectsService : IProjectsService
     public async Task<string> ExportProjectsToCsvAsync(ProjectCsvRequestDTO dto)
     {
         List<ProjectResponseDTO> projects = await GetProjectsByQueryAsync(dto);
-        
+
         // 2) Build CSV
         await using StringWriter writer = new();
         await using CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
-        
+
         // 2a) Header row
         List<string> headers = ["id"];
         if (dto.IncludeStartDate) headers.Add("start_date");
@@ -230,17 +402,17 @@ public class ProjectsService : IProjectsService
         if (dto.IncludeDescription) headers.Add("descriptions");
         if (dto.IncludeLectorate) headers.Add("lectorate");
         if (dto.IncludeOwnerOrganisation) headers.Add("owner_organisation");
-        
+
         foreach (string h in headers)
             csv.WriteField(h);
         await csv.NextRecordAsync();
-        
+
         // 2b) Data rows
         foreach (ProjectResponseDTO p in projects)
         {
             // always write Id
             csv.WriteField(p.Id);
-            
+
             if (dto.IncludeStartDate) csv.WriteField(p.StartDate);
             if (dto.IncludeEndDate) csv.WriteField(p.EndDate);
             if (dto.IncludeUsers)
@@ -255,21 +427,20 @@ public class ProjectsService : IProjectsService
             {
                 List<ProjectTitleResponseDTO> primaryTitles = p.Titles.Where(t => t.Type == TitleType.Primary).ToList();
                 ProjectTitleResponseDTO? unendedTitle = primaryTitles.FirstOrDefault(t => t.EndDate == null);
-                if (unendedTitle is not null)
-                    csv.WriteField(unendedTitle.Text);
-                else
-                    csv.WriteField(primaryTitles.OrderByDescending(t => t.EndDate).FirstOrDefault()?.Text);
-
+                csv.WriteField(unendedTitle is not null
+                    ? unendedTitle.Text
+                    : primaryTitles.OrderByDescending(t => t.EndDate).FirstOrDefault()?.Text);
             }
+
             if (dto.IncludeDescription)
                 csv.WriteField(p.Descriptions.FirstOrDefault(d => d.Type == DescriptionType.Primary)?.Text ??
                     string.Empty);
             if (dto.IncludeLectorate) csv.WriteField(p.Lectorate);
             if (dto.IncludeOwnerOrganisation) csv.WriteField(p.OwnerOrganisation);
-            
+
             await csv.NextRecordAsync();
         }
-        
+
         return writer.ToString();
     }
 
@@ -283,8 +454,17 @@ public class ProjectsService : IProjectsService
         if (userSession is null)
             throw new UserNotAuthenticatedException();
 
-        List<ProjectResponseDTO> projects = await GetAvailableProjects();
-        return projects.ToList();
+        // Use optimized approach to get accessible projects
+        HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+
+        List<Project> projects = await GetProjectsWithIncludes()
+            .Where(p => accessibleProjectIds.Contains(p.Id))
+            .ToListAsync();
+
+        // Filter roles per project per user for the retrieved projects
+        projects.ForEach(FilterRolesForProject);
+
+        return projects.Select(MapToProjectDTO).ToList();
     }
 
     /// <summary>
@@ -306,21 +486,34 @@ public class ProjectsService : IProjectsService
 
         await _context.SaveChangesAsync();
 
+        // Update project embedding asynchronously if embedding service is available
+        if (_embeddingService != null)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await UpdateProjectEmbeddingAsync(id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after project update", id);
+                }
+            });
+
         // Reload the project with all relationships
         Project? loadedProject = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         return MapToProjectDTO(loadedProject);
     }
-    
+
     /// <summary>
     /// Creates a base query for Projects with all related entities included.
     /// This helper method centralizes the query logic to avoid duplication.
     /// </summary>
     /// <returns>An IQueryable of Project with all includes.</returns>
-    private IQueryable<Project> GetProjectsWithIncludes()
-    {
-        return _context.Projects
+    private IQueryable<Project> GetProjectsWithIncludes() =>
+        _context.Projects
             .AsNoTracking()
             .Include(p => p.Titles)
             .Include(p => p.Descriptions)
@@ -340,8 +533,7 @@ public class ProjectsService : IProjectsService
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions);
-    }
-    
+
     /// <summary>
     /// Filters the roles for each user in a project to only include roles for that specific project.
     /// </summary>
@@ -350,69 +542,12 @@ public class ProjectsService : IProjectsService
     {
         foreach (User user in project.Users) user.Roles = user.Roles.Where(r => r.ProjectId == project.Id).ToList();
     }
-    
-    /// <summary>
-    /// Retrieves all projects accessible to the current user based on their SRAM collaborations.
-    /// </summary>
-    /// <returns>A list of projects that the current user has access to</returns>
-    /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
-    private async Task<List<ProjectResponseDTO>> GetAvailableProjects()
-    {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null || userSession.User is null)
-            throw new UserNotAuthenticatedException();
-
-        List<Project> projects;
-        if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
-        {
-            projects = await GetProjectsWithIncludes().ToListAsync();
-        }
-        else if (userSession.User.PermissionLevel == PermissionLevel.SystemAdmin)
-        {
-            List<Project> allProjects = await GetProjectsWithIncludes().ToListAsync();
-            projects = allProjects
-                .Where(p => p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate) ||
-                    p.OwnerOrganisation != null && userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation))
-                .ToList();
-        }
-        else
-        {
-            List<string> accessibleSramIds = userSession.Collaborations
-                .Select(c => c.CollaborationGroup.SCIMId)
-                .ToList();
-
-            projects = await GetProjectsWithIncludes()
-                .Where(p => accessibleSramIds.Contains(p.SCIMId))
-                .ToListAsync();
-        }
-
-        // Filter roles per project per user for the retrieved projects
-        projects.ForEach(FilterRolesForProject);
-
-        return projects.Select(MapToProjectDTO).ToList();
-    }
 
     /// <summary>
     /// Maps a Project entity to a ProjectDTO
     /// </summary>
-    private ProjectResponseDTO MapToProjectDTO(Project project)
-    {
-        // Get all person IDs from contributors to fetch in one query
-        List<Guid> personIds = project.Contributors.Select(c => c.PersonId).Distinct().ToList();
-
-        // Fetch all persons in one go (to avoid N+1 query problem)
-        Dictionary<Guid, Person> people = _context.People
-            .Where(p => personIds.Contains(p.Id))
-            .ToDictionary(p => p.Id);
-
-        List<Guid> organisationIds =
-            project.Organisations.Select(o => o.OrganisationId).Distinct().ToList();
-
-        List<Organisation> organisations = _context.Organisations
-            .Where(o => organisationIds.Contains(o.Id))
-            .ToList();
-
-        return new()
+    private ProjectResponseDTO MapToProjectDTO(Project project) =>
+        new()
         {
             Id = project.Id,
             Titles = project.Titles.ConvertAll(t => new ProjectTitleResponseDTO
@@ -463,37 +598,34 @@ public class ProjectsService : IProjectsService
                 Type = p.Type,
                 Categories = p.Categories,
             }),
-            Organisations = organisations.ConvertAll(o => new ProjectOrganisationResponseDTO
+            Organisations = project.Organisations.Select(po => new ProjectOrganisationResponseDTO
             {
                 ProjectId = project.Id,
                 Organisation = new()
                 {
-                    Id = o.Id,
-                    Name = o.Name,
-                    Roles = project.Organisations.FirstOrDefault(po => po.OrganisationId == o.Id)?.Roles.Select(r =>
-                        new OrganisationRoleResponseDTO
-                        {
-                            Role = r.Role,
-                            StartDate = r.StartDate,
-                            EndDate = r.EndDate,
-                        }
-                    ).ToList() ?? throw new OrganisationNotFoundException(o.Id),
-                    RORId = o.RORId,
+                    Id = po.Organisation!.Id,
+                    Name = po.Organisation.Name,
+                    Roles = po.Roles.Select(r => new OrganisationRoleResponseDTO
+                    {
+                        Role = r.Role,
+                        StartDate = r.StartDate,
+                        EndDate = r.EndDate,
+                    }).ToList(),
+                    RORId = po.Organisation.RORId,
                 }
-            }),
+            }).ToList(),
             Contributors = project.Contributors.Select(c => new ContributorResponseDTO
             {
-                Person = people.TryGetValue(c.PersonId,
-                    out Person? person)
+                Person = c.Person != null
                     ? new()
                     {
-                        Id = person.Id,
-                        ORCiD = person.ORCiD,
-                        Name = person.Name,
-                        GivenName = person.GivenName,
-                        FamilyName = person.FamilyName,
-                        Email = person.Email,
-                        UserId = person.UserId,
+                        Id = c.Person.Id,
+                        ORCiD = c.Person.ORCiD,
+                        Name = c.Person.Name,
+                        GivenName = c.Person.GivenName,
+                        FamilyName = c.Person.FamilyName,
+                        Email = c.Person.Email,
+                        UserId = c.Person.UserId,
                     }
                     : throw new PersonNotFoundException(c.PersonId),
                 Roles = c.Roles.ConvertAll(r => new ContributorRoleResponseDTO
@@ -517,38 +649,212 @@ public class ProjectsService : IProjectsService
             Lectorate = project.Lectorate,
             OwnerOrganisation = project.OwnerOrganisation,
         };
+
+    public async Task<int> UpdateProjectEmbeddingsAsync()
+    {
+        if (_embeddingService == null)
+        {
+            _logger.LogWarning("Embedding service not available for updating project embeddings");
+            return 0;
+        }
+
+        try
+        {
+            // Find projects that need embedding updates
+            List<Project> projectsToUpdate = await _context.Projects
+                .Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .Where(p => p.Embedding == null ||
+                    p.EmbeddingContentHash == null ||
+                    p.EmbeddingLastUpdated == null ||
+                    p.EmbeddingLastUpdated < p.LastestEdit)
+                .ToListAsync();
+
+            if (projectsToUpdate.Count == 0)
+            {
+                _logger.LogInformation("No projects need embedding updates");
+                return 0;
+            }
+
+            _logger.LogInformation("Updating embeddings for {Count} projects", projectsToUpdate.Count);
+
+            int updatedCount = 0;
+            const int batchSize = 10;
+
+            for (int i = 0; i < projectsToUpdate.Count; i += batchSize)
+            {
+                List<Project> batch = projectsToUpdate.Skip(i).Take(batchSize).ToList();
+                string[] texts = batch.Select(p => p.GetEmbeddingText()).ToArray();
+
+                // Generate embeddings for the batch
+                Vector[] embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
+
+                // Update each project
+                for (int j = 0; j < batch.Count; j++)
+                {
+                    Project project = batch[j];
+                    Vector embedding = embeddings[j];
+                    string contentHash = project.GetEmbeddingContentHash();
+
+                    // Only update if content actually changed
+                    if (project.EmbeddingContentHash == contentHash)
+                        continue;
+
+                    project.Embedding = embedding;
+                    project.EmbeddingContentHash = contentHash;
+                    project.EmbeddingLastUpdated = DateTime.UtcNow;
+                    updatedCount++;
+                }
+
+                // Save batch
+                await _context.SaveChangesAsync();
+
+                _logger.LogDebug("Updated embeddings for batch {BatchStart}-{BatchEnd}",
+                    i + 1, Math.Min(i + batchSize, projectsToUpdate.Count));
+            }
+
+            _logger.LogInformation("Successfully updated embeddings for {Count} projects", updatedCount);
+            return updatedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update project embeddings");
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdateProjectEmbeddingAsync(Guid projectId)
+    {
+        if (_embeddingService == null)
+        {
+            _logger.LogWarning("Embedding service not available for updating project embedding");
+            return false;
+        }
+
+        try
+        {
+            Project? project = await _context.Projects
+                .Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+
+            if (project == null)
+            {
+                _logger.LogWarning("Project {ProjectId} not found for embedding update", projectId);
+                return false;
+            }
+
+            string currentContentHash = project.GetEmbeddingContentHash();
+
+            // Check if embedding update is needed
+            if (project.EmbeddingContentHash == currentContentHash && project.Embedding != null)
+            {
+                _logger.LogDebug("Project {ProjectId} embedding is already up to date", projectId);
+                return false;
+            }
+
+            // Generate new embedding
+            string text = project.GetEmbeddingText();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                _logger.LogWarning("Project {ProjectId} has no content for embedding", projectId);
+                return false;
+            }
+
+            Vector embedding = await _embeddingService.GenerateEmbeddingAsync(text);
+
+            // Update project
+            project.Embedding = embedding;
+            project.EmbeddingContentHash = currentContentHash;
+            project.EmbeddingLastUpdated = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Updated embedding for project {ProjectId}", projectId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update embedding for project {ProjectId}", projectId);
+            throw;
+        }
     }
 
     /// <summary>
-    /// Generates a CSV formatted string from a collection of data objects,
-    /// where each object's properties are used to populate the CSV rows and columns.
+    /// Calculates a text match score based on exact word matches in titles and descriptions.
+    /// Higher scores for matches in titles, and bonus for matching multiple words.
+    /// Uses whole word matching for more accurate results.
     /// </summary>
-    /// <typeparam name="T">The type of objects in the data collection to be converted to CSV format.</typeparam>
-    /// <param name="data">The collection of data objects to be serialized to CSV.</param>
-    /// <returns>A CSV formatted string representing the data collection.</returns>
-    private static string GenerateCsv<T>(IEnumerable<T> data)
+    /// <param name="project">The project to score</param>
+    /// <param name="queryWords">The search terms split into individual words</param>
+    /// <returns>A score between 0 and 1 representing text match quality</returns>
+    private static double CalculateTextMatchScore(Project project, string[] queryWords)
     {
-        StringBuilder csv = new();
-        PropertyInfo[] properties = typeof(T).GetProperties();
+        if (queryWords.Length == 0) return 0;
 
-        //  header 
-        csv.AppendLine(string.Join(",", properties.Select(p => p.Name)));
+        // Get all text content
+        string allTitleText = string.Join(" ", project.Titles.Select(t => t.Text)).ToLowerInvariant();
+        string allDescriptionText = string.Join(" ", project.Descriptions.Select(d => d.Text)).ToLowerInvariant();
 
-        //  rows
-        foreach (T item in data)
-        {
-            IEnumerable<string> values = properties.Select(p =>
-            {
-                string value = p.GetValue(item)?.ToString() ?? string.Empty;
-                // Escape commas and quotes in values
-                if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
-                    value = $"\"{value.Replace("\"", "\"\"")}\"";
-                return value;
-            });
+        // Split content into words for whole word matching
+        string[] titleWords = allTitleText.Split([' ', '\t', '\n', '\r', '.', ',', ';', ':', '!', '?'],
+            StringSplitOptions.RemoveEmptyEntries);
+        string[] descriptionWords = allDescriptionText.Split([' ', '\t', '\n', '\r', '.', ',', ';', ':', '!', '?'],
+            StringSplitOptions.RemoveEmptyEntries);
 
-            csv.AppendLine(string.Join(",", values));
-        }
+        // Count exact word matches
+        int titleWordsMatched = queryWords.Count(queryWord =>
+            titleWords.Any(titleWord => titleWord.Equals(queryWord, StringComparison.OrdinalIgnoreCase)));
+        int descriptionWordsMatched = queryWords.Count(queryWord =>
+            descriptionWords.Any(descWord => descWord.Equals(queryWord, StringComparison.OrdinalIgnoreCase)));
 
-        return csv.ToString();
+        double titleMatchScore = (double)titleWordsMatched / queryWords.Length;
+        double descriptionMatchScore = (double)descriptionWordsMatched / queryWords.Length;
+
+        // Combine with configured weights
+        return titleMatchScore * TitleWeight + descriptionMatchScore * DescriptionWeight;
     }
+
+    /// <summary>
+    /// Efficiently gets accessible project IDs for the current user without loading full DTOs.
+    /// </summary>
+    /// <param name="userSession">The current user session</param>
+    /// <returns>Set of project IDs the user can access</returns>
+    private async Task<HashSet<Guid>> GetAccessibleProjectIdsAsync(UserSession userSession)
+    {
+        if (userSession.User!.PermissionLevel == PermissionLevel.SuperAdmin)
+            return await _context.Projects.Select(p => p.Id).ToHashSetAsync();
+
+        if (userSession.User.PermissionLevel == PermissionLevel.SystemAdmin)
+
+            return await _context.Projects
+                .Where(p => (p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate)) ||
+                    (p.OwnerOrganisation != null &&
+                        userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation)))
+                .Select(p => p.Id)
+                .ToHashSetAsync();
+
+        List<string> accessibleSramIds = userSession.Collaborations
+            .Select(c => c.CollaborationGroup.SCIMId)
+            .ToList();
+
+        return await _context.Projects
+            .Where(p => accessibleSramIds.Contains(p.SCIMId))
+            .Select(p => p.Id)
+            .ToHashSetAsync();
+    }
+
+    /// <summary>
+    /// Optimized hybrid score calculation.
+    /// </summary>
+    /// <param name="semanticSimilarity">The semantic similarity score</param>
+    /// <param name="textMatchScore">The text match score</param>
+    /// <returns>Combined hybrid score</returns>
+    private static double CalculateHybridScoreOptimized(double semanticSimilarity, double textMatchScore) =>
+        textMatchScore switch
+        {
+            >= 1.0 => PerfectMatchBoost + (semanticSimilarity * (1.0 - PerfectMatchBoost)),
+            > 0    => (textMatchScore * TextMatchWeight) + (semanticSimilarity * SemanticWeight),
+            _      => semanticSimilarity * NoMatchPenalty
+        };
 }

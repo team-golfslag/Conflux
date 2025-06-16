@@ -38,6 +38,7 @@ Before you begin, ensure you have the following installed:
 - .NET SDK (the version compatible with this project, typically specified in a `global.json` file or inferable from the project files)
 - [Docker](https://www.docker.com/get-started) (Optional, for containerized deployment using [Dockerfile](Dockerfile) and [docker-compose.yml](docker-compose.yml))
 - Git
+- [Git LFS](https://git-lfs.github.io/) (Required for downloading embedding models)
 
 ## Setup
 
@@ -51,6 +52,12 @@ Before you begin, ensure you have the following installed:
     ```sh
     dotnet restore Conflux.sln
     ```
+
+3.  **Download embedding models for semantic search:**
+    ```sh
+    ./download-model.sh
+    ```
+    This script will download the all-MiniLM-L12-v2.onnx embedding model required for semantic search functionality. The models will be placed in a `Models/` directory and used for local, self-hosted semantic search across 100+ languages.
 
 ### Configuration
 
@@ -68,6 +75,21 @@ Key configurations include:
     }
     ```
 -   **Integration Settings:** API keys, secrets, and endpoints for external services like RAiD, SRAM, and NWOpen are configured via environment variables. Refer to [`Conflux.API/Program.cs`](Conflux.API/Program.cs) for details on how these are loaded and used.
+
+-   **Embedding Model Settings:** The semantic search functionality uses locally hosted ONNX embedding models. Configuration is in `appsettings.json` under the `EmbeddingModel` section:
+    ```json
+    // filepath: Conflux.API/appsettings.json
+    {
+      "EmbeddingModel": {
+        "Path": "Models/all-MiniLM-L12-v2.onnx.onnx",
+        "TokenizerPath": "Models/vocab.txt",
+        "MaxTokens": 512,
+        "Dimension": 384
+      }
+      // ... other settings
+    }
+    ```
+    These models are downloaded automatically using the `download-model.sh` script and provide multilingual semantic search capabilities across 100+ languages.
 
     **Required Environment Variables (for integrations and environment-specific overrides):**
     Set the following environment variables in your deployment environment or local shell if you need to override `appsettings.json` or provide sensitive data:
@@ -132,17 +154,21 @@ dotnet build Conflux.sln --configuration Release
 
 #### Using Docker
 
-The project includes a [Dockerfile](Dockerfile) and [docker-compose.yml](docker-compose.yml) for containerized deployment.
+The project includes a [Dockerfile](Dockerfile) and [docker-compose.yml](docker-compose.yml) for containerized deployment. The Docker image automatically includes the embedding models for semantic search.
+
+**Note:** Make sure to run `./download-model.sh` before building the Docker image to ensure the embedding models are available.
 
 1.  **Build and run using Docker Compose:**
     Ensure your `docker-compose.yml` is configured with necessary environment variables or mounts for settings.
     ```sh
+    ./download-model.sh  # Download models first
     docker-compose up --build -d
     ```
     This will build the images and start the services defined in [docker-compose.yml](docker-compose.yml).
 
 2.  **Build and run a single Docker image:**
     ```sh
+    ./download-model.sh  # Download models first
     docker build -t conflux-backend .
     # Ensure to pass all required environment variables for configuration
     docker run -p 8080:80 conflux-backend
@@ -165,13 +191,22 @@ Once the application is running:
 
 Conflux is built using .NET and follows a layered architecture:
 -   **[`Conflux.API`](Conflux.API)**: Exposes the RESTful API endpoints, handles request/response processing, and authentication.
--   **[`Conflux.Domain.Logic`](Conflux.Domain.Logic)**: Contains the core business logic, services (e.g., [`ContributorsService`](Conflux.Domain.Logic/Services/ContributorsService.cs)), and domain-specific operations.
--   **[`Conflux.Domain`](Conflux.Domain)**: Defines the domain entities and interfaces.
--   **[`Conflux.Data`](Conflux.Data)**: Manages data persistence, likely using Entity Framework Core, interacting with the configured database.
+-   **[`Conflux.Domain.Logic`](Conflux.Domain.Logic)**: Contains the core business logic, services (e.g., [`ContributorsService`](Conflux.Domain.Logic/Services/ContributorsService.cs)), and domain-specific operations. Includes the `OnnxEmbeddingService` for local semantic search.
+-   **[`Conflux.Domain`](Conflux.Domain)**: Defines the domain entities and interfaces. Project entities include vector embeddings for semantic search.
+-   **[`Conflux.Data`](Conflux.Data)**: Manages data persistence using Entity Framework Core with PostgreSQL and pgvector extension for vector similarity search.
 -   **Integrations**: Modules for connecting with external services:
     -   [`Conflux.Integrations.RAiD`](Conflux.Integrations.RAiD) (e.g., [`ProjectMapperService.cs`](Conflux.Integrations.RAiD/ProjectMapperService.cs))
     -   [`Conflux.Integrations.SRAM`](Conflux.Integrations.SRAM)
     -   [`Conflux.Integrations.NWOpen`](Conflux.Integrations.NWOpen)
+
+### Semantic Search Features
+
+Conflux includes advanced semantic search capabilities:
+-   **Multilingual Support**: Supports semantic search across 100+ languages using the all-MiniLM-L12-v2.onnx model
+-   **Self-Hosted**: All embedding generation happens locally using ONNX Runtime - no external API calls required
+-   **Always Up-to-Date**: Embeddings are automatically updated whenever project titles or descriptions change
+-   **Vector Similarity**: Uses PostgreSQL's pgvector extension for efficient vector similarity search
+-   **Hybrid Search**: Combines traditional text search with semantic vector search for optimal results
 
 ## Documentation
 

@@ -8,6 +8,7 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Conflux.Domain.Logic.Services;
 
@@ -15,7 +16,12 @@ namespace Conflux.Domain.Logic.Services;
 /// Service for managing project descriptions.
 /// </summary>
 /// <param name="context">The database context.</param>
-public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescriptionsService
+/// <param name="projectsService">The projects service for embedding updates.</param>
+/// <param name="logger">The logger.</param>
+public class ProjectDescriptionsService(
+    ConfluxContext context, 
+    IProjectsService projectsService,
+    ILogger<ProjectDescriptionsService> logger) : IProjectDescriptionsService
 {
     /// <inheritdoc />
     public async Task<List<ProjectDescriptionResponseDTO>> GetDescriptionsByProjectIdAsync(Guid projectId)
@@ -60,6 +66,19 @@ public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescri
         context.ProjectDescriptions.Add(description);
         await context.SaveChangesAsync();
 
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description creation", projectId);
+            }
+        });
+
         return MapToDescriptionResponseDTO(description);
     }
 
@@ -75,6 +94,19 @@ public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescri
 
         await context.SaveChangesAsync();
 
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description update", projectId);
+            }
+        });
+
         return MapToDescriptionResponseDTO(description);
     }
 
@@ -85,6 +117,19 @@ public class ProjectDescriptionsService(ConfluxContext context) : IProjectDescri
 
         context.ProjectDescriptions.Remove(description);
         await context.SaveChangesAsync();
+
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description deletion", projectId);
+            }
+        });
     }
 
     /// <summary>

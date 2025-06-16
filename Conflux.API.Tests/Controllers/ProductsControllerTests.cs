@@ -20,7 +20,6 @@ public class ProductsControllerTests
 {
     private readonly ProductsController _controller;
     private readonly Mock<IProductsService> _mockService;
-    private readonly Mock<ICrossrefService> _mockCrossrefService = new();
 
     public ProductsControllerTests()
     {
@@ -36,7 +35,7 @@ public class ProductsControllerTests
                 Type = ProductType.Dataset,
                 Categories = [ProductCategoryType.Output],
             });
-        _controller = new(_mockService.Object, _mockCrossrefService.Object);
+        _controller = new(_mockService.Object);
     }
 
     [Fact]
@@ -233,24 +232,5 @@ public class ProductsControllerTests
         // Act and Assert
         ActionResult response = await _controller.DeleteProductAsync(projectId, productId);
         Assert.IsType<NotFoundObjectResult>(response);
-    }
-    
-    [Fact]
-    public async Task GetInfoFromDoi_ReturnsProductInfo_ForValidDoi()
-    {
-        // Arrange
-        string doi = "10.1234/testproduct";
-        
-        // Act
-        ActionResult<ProductResponseDTO> response = await _controller.GetInfoFromDoi(doi);
-        
-        // Assert
-        ProductResponseDTO? productInfo = response.Value;
-        Assert.NotNull(productInfo);
-        Assert.Equal("Test Product", productInfo.Title);
-        Assert.Equal(ProductSchema.Doi, productInfo.Schema);
-        Assert.Equal("https://doi.org/testproduct", productInfo.Url);
-        Assert.Equal(ProductType.Dataset, productInfo.Type);
-        Assert.Contains(ProductCategoryType.Output, productInfo.Categories);
     }
 }

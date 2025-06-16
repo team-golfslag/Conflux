@@ -6,6 +6,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Pgvector.EntityFrameworkCore;
 
 namespace Conflux.Data;
 
@@ -24,6 +25,22 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
         string environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
         string basePath = Path.Combine(Directory.GetCurrentDirectory(), "../Conflux.API");
+        
+        // Recursively find solution root if the base path does not exist (for testing)
+        if (!Directory.Exists(basePath))
+        {
+            // Try from the solution root
+            var solutionRoot = Directory.GetCurrentDirectory();
+            while (solutionRoot != null && !File.Exists(Path.Combine(solutionRoot, "Conflux.sln")))
+            {
+                solutionRoot = Directory.GetParent(solutionRoot)?.FullName;
+            }
+            
+            if (solutionRoot != null)
+            {
+                basePath = Path.Combine(solutionRoot, "Conflux.API");
+            }
+        }
 
         IConfiguration config = new ConfigurationBuilder()
             .SetBasePath(basePath)
@@ -37,7 +54,7 @@ public class ConfluxContextFactory : IDesignTimeDbContextFactory<ConfluxContext>
             connectionString = ConnectionStringHelper.GetConnectionStringFromEnvironment();
 
         DbContextOptionsBuilder<ConfluxContext> optionsBuilder = new();
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(connectionString, o => o.UseVector());
 
         return new(optionsBuilder.Options);
     }

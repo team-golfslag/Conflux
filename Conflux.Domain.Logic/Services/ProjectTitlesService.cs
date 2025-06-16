@@ -8,16 +8,24 @@ using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Conflux.Domain.Logic.Services;
 
 public class ProjectTitlesService : IProjectTitlesService
 {
     private readonly ConfluxContext _context;
+    private readonly IProjectsService _projectsService;
+    private readonly ILogger<ProjectTitlesService> _logger;
 
-    public ProjectTitlesService(ConfluxContext context)
+    public ProjectTitlesService(
+        ConfluxContext context, 
+        IProjectsService projectsService,
+        ILogger<ProjectTitlesService> logger)
     {
         _context = context;
+        _projectsService = projectsService;
+        _logger = logger;
     }
 
     public async Task<List<ProjectTitleResponseDTO>> GetTitlesByProjectIdAsync(Guid projectId)
@@ -57,6 +65,20 @@ public class ProjectTitlesService : IProjectTitlesService
                 currentTitle.Text = titleDTO.Text;
 
                 await _context.SaveChangesAsync();
+
+                // Update project embedding asynchronously
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _projectsService.UpdateProjectEmbeddingAsync(projectId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after title update", projectId);
+                    }
+                });
+
                 return await GetTitlesByProjectIdAsync(projectId);
             }
 
@@ -78,6 +100,19 @@ public class ProjectTitlesService : IProjectTitlesService
 
         await _context.SaveChangesAsync();
 
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after title creation", projectId);
+            }
+        });
+
         return await GetTitlesByProjectIdAsync(projectId);
     }
 
@@ -91,6 +126,20 @@ public class ProjectTitlesService : IProjectTitlesService
 
         title.EndDate = DateTime.UtcNow.Date;
         await _context.SaveChangesAsync();
+
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after title end", projectId);
+            }
+        });
+
         return MapToTitleResponseDTO(title);
     }
 
@@ -114,6 +163,19 @@ public class ProjectTitlesService : IProjectTitlesService
 
         _context.ProjectTitles.Remove(title);
         await _context.SaveChangesAsync();
+
+        // Update project embedding asynchronously
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _projectsService.UpdateProjectEmbeddingAsync(projectId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after title deletion", projectId);
+            }
+        });
     }
 
     internal async Task<ProjectTitle?> GetCurrentTitleByTitleTypeHelper(Guid projectId, TitleType titleType)

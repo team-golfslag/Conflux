@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.FeatureManagement;
 using Moq;
+using Pgvector;
 
 namespace Conflux.API.Tests;
 
@@ -47,6 +49,17 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
     // This is a unique name for the in-memory database to avoid conflicts between tests
     private readonly string _databaseName = $"InMemoryConfluxTestDb_{Guid.CreateVersion7()}";
 
+    // Helper method to create vector arrays for mocking
+    private static Vector[] CreateVectorArray(int count)
+    {
+        var vectors = new Vector[count];
+        for (int i = 0; i < count; i++)
+        {
+            vectors[i] = new Vector(new float[384]);
+        }
+        return vectors;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -58,6 +71,24 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                 services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ConfluxContext>));
             if (descriptor != null)
                 services.Remove(descriptor);
+
+            // Remove the existing OnnxEmbeddingService registration
+            ServiceDescriptor? embeddingDescriptor =
+                services.SingleOrDefault(d => d.ServiceType == typeof(IEmbeddingService));
+            if (embeddingDescriptor != null)
+                services.Remove(embeddingDescriptor);
+
+            // Add mock embedding service for tests
+            var mockEmbeddingService = new Mock<IEmbeddingService>();
+            var dummyVector = new Vector(new float[384]);
+            
+            mockEmbeddingService.Setup(x => x.GenerateEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(dummyVector); 
+                
+            mockEmbeddingService.Setup(x => x.GenerateEmbeddingsAsync(It.IsAny<string[]>()))
+                .ReturnsAsync(CreateVectorArray(1));
+                
+            services.AddSingleton(mockEmbeddingService.Object);
 
             // Add in-memory DB context
             services.AddDbContext<ConfluxContext>(options =>
@@ -245,6 +276,12 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
             // Replace the actual service with our mock
             services.AddScoped<IUserSessionService>(_ => mockUserSessionService.Object);
 
+            // Mock the feature manager to disable semantic search for tests
+            Mock<IVariantFeatureManager> mockFeatureManager = new();
+            mockFeatureManager.Setup(m => m.IsEnabledAsync("SemanticSearch", default))
+                .ReturnsAsync(false);
+            services.AddScoped<IVariantFeatureManager>(_ => mockFeatureManager.Object);
+
             // Mock the access control service to allow our test admin user to access all projects with admin role
             Mock<IAccessControlService> mockAccessControlService = new();
             mockAccessControlService.Setup(m => m.UserHasRoleInProject(
@@ -252,6 +289,9 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             // Replace the actual service with our mock
             services.AddScoped<IAccessControlService>(sp => mockAccessControlService.Object);
+
+            // Mock feature manager to disable semantic search
+            services.AddSingleton(Mock.Of<IFeatureManager>());
         });
     }
 }

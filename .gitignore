@@ -11,3 +11,4 @@ conflux-api-client/node_modules
 conflux-api-client/package-lock.json
 conflux-api-client/src/**
 !conflux-api-client/src/.gitkeep
+Models/*

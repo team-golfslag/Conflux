@@ -36,6 +36,7 @@
         <ProjectReference Include="..\Conflux.Data\Conflux.Data.csproj" />
         <ProjectReference Include="..\Conflux.Domain.Logic\Conflux.Domain.Logic.csproj" />
         <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj" />
+        <ProjectReference Include="..\Conflux.Integrations.Archive\Conflux.Integrations.Archive.csproj" />
         <ProjectReference Include="..\Conflux.Integrations.RAiD\Conflux.Integrations.RAiD.csproj" />
     </ItemGroup>
 

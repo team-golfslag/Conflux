@@ -7,6 +7,7 @@ using Conflux.Data;
 using Conflux.Domain.Logic.DTOs.Requests;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Exceptions;
+using Conflux.Integrations.Archive;
 using Crossref.Net.Exceptions;
 using Crossref.Net.Models;
 using Crossref.Net.Services;
@@ -23,11 +24,13 @@ public class ProductsService : IProductsService
 {
     private readonly ConfluxContext _context;
     private readonly ICrossrefService _crossrefService;
+    private readonly IWebArchiveService _webArchiveService;
 
-    public ProductsService(ConfluxContext context, ICrossrefService crossrefService)
+    public ProductsService(ConfluxContext context, ICrossrefService crossrefService, IWebArchiveService webArchiveService)
     {
         _context = context;
         _crossrefService = crossrefService;
+        _webArchiveService = webArchiveService;
     }
 
     /// <summary>
@@ -180,6 +183,18 @@ public class ProductsService : IProductsService
         };
 
         return productResponse;
+    }
+
+    public async Task<string> GetArchiveLinkForUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            throw new ArgumentException("URL cannot be null or empty.", nameof(url));
+
+        string? archiveLink = await _webArchiveService.CreateArchiveLinkAsync(url);
+        if (string.IsNullOrEmpty(archiveLink))
+            throw new ArchiveException($"Failed to create archive link for URL: {url}");
+
+        return archiveLink;
     }
 
     /// <summary>

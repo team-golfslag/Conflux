@@ -31,11 +31,17 @@ if [ -f "$MODEL_DIR/$MODEL_FILE" ] && [ -f "$MODEL_DIR/$TOKENIZER_FILE" ]; then
     echo "   - $MODEL_FILE"
     echo "   - $TOKENIZER_FILE"
     echo ""
-    read -p "Do you want to re-download? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "⏭️  Skipping download."
-        exit 0
+    
+    # Skip interactive prompt in CI environments
+    if [ "$CI" = "true" ]; then
+        echo "CI environment detected, re-downloading models..."
+    else
+        read -p "Do you want to re-download? (y/N): " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Skipping download."
+            exit 0
+        fi
     fi
 fi
 

@@ -20,6 +20,17 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+            - name: Install Git LFS
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install git-lfs
+            - name: Download ML models
+              run: |
+                  chmod +x download-model.sh
+                  ./download-model.sh
+              env:
+                  # Skip interactive prompts in CI
+                  CI: true
             - name: Log in to the Container registry
               uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
               with:

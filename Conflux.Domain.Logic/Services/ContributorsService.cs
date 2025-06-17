@@ -190,11 +190,13 @@ public class ContributorsService : IContributorsService
         Contributor contributor = _context.Contributors
                 .Include(c => c.Roles)
                 .Include(c => c.Person)
+                .ThenInclude(p => p.User)
+                .ThenInclude(user => user.Roles)
                 .Include(c => c.Positions)
                 .SingleOrDefault(p => p.ProjectId == projectId && p.PersonId == personId) ??
             throw new ContributorNotFoundException(projectId);
-        
-        if (contributor.Person?.UserId != null) 
+
+        if (contributor.Person is { UserId: not null, User: not null } && contributor.Person.User.Roles.Any(r => r.ProjectId == projectId && r.Type == UserRoleType.Contributor))
             throw new ContributorHasUserException("Cannot delete contributor with a user account.");
 
         _context.Contributors.Remove(contributor);

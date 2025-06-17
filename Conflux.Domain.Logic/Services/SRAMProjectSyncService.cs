@@ -75,8 +75,6 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
                 Person = person,
                 Roles = [],
             };
-         
-            
             
             newUsers.Add(newUser);
             newPeople.Add(person);
@@ -155,11 +153,19 @@ public class SRAMProjectSyncService : ISRAMProjectSyncService
         
         // For each contributor with a user associated, check if they have the contributor role
         foreach (Contributor contributor in project.Contributors
-                     .Where(c => c.Person?.User != null))
+            .Where(c => c.Person?.User != null).ToList())
         {
             // if they no longer have the contributor role, end all their positions 
             if (contributor.Person!.User!.Roles.Any(r => r.Type == UserRoleType.Contributor && r.ProjectId == project.Id))
                 continue;
+            
+            // if they have not had any positions, remove the contributor
+            if (!contributor.Positions.Any())
+            {
+                project.Contributors.Remove(contributor);
+                _confluxContext.Contributors.Remove(contributor);
+                continue;
+            }
             
             // End all positions
             foreach (ContributorPosition position in contributor.Positions.Where(p => p.EndDate == null))

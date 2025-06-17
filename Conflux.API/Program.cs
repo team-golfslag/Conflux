@@ -109,9 +109,8 @@ public class Program
         builder.Services.AddScoped<IAccessControlService, AccessControlService>();
         builder.Services.AddScoped<ITimelineService, TimelineService>();
         builder.Services.AddScoped<IAdminService, AdminService>();
-        builder.Services.AddScoped<ILanguageService, LanguageService>();
-
-        builder.Services.AddScoped<IEmbeddingService, OnnxEmbeddingService>();
+        builder.Services.AddSingleton<ILanguageService, LanguageService>();
+        builder.Services.AddSingleton<IEmbeddingService, OnnxEmbeddingService>();
 
 
         if (await featureManager.IsEnabledAsync("OrcidIntegration"))

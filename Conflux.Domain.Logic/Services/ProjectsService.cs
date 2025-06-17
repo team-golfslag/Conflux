@@ -451,15 +451,23 @@ public class ProjectsService : IProjectsService
     public async Task<List<ProjectResponseDTO>> GetAllProjectsAsync()
     {
         UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
+        if (userSession?.User is null)
             throw new UserNotAuthenticatedException();
 
         // Use optimized approach to get accessible projects
-        HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
-
-        List<Project> projects = await GetProjectsWithIncludes()
-            .Where(p => accessibleProjectIds.Contains(p.Id))
-            .ToListAsync();
+        List<Project> projects;
+        if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
+        {
+            projects = await GetProjectsWithLimitedIncludes()
+                .ToListAsync();
+        }
+        else
+        {
+            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+            projects = await GetProjectsWithLimitedIncludes()
+                .Where(p => accessibleProjectIds.Contains(p.Id))
+                .ToListAsync();
+        }
 
         // Filter roles per project per user for the retrieved projects
         projects.ForEach(FilterRolesForProject);
@@ -533,6 +541,25 @@ public class ProjectsService : IProjectsService
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions);
+
+
+    /// <summary>
+    /// Creates a base query for Projects with limited includes.
+    /// This helper method centralizes the query logic to avoid duplication.
+    /// </summary>
+    /// <returns>An IQueryable of Project with limited includes.</returns>
+    private IQueryable<Project> GetProjectsWithLimitedIncludes() =>
+        _context.Projects
+            .AsNoTracking()
+            .Include(p => p.Titles)
+            .Include(p => p.Descriptions)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Roles)
+            .Include(p => p.Users)
+            .ThenInclude(user => user.Person)
+            .Include(p => p.Contributors)
+            .ThenInclude(c => c.Person)
+            .ThenInclude(p => p!.User);
 
     /// <summary>
     /// Filters the roles for each user in a project to only include roles for that specific project.

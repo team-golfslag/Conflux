@@ -205,11 +205,8 @@ public class Program
         builder.Services.AddDbContext<ConfluxContext>(opt =>
             opt.UseNpgsql(connectionString,
                 npgsql => npgsql.MigrationsAssembly("Conflux.Data")
-                    .UseVector())
-                .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
-                .EnableDetailedErrors(builder.Environment.IsDevelopment())
-                .LogTo(Console.WriteLine, LogLevel.Warning)
-                .EnableServiceProviderCaching(false));
+                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
+                    .UseVector()));
     }
 
     private static async Task ConfigureSRAMServices(WebApplicationBuilder builder,

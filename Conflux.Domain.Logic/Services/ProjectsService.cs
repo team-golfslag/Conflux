@@ -499,20 +499,6 @@ public class ProjectsService : IProjectsService
 
         await _context.SaveChangesAsync();
 
-        // Update project embedding asynchronously if embedding service is available
-        if (_embeddingService != null)
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await UpdateProjectEmbeddingAsync(id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after project update", id);
-                }
-            });
-        
         // Reload the project with all relationships
         Project? loadedProject = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);

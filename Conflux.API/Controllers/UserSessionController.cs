@@ -3,6 +3,7 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
+using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
@@ -45,7 +46,7 @@ public class UserSessionController : ControllerBase
         UserSession? user;
         try
         {
-            user = await _userSessionService.GetUser();
+            user = await _userSessionService.GetSession();
         }
         catch (Exception)
         {
@@ -59,7 +60,6 @@ public class UserSessionController : ControllerBase
         if (user is null) return Unauthorized();
 
         await _sessionMappingService.CollectSessionData(user);
-        await _userSessionService.UpdateUser();
         if (!IsValidRedirectUrl(redirectUri)) return new ForbidResult();
 
         // Validate redirect URL
@@ -94,7 +94,8 @@ public class UserSessionController : ControllerBase
     [Authorize]
     public async Task<ActionResult<UserSessionResponseDTO>> UserSession()
     {
-        UserSession userSession = await _userSessionService.GetUser() ?? throw new InvalidOperationException();
+        UserSession userSession = await _userSessionService.GetSession() ?? throw new InvalidOperationException();
+        User user = await _userSessionService.GetUser();
         return new UserSessionResponseDTO
         {
             SRAMId = userSession.SRAMId,
@@ -102,31 +103,29 @@ public class UserSessionController : ControllerBase
             GivenName = userSession.GivenName,
             FamilyName = userSession.FamilyName,
             Email = userSession.Email,
-            User = userSession.User != null
-                ? new UserResponseDTO
-                {
-                    Id = userSession.User.Id,
-                    SRAMId = userSession.User.SRAMId,
-                    SCIMId = userSession.User.SCIMId,
-                    Roles = userSession.User.Roles,
-                    PermissionLevel = userSession.User.PermissionLevel,
-                    AssignedLectorates = userSession.User.AssignedLectorates,
-                    AssignedOrganisations = userSession.User.AssignedOrganisations,
-                    RecentlyAccessedProjectIds = userSession.User.RecentlyAccessedProjectIds,
-                    FavouriteProjectIds = userSession.User.FavoriteProjectIds,
-                    Person = userSession.User.Person != null
-                        ? new PersonResponseDTO
-                        {
-                            Id = userSession.User.Person.Id,
-                            ORCiD = userSession.User.Person.ORCiD,
-                            Name = userSession.User.Person.Name,
-                            GivenName = userSession.User.Person.GivenName,
-                            FamilyName = userSession.User.Person.FamilyName,
-                            Email = userSession.User.Person.Email,
-                        }
-                        : null,
-                }
-                : null,
+            User = new()
+            {
+                Id = user.Id,
+                SRAMId = user.SRAMId,
+                SCIMId = user.SCIMId,
+                Roles = user.Roles,
+                PermissionLevel = user.PermissionLevel,
+                AssignedLectorates = user.AssignedLectorates,
+                AssignedOrganisations = user.AssignedOrganisations,
+                RecentlyAccessedProjectIds = user.RecentlyAccessedProjectIds,
+                FavouriteProjectIds = user.FavoriteProjectIds,
+                Person = user.Person != null
+                    ? new PersonResponseDTO
+                    {
+                        Id = user.Person.Id,
+                        ORCiD = user.Person.ORCiD,
+                        Name = user.Person.Name,
+                        GivenName = user.Person.GivenName,
+                        FamilyName = user.Person.FamilyName,
+                        Email = user.Person.Email,
+                    }
+                    : null,
+            },
             Collaborations = userSession.Collaborations
         };
     }

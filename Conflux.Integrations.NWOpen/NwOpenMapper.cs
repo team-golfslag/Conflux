@@ -275,7 +275,7 @@ public static class NwOpenMapper
         else
         {
             // Create a new development user and add to our list
-            devUser = UserSession.Development().User!;
+            devUser = UserSession.Development().Item2;
             Users.Add(devUser);
             People.Add(devUser.Person!);
         }

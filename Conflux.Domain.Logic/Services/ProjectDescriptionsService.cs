@@ -66,18 +66,16 @@ public class ProjectDescriptionsService(
         context.ProjectDescriptions.Add(description);
         await context.SaveChangesAsync();
 
-        // Update project embedding asynchronously
-        _ = Task.Run(async () =>
+        try 
         {
-            try
-            {
-                await projectsService.UpdateProjectEmbeddingAsync(projectId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description creation", projectId);
-            }
-        });
+            // Update embedding directly instead of using Task.Run
+            await projectsService.UpdateProjectEmbeddingAsync(projectId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description creation", projectId);
+            // Continue despite embedding update failure
+        }
 
         return MapToDescriptionResponseDTO(description);
     }
@@ -94,18 +92,14 @@ public class ProjectDescriptionsService(
 
         await context.SaveChangesAsync();
 
-        // Update project embedding asynchronously
-        _ = Task.Run(async () =>
+        try
         {
-            try
-            {
-                await projectsService.UpdateProjectEmbeddingAsync(projectId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description update", projectId);
-            }
-        });
+            await projectsService.UpdateProjectEmbeddingAsync(projectId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update embedding for project {ProjectId} after description update", projectId);
+        }
 
         return MapToDescriptionResponseDTO(description);
     }

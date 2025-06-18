@@ -6,6 +6,7 @@
 using Conflux.API.Attributes;
 using Conflux.API.Filters;
 using Conflux.Domain;
+using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Http;
@@ -50,7 +51,7 @@ public class AccessControlFilterTests
     {
         // Arrange
         var userSessionService = new Mock<IUserSessionService>();
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync((UserSession?)null);
+        userSessionService.Setup(x => x.GetUser()).Throws(new UserNotAuthenticatedException());
 
         var accessControlService = new Mock<IAccessControlService>();
         AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
@@ -63,11 +64,7 @@ public class AccessControlFilterTests
         };
         AuthorizationFilterContext context = new(actionContext, new List<IFilterMetadata>());
 
-        // Act
-        await filter.OnAuthorizationAsync(context);
-
-        // Assert
-        Assert.IsType<UnauthorizedResult>(context.Result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => filter.OnAuthorizationAsync(context));
     }
 
     [Fact]
@@ -78,12 +75,15 @@ public class AccessControlFilterTests
         Guid projectId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(user);
+
 
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, UserRoleType.Admin))
@@ -124,12 +124,15 @@ public class AccessControlFilterTests
         Guid projectId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(user);
+
 
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(userId, projectId, UserRoleType.Admin))
@@ -172,12 +175,14 @@ public class AccessControlFilterTests
         Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var accessControlService = new Mock<IAccessControlService>();
         accessControlService.Setup(x => x.UserHasRoleInProject(
@@ -217,12 +222,14 @@ public class AccessControlFilterTests
         Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var accessControlService = new Mock<IAccessControlService>();
         AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);
@@ -258,12 +265,14 @@ public class AccessControlFilterTests
         Guid userId = Guid.CreateVersion7();
 
         var userSessionService = new Mock<IUserSessionService>();
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
-        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        userSessionService.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var accessControlService = new Mock<IAccessControlService>();
         AccessControlFilter filter = new(userSessionService.Object, accessControlService.Object, UserRoleType.Admin);

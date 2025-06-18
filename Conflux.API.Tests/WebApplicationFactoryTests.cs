@@ -242,9 +242,11 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
 
             // Mock the user session service to return our test admin user
             Mock<IUserSessionService> mockUserSessionService = new();
-            mockUserSessionService.Setup(m => m.GetUser()).ReturnsAsync(new UserSession
+            
+            // Set up the test user and session
+            UserSession testSession = new UserSession
             {
-                User = testUser,
+                UserId = testUserId,
                 Collaborations =
                 [
                     new()
@@ -271,7 +273,11 @@ public class WebApplicationFactoryTests : WebApplicationFactory<Program>
                         ],
                     },
                 ],
-            });
+            };
+            
+            mockUserSessionService.Setup(m => m.GetSession()).ReturnsAsync(testSession);
+            
+            mockUserSessionService.Setup(m => m.GetUser()).ReturnsAsync(testUser);
 
             // Replace the actual service with our mock
             services.AddScoped<IUserSessionService>(_ => mockUserSessionService.Object);

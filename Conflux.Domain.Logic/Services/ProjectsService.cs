@@ -64,7 +64,7 @@ public class ProjectsService : IProjectsService
     /// <exception cref="UserNotAuthenticatedException">Thrown when the user is not authenticated</exception>
     public async Task<List<UserRole>?> GetRolesFromProject(Project project)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
+        UserSession? userSession = await _userSessionService.GetSession();
         if (userSession is null)
             throw new UserNotAuthenticatedException();
         Collaboration? collaboration =
@@ -80,9 +80,7 @@ public class ProjectsService : IProjectsService
 
     public async Task FavoriteProjectAsync(Guid projectId, bool favorite)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null)
-            throw new UserNotAuthenticatedException();
+        User user = await _userSessionService.GetUser();
 
         Project? project = await _context.Projects
             .Include(p => p.Users)
@@ -92,13 +90,6 @@ public class ProjectsService : IProjectsService
         if (project is null)
             throw new ProjectNotFoundException(projectId);
 
-        if (userSession.User is null)
-            return;
-
-        User? user = await _context.Users.FindAsync(userSession.User.Id);
-        if (user is null)
-            return;
-
         if (favorite && !user.FavoriteProjectIds.Contains(projectId))
             user.FavoriteProjectIds.Add(projectId);
         else if (!favorite && user.FavoriteProjectIds.Contains(projectId))
@@ -106,7 +97,6 @@ public class ProjectsService : IProjectsService
 
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
-        await _userSessionService.UpdateUser();
     }
 
     /// <summary>
@@ -131,30 +121,29 @@ public class ProjectsService : IProjectsService
     /// <exception cref="ProjectNotFoundException">Thrown when the project is not found</exception>
     public async Task<Project> GetProjectByIdAsync(Guid id)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession?.User is null)
+        UserSession? userSession = await _userSessionService.GetSession();
+        if (userSession is null)
             throw new UserNotAuthenticatedException();
+        User user = await _userSessionService.GetUser();
 
         Project? project = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
 
         FilterRolesForProject(project);
-
-
-        userSession.User.RecentlyAccessedProjectIds =
-            userSession.User.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+        
+        user.RecentlyAccessedProjectIds = user.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
-        await _userSessionService.CommitUser(userSession);
 
-        switch (userSession.User.PermissionLevel)
+        switch (user.PermissionLevel)
         {
             case PermissionLevel.SuperAdmin:
             case PermissionLevel.SystemAdmin when (
-                project.Lectorate is not null && userSession.User.AssignedLectorates.Contains(project.Lectorate) ||
+                project.Lectorate is not null && user.AssignedLectorates.Contains(project.Lectorate) ||
                 project.OwnerOrganisation is not null &&
-                userSession.User.AssignedOrganisations.Contains(project.OwnerOrganisation)):
-            case PermissionLevel.User when (userSession.Collaborations
-                .Select(c => c.CollaborationGroup.SCIMId).Contains(project.SCIMId)):
+                user.AssignedOrganisations.Contains(project.OwnerOrganisation)):
+            case PermissionLevel.User when userSession.Collaborations
+                .Select(c => c.CollaborationGroup.SCIMId).Contains(project.SCIMId):
                 return project;
             default:
                 throw new ProjectNotFoundException(id);
@@ -174,8 +163,11 @@ public class ProjectsService : IProjectsService
     /// <returns>Filtered and ordered list of project DTOs</returns>
     public async Task<List<ProjectResponseDTO>> GetProjectsByQueryAsync(ProjectQueryDTO dto)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession is null || userSession.User is null)
+        UserSession? userSession = await _userSessionService.GetSession();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        User? user = await _userSessionService.GetUser();
+        if (user is null)
             throw new UserNotAuthenticatedException();
 
         // Check if semantic search is enabled via feature flag
@@ -184,17 +176,17 @@ public class ProjectsService : IProjectsService
         if (useSemanticSearch && _embeddingService != null && !string.IsNullOrWhiteSpace(dto.Query))
         {
             _logger.LogDebug("Using semantic search for query: {Query}", dto.Query);
-            return await GetProjectsBySemanticSearchAsync(dto, userSession);
+            return await GetProjectsBySemanticSearchAsync(dto, user, userSession);
         }
         else
         {
             _logger.LogDebug("Using simple text search for query: {Query}", dto.Query);
-            return await GetProjectsBySimpleTextSearchAsync(dto, userSession);
+            return await GetProjectsBySimpleTextSearchAsync(dto, user, userSession);
         }
     }
 
     private async Task<List<ProjectResponseDTO>> GetProjectsBySemanticSearchAsync(ProjectQueryDTO dto,
-        UserSession userSession)
+        User user, UserSession userSession)
     {
         try
         {
@@ -205,7 +197,7 @@ public class ProjectsService : IProjectsService
             string[] queryWords = dto.Query!.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             // Get IDs of projects the user can access
-            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, userSession);
 
             // Perform a pure vector search on the database.
             var vectorResults = await _context.Projects
@@ -272,7 +264,7 @@ public class ProjectsService : IProjectsService
 
             // Convert to DTOs and apply final filters
             List<ProjectResponseDTO> projectDtos = finalScoredProjects.Select(MapToProjectDTO).ToList();
-            return ApplyFiltersAndOrdering(projectDtos, dto, userSession).ToList();
+            return ApplyFiltersAndOrdering(projectDtos, dto, user).ToList();
         }
         catch (Exception ex)
         {
@@ -281,17 +273,17 @@ public class ProjectsService : IProjectsService
                 dto.Query);
 
             // Fallback to simple text search on any error
-            return await GetProjectsBySimpleTextSearchAsync(dto, userSession);
+            return await GetProjectsBySimpleTextSearchAsync(dto, user, userSession);
         }
     }
 
     private async Task<List<ProjectResponseDTO>> GetProjectsBySimpleTextSearchAsync(ProjectQueryDTO dto,
-        UserSession userSession)
+        User user, UserSession userSession)
     {
         _logger.LogDebug("Performing optimized simple text search for query: {Query}", dto.Query);
 
         // Get accessible project IDs efficiently
-        HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+        HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, userSession);
 
         // Build the base query with access filters
         IQueryable<Project> baseQuery = GetProjectsWithIncludes()
@@ -330,12 +322,12 @@ public class ProjectsService : IProjectsService
         _logger.LogInformation("Simple text search returned {Count} results for query: {Query}",
             projectDtos.Count, dto.Query);
 
-        return ApplyFiltersAndOrdering(projectDtos, dto, userSession).ToList();
+        return ApplyFiltersAndOrdering(projectDtos, dto, user).ToList();
     }
 
     private static IEnumerable<ProjectResponseDTO> ApplyFiltersAndOrdering(
         IEnumerable<ProjectResponseDTO> projects,
-        ProjectQueryDTO dto, UserSession userSession)
+        ProjectQueryDTO dto, User user)
     {
         DateTime? startDate;
         if (dto.StartDate.HasValue)
@@ -371,7 +363,7 @@ public class ProjectsService : IProjectsService
                 OrderByType.EndDateAsc    => projects.OrderBy(project => project.EndDate),
                 OrderByType.EndDateDesc   => projects.OrderByDescending(project => project.EndDate),
                 _ => projects.OrderByDescending(project =>
-                    userSession.User!.RecentlyAccessedProjectIds.Contains(project.Id))
+                    user!.RecentlyAccessedProjectIds.Contains(project.Id))
             };
 
         return projects;
@@ -450,20 +442,24 @@ public class ProjectsService : IProjectsService
     /// <returns>All projects as DTOs</returns>
     public async Task<List<ProjectResponseDTO>> GetAllProjectsAsync()
     {
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession?.User is null)
+        UserSession? userSession = await _userSessionService.GetSession();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+
+        User? user = await _userSessionService.GetUser();
+        if (user is null)
             throw new UserNotAuthenticatedException();
 
         // Use optimized approach to get accessible projects
         List<Project> projects;
-        if (userSession.User.PermissionLevel == PermissionLevel.SuperAdmin)
+        if (user.PermissionLevel == PermissionLevel.SuperAdmin)
         {
             projects = await GetProjectsWithLimitedIncludes()
                 .ToListAsync();
         }
         else
         {
-            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(userSession);
+            HashSet<Guid> accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, userSession);
             projects = await GetProjectsWithLimitedIncludes()
                 .Where(p => accessibleProjectIds.Contains(p.Id))
                 .ToListAsync();
@@ -507,7 +503,7 @@ public class ProjectsService : IProjectsService
                     _logger.LogError(ex, "Failed to update embedding for project {ProjectId} after project update", id);
                 }
             });
-
+        
         // Reload the project with all relationships
         Project? loadedProject = await GetProjectsWithIncludes().SingleOrDefaultAsync(p => p.Id == id)
             ?? throw new ProjectNotFoundException(id);
@@ -541,7 +537,6 @@ public class ProjectsService : IProjectsService
             .ThenInclude(c => c.Roles)
             .Include(p => p.Contributors)
             .ThenInclude(c => c.Positions);
-
 
     /// <summary>
     /// Creates a base query for Projects with limited includes.
@@ -845,25 +840,27 @@ public class ProjectsService : IProjectsService
     /// <summary>
     /// Efficiently gets accessible project IDs for the current user without loading full DTOs.
     /// </summary>
+    /// <param name="user">The current user</param>
     /// <param name="userSession">The current user session</param>
     /// <returns>Set of project IDs the user can access</returns>
-    private async Task<HashSet<Guid>> GetAccessibleProjectIdsAsync(UserSession userSession)
+    private async Task<HashSet<Guid>> GetAccessibleProjectIdsAsync(User user, UserSession userSession)
     {
-        if (userSession.User!.PermissionLevel == PermissionLevel.SuperAdmin)
+        if (user!.PermissionLevel == PermissionLevel.SuperAdmin)
             return await _context.Projects.Select(p => p.Id).ToHashSetAsync();
-
-        if (userSession.User.PermissionLevel == PermissionLevel.SystemAdmin)
-
-            return await _context.Projects
-                .Where(p => (p.Lectorate != null && userSession.User.AssignedLectorates.Contains(p.Lectorate)) ||
-                    (p.OwnerOrganisation != null &&
-                        userSession.User.AssignedOrganisations.Contains(p.OwnerOrganisation)))
-                .Select(p => p.Id)
-                .ToHashSetAsync();
 
         List<string> accessibleSramIds = userSession.Collaborations
             .Select(c => c.CollaborationGroup.SCIMId)
             .ToList();
+
+        if (user.PermissionLevel == PermissionLevel.SystemAdmin)
+            return await _context.Projects
+                .Where(p => (p.Lectorate != null && user.AssignedLectorates.Contains(p.Lectorate)) ||
+                    (p.OwnerOrganisation != null &&
+                        user.AssignedOrganisations.Contains(p.OwnerOrganisation)) ||
+                    accessibleSramIds.Contains(p.SCIMId))
+                .Select(p => p.Id)
+                .ToHashSetAsync();
+
 
         return await _context.Projects
             .Where(p => accessibleSramIds.Contains(p.SCIMId))

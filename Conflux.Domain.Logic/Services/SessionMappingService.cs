@@ -277,6 +277,7 @@ public class SessionMappingService : ISessionMappingService
                 .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
 
             var users = await _context.Users
+                .AsNoTracking()
                 .Where(p => group.Members.Select(m => m.SCIMId).Contains(p.SCIMId))
                 .ToListAsync();
 

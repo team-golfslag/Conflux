@@ -20,12 +20,7 @@ public class AccessControlFilter(
 {
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        UserSession? userSession = await userSessionService.GetUser();
-        if (userSession?.User is null)
-        {
-            context.Result = new UnauthorizedResult();
-            return;
-        }
+        User user = await userSessionService.GetUser();
 
         RouteValueDictionary routeData = context.RouteData.Values;
         Endpoint? endpoint = context.HttpContext.GetEndpoint();
@@ -43,10 +38,8 @@ public class AccessControlFilter(
             if (!Guid.TryParse(projectIdString, out projectId))
                 throw new ArgumentException("Project ID is not a valid GUID", nameof(projectIdString));
         }
-
-        Guid userId = userSession.User!.Id;
-
-        bool hasRole = await accessControlService.UserHasRoleInProject(userId, projectId, userRoleType);
+        
+        bool hasRole = await accessControlService.UserHasRoleInProject(user.Id, projectId, userRoleType);
         if (!hasRole)
             throw new UnauthorizedAccessException("User does not have the required role in the project");
     }

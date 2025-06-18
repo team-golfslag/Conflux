@@ -56,13 +56,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
     public async Task Endpoint_WithRequireProjectRoleAttribute_RejectsUnauthorizedUser()
     {
         // Arrange
-        UserSession userSession = new()
-        {
-            User = null, // No authenticated user
-            Collaborations = new(),
-        };
-
-        HttpClient client = await CreateTestClient(userSession);
+        HttpClient client = await CreateTestClient(null);
 
         // Act
         HttpResponseMessage response = await client.GetAsync("/test-auth/admin");
@@ -78,9 +72,10 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
         Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
 
@@ -103,9 +98,10 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
         Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
 
@@ -127,10 +123,11 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
         // Arrange
         Guid userId = Guid.CreateVersion7();
         Guid projectId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-
+        
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
 
@@ -155,9 +152,10 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
         // Arrange
         Guid userId = Guid.CreateVersion7();
 
+        User user = CreateUserWithPerson(userId, "Test User", "test-scim-id");
         UserSession userSession = new()
         {
-            User = CreateUserWithPerson(userId, "Test User", "test-scim-id"),
+            UserId = userId,
             Collaborations = new(),
         };
 
@@ -185,7 +183,18 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
         Func<Guid, Guid, UserRoleType, Task<bool>>? roleCheck = null)
     {
         var userSessionServiceMock = new Mock<IUserSessionService>();
-        userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+
+        if (userSession != null)
+        {
+            // Create a user based on the session
+            User user = CreateUserWithPerson(userSession.UserId, userSession.Name ?? "Test User", "test-scim-id");
+            userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
+        }
+        else
+        {
+            userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync((User?)null);
+        }
 
         var accessControlServiceMock = new Mock<IAccessControlService>();
 
@@ -230,9 +239,9 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
                                 context.RequestServices.GetRequiredService<IUserSessionService>();
                             IAccessControlService accessControlService =
                                 context.RequestServices.GetRequiredService<IAccessControlService>();
-                            UserSession? session = await userSessionService.GetUser();
+                            User? user = await userSessionService.GetUser();
 
-                            if (session?.User == null)
+                            if (user == null)
                             {
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
@@ -246,7 +255,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
                             }
 
                             bool hasRole = await accessControlService.UserHasRoleInProject(
-                                session.User.Id, projectId, UserRoleType.Admin);
+                                user.Id, projectId, UserRoleType.Admin);
 
                             if (!hasRole)
                             {
@@ -265,9 +274,9 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
                                 context.RequestServices.GetRequiredService<IUserSessionService>();
                             IAccessControlService accessControlService =
                                 context.RequestServices.GetRequiredService<IAccessControlService>();
-                            UserSession? session = await userSessionService.GetUser();
+                            User? user = await userSessionService.GetUser();
 
-                            if (session?.User == null)
+                            if (user == null)
                             {
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
@@ -275,7 +284,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
 
                             // For endpoints without project ID, we use empty GUID
                             bool hasRole = await accessControlService.UserHasRoleInProject(
-                                session.User.Id, Guid.Empty, UserRoleType.Admin);
+                                user.Id, Guid.Empty, UserRoleType.Admin);
 
                             if (!hasRole)
                             {
@@ -294,9 +303,9 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
                                 context.RequestServices.GetRequiredService<IUserSessionService>();
                             IAccessControlService accessControlService =
                                 context.RequestServices.GetRequiredService<IAccessControlService>();
-                            UserSession? session = await userSessionService.GetUser();
+                            User? user = await userSessionService.GetUser();
 
-                            if (session?.User == null)
+                            if (user == null)
                             {
                                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                 return;
@@ -310,7 +319,7 @@ public class AccessControlIntegrationTests : IClassFixture<WebApplicationFactory
                             }
 
                             bool hasRole = await accessControlService.UserHasRoleInProject(
-                                session.User.Id, projectId, UserRoleType.Contributor);
+                               user.Id, projectId, UserRoleType.Contributor);
 
                             if (!hasRole)
                             {

@@ -77,35 +77,20 @@ public class OrcidController : ControllerBase
         // It bypasses the actual ORCID flow and hardcodes an ORCID.
         // If SRAMAuthentication is disabled, it just redirects without saving.
         // If SRAMAuthentication is enabled, it tries to save the hardcoded ORCID.
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession == null)
-            return Unauthorized("User not logged in");
-
-        if (userSession.User == null)
-            return BadRequest("User session does not contain a user");
-
+        User user = await _userSessionService.GetUser();
         const string exampleOrcid = "https://orcid.org/0000-0002-1825-0097";
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
         // This still needs the fix to avoid the DbUpdateException.
-        User? dbUser = await _context.Users
-            .Include(user => user.Person)
-            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
-        if (dbUser == null)
-            return NotFound("User not found in database.");
-
         // Make sure we can access the Person
-        if (dbUser.Person == null)
+        if (user.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
         
-        dbUser.Person.ORCiD = exampleOrcid;
-        // No need for _context.Users.Update(dbUser) when modifying a tracked entity.
+        user.Person.ORCiD = exampleOrcid;
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
-
-        // Update the session state after saving changes
-        await _userSessionService.UpdateUser();
 
         // Redirect to the final destination after linking (in this dev path)
         return Redirect(safeRedirectUri); // Use the validated safeRedirectUri
@@ -224,27 +209,17 @@ public class OrcidController : ControllerBase
                 return BadRequest("Could not retrieve ORCID ID from claims or session.");
         }
 
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession?.User == null)
-            // This scenario might happen if the primary session expired while the user was at ORCID.
-            // Handle appropriately - maybe redirect to login?
-            return Unauthorized("Primary user session not found or invalid. Please log in again.");
+        User user = await _userSessionService.GetUser();
 
-        User? dbUser = await _context.Users
-            .Include(user => user.Person)
-            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
-        if (dbUser == null)
-            // User exists in session but not DB? This indicates an inconsistency.
-            return NotFound($"User with ID {userSession.User.Id} not found in database.");
-
-        if (dbUser.Person == null)
+        if (user.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
         
-        dbUser.Person.ORCiD = $"https://orcid.org/{orcidId}";
+        user.Person.ORCiD = $"https://orcid.org/{orcidId}";
         try
         {
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException ex)
@@ -255,35 +230,25 @@ public class OrcidController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while linking the ORCID.");
         }
 
-        await _userSessionService.UpdateUser();
         return Redirect(safeRedirectUri);
     }
 
     [HttpGet("unlink")]
     public async Task<IActionResult> OrcidUnlink()
     {
-        // Get current user session
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession?.User == null)
-            return Unauthorized("User not logged in or session invalid.");
-
-        // Fetch the corresponding User entity from the database
-        User? dbUser = await _context.Users
-            .Include(user => user.Person)
-            .SingleOrDefaultAsync(u => u.Id == userSession.User.Id);
-        if (dbUser == null) return NotFound($"User with ID {userSession.User.Id} not found in database.");
-        
-        if (dbUser.Person == null)
+        User user = await _userSessionService.GetUser();
+        if (user.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
 
         // Update *only* the ORCiD property
-        dbUser.Person.ORCiD = null;
+        user.Person.ORCiD = null;
 
         // Save changes
         try
         {
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException ex)
@@ -291,10 +256,7 @@ public class OrcidController : ControllerBase
             Console.WriteLine($"Error saving ORCID unlink: {ex}");
             return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while unlinking the ORCID.");
         }
-
-        userSession.User = dbUser;
-        await _userSessionService.CommitUser(userSession);
-
+        
         return Ok("ORCID successfully unlinked.");
     }
 

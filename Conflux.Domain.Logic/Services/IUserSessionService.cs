@@ -10,8 +10,8 @@ namespace Conflux.Domain.Logic.Services;
 
 public interface IUserSessionService
 {
-    Task<UserSession?> GetUser();
-    Task<UserSession?> UpdateUser();
+    Task<UserSession?> GetSession();
+    Task<User> GetUser();
     Task CommitUser(UserSession userSession);
     Task<UserSession?> SetUser(ClaimsPrincipal? claims);
     void ClearUser();

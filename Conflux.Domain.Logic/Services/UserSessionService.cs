@@ -69,7 +69,7 @@ public class UserSessionService : IUserSessionService
             
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
         if (userSession == null)
-            return null;
+            return await SetUser(null);
 
         User? user = await _confluxContext.Users
             .SingleOrDefaultAsync(p => p.Id == userSession.UserId);
@@ -113,19 +113,22 @@ public class UserSessionService : IUserSessionService
         UserSession? userSession = await GetUserSession(claims);
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-
-        // Check if the user is already in the session
-        if (userSession.UserId == Guid.Empty)
-            return userSession;
         
-        User user = await GetUser();
+        User? user = await _confluxContext.Users
+            .Include(p => p.Person)
+            .SingleOrDefaultAsync(p => p.SRAMId == userSession.SRAMId);
 
-        if (user is not { PermissionLevel: PermissionLevel.User } ||
-            !_superAdminEmails.Contains(userSession.Email)) return userSession;
+        if (userSession.UserId == Guid.Empty) 
+            userSession.UserId = user?.Id ?? Guid.Empty;
+
+        if (user is { PermissionLevel: PermissionLevel.User } &&
+            _superAdminEmails.Contains(userSession.Email))
+        {
+            user.PermissionLevel = PermissionLevel.SuperAdmin;
+            await _confluxContext.SaveChangesAsync();
+        }
         
-        user.PermissionLevel = PermissionLevel.SuperAdmin;
-        _confluxContext.Users.Update(user);
-        await _confluxContext.SaveChangesAsync();
+        _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
 
         return userSession;
     }

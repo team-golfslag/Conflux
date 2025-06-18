@@ -90,13 +90,17 @@ public class ProjectsService : IProjectsService
         if (project is null)
             throw new ProjectNotFoundException(projectId);
 
-        if (favorite && !user.FavoriteProjectIds.Contains(projectId))
-            user.FavoriteProjectIds.Add(projectId);
-        else if (!favorite && user.FavoriteProjectIds.Contains(projectId))
-            user.FavoriteProjectIds.Remove(projectId);
+        // Load the user fresh from context to avoid tracking conflicts
+        User? trackedUser = await _context.Users.FindAsync(user.Id);
+        if (trackedUser is not null)
+        {
+            if (favorite && !trackedUser.FavoriteProjectIds.Contains(projectId))
+                trackedUser.FavoriteProjectIds.Add(projectId);
+            else if (!favorite && trackedUser.FavoriteProjectIds.Contains(projectId))
+                trackedUser.FavoriteProjectIds.Remove(projectId);
 
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -131,9 +135,14 @@ public class ProjectsService : IProjectsService
 
         FilterRolesForProject(project);
         
-        user.RecentlyAccessedProjectIds = user.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
+        // Update recently accessed projects by loading the user fresh from context
+        // to avoid tracking conflicts with the detached user from GetUser()
+        User? trackedUser = await _context.Users.FindAsync(user.Id);
+        if (trackedUser is not null)
+        {
+            trackedUser.RecentlyAccessedProjectIds = trackedUser.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+            await _context.SaveChangesAsync();
+        }
 
         switch (user.PermissionLevel)
         {

@@ -47,19 +47,34 @@ public class SessionMappingService : ISessionMappingService
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
             return;
 
+        _context.ChangeTracker.Clear();
+
         await CollectAndAddProjects(userSession);
         await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
 
         await CollectAndAddUsers(userSession);
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
 
         await CollectAndAddRoles(userSession);
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
 
         await CoupleUsersToProject(userSession);
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
 
         await CoupleRolesToUsers(userSession);
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
 
         await CollectAndAddContributors(userSession);
-
         await _context.SaveChangesAsync();
     }
 
@@ -94,9 +109,7 @@ public class SessionMappingService : ISessionMappingService
                 Contributor newContributor = new()
                 {
                     PersonId = user.Person.Id,
-                    Person = user.Person,
                     ProjectId = project.Id,
-                    Project = project,
                     Roles = [],
                     Positions = [],
                     Leader = false,
@@ -104,9 +117,6 @@ public class SessionMappingService : ISessionMappingService
                 };
 
                 _context.Contributors.Add(newContributor);
-                project.Contributors.Add(newContributor);
-                _context.Projects.Update(project);
-
                 await _context.SaveChangesAsync();
             }
         }
@@ -188,9 +198,8 @@ public class SessionMappingService : ISessionMappingService
             .SingleOrDefaultAsync(p => p.SCIMId == scimUser.Id);
         if (existingPerson is not null)
         {
-            if (existingPerson.SRAMId != null || existingPerson.Person.Email != userSession.Email) return;
+            if (existingPerson.SRAMId != null || existingPerson.Person?.Email != userSession.Email) return;
             existingPerson.SRAMId = userSession.SRAMId;
-            _context.Users.Update(existingPerson);
             return;
         }
 
@@ -276,17 +285,20 @@ public class SessionMappingService : ISessionMappingService
                 .Include(p => p.Users)
                 .SingleOrDefaultAsync(p => p.SCIMId == group.SCIMId);
 
+            if (project is null) continue;
+
+            var userScimIds = group.Members.Select(m => m.SCIMId).ToList();
             var users = await _context.Users
-                .AsNoTracking()
-                .Where(p => group.Members.Select(m => m.SCIMId).Contains(p.SCIMId))
+                .Where(p => userScimIds.Contains(p.SCIMId))
                 .ToListAsync();
 
-            foreach (User person in users)
+            foreach (User user in users)
             {
-                if (project is null) continue;
-                if (project.Users.Contains(person)) continue;
-
-                project.Users.Add(person);
+                // Check if user is already associated with project to avoid duplicates
+                if (!project.Users.Any(u => u.Id == user.Id))
+                {
+                    project.Users.Add(user);
+                }
             }
         }
     }
@@ -301,20 +313,24 @@ public class SessionMappingService : ISessionMappingService
         {
             foreach (Group group in groups)
             {
+                var userScimIds = group.Members.Select(m => m.SCIMId).ToList();
                 var users = await _context.Users
-                    .Where(p => group.Members
-                        .Select(m => m.SCIMId)
-                        .Contains(p.SCIMId))
+                    .Where(p => userScimIds.Contains(p.SCIMId))
                     .Include(person => person.Roles)
                     .ToListAsync();
 
-                foreach (var roles in users.Select(role => role.Roles))
+                UserRole? role = await _context.UserRoles
+                    .SingleOrDefaultAsync(r => r.Urn == group.Urn);
+                
+                if (role is null) continue;
+
+                foreach (var user in users)
                 {
-                    UserRole? role = await _context.UserRoles
-                        .SingleOrDefaultAsync(r => r.Urn == group.Urn);
-                    if (role is null) continue;
-                    if (roles.Contains(role)) continue;
-                    roles.Add(role);
+                    // Check if user already has this role to avoid duplicates
+                    if (!user.Roles.Any(r => r.Id == role.Id))
+                    {
+                        user.Roles.Add(role);
+                    }
                 }
             }
         }

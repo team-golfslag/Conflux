@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.FeatureManagement;
@@ -200,11 +201,15 @@ public class Program
 
         string connectionString = builder.Configuration.GetConnectionString("Database") ??
             ConnectionStringHelper.GetConnectionStringFromEnvironment();
-        builder.Services.AddDbContextPool<ConfluxContext>(opt =>
+        
+        builder.Services.AddDbContext<ConfluxContext>(opt =>
             opt.UseNpgsql(connectionString,
                 npgsql => npgsql.MigrationsAssembly("Conflux.Data")
-                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
-                    .UseVector()));
+                    .UseVector())
+                .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
+                .EnableDetailedErrors(builder.Environment.IsDevelopment())
+                .LogTo(Console.WriteLine, LogLevel.Warning)
+                .EnableServiceProviderCaching(false));
     }
 
     private static async Task ConfigureSRAMServices(WebApplicationBuilder builder,

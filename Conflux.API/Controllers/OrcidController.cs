@@ -81,15 +81,17 @@ public class OrcidController : ControllerBase
         const string exampleOrcid = "https://orcid.org/0000-0002-1825-0097";
 
         // If SRAM is enabled (but OrcidAuthentication feature flag is off), update DB with hardcoded ORCID.
-        // This still needs the fix to avoid the DbUpdateException.
-        // Make sure we can access the Person
-        if (user.Person == null)
+        // Load the user fresh from context to avoid tracking conflicts
+        User? trackedUser = await _context.Users
+            .Include(u => u.Person)
+            .SingleOrDefaultAsync(u => u.Id == user.Id);
+        
+        if (trackedUser?.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
         
-        user.Person.ORCiD = exampleOrcid;
-        _context.Users.Update(user);
+        trackedUser.Person.ORCiD = exampleOrcid;
         await _context.SaveChangesAsync();
 
         // Redirect to the final destination after linking (in this dev path)
@@ -211,15 +213,19 @@ public class OrcidController : ControllerBase
 
         User user = await _userSessionService.GetUser();
 
-        if (user.Person == null)
+        // Load the user fresh from context to avoid tracking conflicts
+        User? trackedUser = await _context.Users
+            .Include(u => u.Person)
+            .SingleOrDefaultAsync(u => u.Id == user.Id);
+
+        if (trackedUser?.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
         
-        user.Person.ORCiD = $"https://orcid.org/{orcidId}";
+        trackedUser.Person.ORCiD = $"https://orcid.org/{orcidId}";
         try
         {
-            _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException ex)
@@ -237,18 +243,23 @@ public class OrcidController : ControllerBase
     public async Task<IActionResult> OrcidUnlink()
     {
         User user = await _userSessionService.GetUser();
-        if (user.Person == null)
+        
+        // Load the user fresh from context to avoid tracking conflicts
+        User? trackedUser = await _context.Users
+            .Include(u => u.Person)
+            .SingleOrDefaultAsync(u => u.Id == user.Id);
+            
+        if (trackedUser?.Person == null)
         {
             return NotFound("User does not have an associated Person record.");
         }
 
         // Update *only* the ORCiD property
-        user.Person.ORCiD = null;
+        trackedUser.Person.ORCiD = null;
 
         // Save changes
         try
         {
-            _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException ex)

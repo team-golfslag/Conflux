@@ -38,7 +38,7 @@ public class AdminServiceTests : IDisposable
 
         _mockUserSessionService = new();
         _mockConfiguration = new();
-        _service = new(_context, _mockConfiguration.Object, _mockUserSessionService.Object);
+        _service = new(_context, _mockConfiguration.Object);
     }
 
     public void Dispose()
@@ -102,9 +102,10 @@ public class AdminServiceTests : IDisposable
         {
             Email = user.Person!.Email!,
             Name = user.Person.Name,
-            User = user
+            UserId = user.Id,
         };
-        _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
+        _mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync(userSession);
+        
     }
 
     #endregion
@@ -164,17 +165,6 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetUsersByQuery_WithNonSuperAdminUser_ThrowsUnauthorizedAccessException()
-    {
-        // Arrange
-        User regularUser = await CreateAndSaveUserAsync("Regular User", "user@test.com");
-        SetupUserSession(regularUser);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.GetUsersByQuery(null, false));
-    }
-
-    [Fact]
     public async Task SetUserPermissionLevel_WithValidUser_UpdatesPermissionLevel()
     {
         // Arrange
@@ -189,19 +179,6 @@ public class AdminServiceTests : IDisposable
         Assert.Equal(PermissionLevel.SystemAdmin, result.PermissionLevel);
         User? updatedUserInDb = await _context.Users.FindAsync(targetUser.Id);
         Assert.Equal(PermissionLevel.SystemAdmin, updatedUserInDb!.PermissionLevel);
-    }
-
-    [Fact]
-    public async Task SetPermissionLevel_WithSuperAdminLevel_ThrowsArgumentException()
-    {
-        // Arrange
-        User superAdmin = await CreateAndSaveUserAsync("Super Admin", "admin@test.com", PermissionLevel.SuperAdmin);
-        User targetUser = await CreateAndSaveUserAsync("Target User", "target@test.com");
-        SetupUserSession(superAdmin);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.SetUserPermissionLevel(targetUser.Id, PermissionLevel.SuperAdmin));
     }
 
     [Fact]

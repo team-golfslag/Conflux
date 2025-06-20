@@ -210,5 +210,5 @@ public class ConfluxContext : DbContext, IConfluxContext
         base.OnModelCreating(modelBuilder);
     }
 
-    public bool ShouldSeed() => Users.Find(UserSession.DevelopmentUserId) != null;
+    public bool ShouldSeed() => Users.AsNoTracking().Any(u => u.Id == UserSession.DevelopmentUserId);
 }

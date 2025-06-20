@@ -40,57 +40,50 @@ public class UserSessionService : IUserSessionService
             .GetSection("SuperAdminEmails")
             .Get<List<string>>() ?? [];
     }
+    
+    public async Task<User> GetUser()
+    {
+        UserSession? userSession = await GetSession();
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
 
-    public async Task<UserSession?> GetUser()
+        User? user = await _confluxContext.Users
+            .AsNoTracking()
+            .Include(p => p.Person)
+            .SingleOrDefaultAsync(p => p.Id == userSession.UserId);
+        if (user is null)
+            throw new UserNotAuthenticatedException();
+        
+        return user;
+    }
+    
+    public async Task<UserSession?> GetSession()
     {
         // if there is no http context, we are in a test
-        if (_httpContextAccessor.HttpContext == null)
-            return UserSession.Development();
+        if (_httpContextAccessor.HttpContext == null || !await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return UserSession.Development().Item1;
 
         if (_httpContextAccessor.HttpContext.Session is null ||
-            !_httpContextAccessor.HttpContext.Session.IsAvailable) return await SetUser(null);
+            !_httpContextAccessor.HttpContext.Session.IsAvailable) 
+            return null;
+            
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
         if (userSession == null)
             return await SetUser(null);
 
-        // Get a fresh reference that EF is already tracking
-        var user = await _confluxContext.Users.FindAsync(userSession.User?.Id);
-        if (userSession.User != null && user != null && user.PermissionLevel != PermissionLevel.SuperAdmin && _superAdminEmails.Contains(userSession.Email))
-        {
-            user.PermissionLevel = PermissionLevel.SuperAdmin;
-            await _confluxContext.SaveChangesAsync();
+        User? user = await _confluxContext.Users
+            .SingleOrDefaultAsync(p => p.Id == userSession.UserId);
+        if (user == null || user.PermissionLevel == PermissionLevel.SuperAdmin ||
+            !_superAdminEmails.Contains(userSession.Email)) return userSession;
         
-            // Update the session with the changes
-            userSession.User.PermissionLevel = PermissionLevel.SuperAdmin;
-            _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
-        }
+        user.PermissionLevel = PermissionLevel.SuperAdmin;
+        await _confluxContext.SaveChangesAsync();
+        
+        // Update the session with the changes
+        user.PermissionLevel = PermissionLevel.SuperAdmin;
+        _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
 
-        // Before returning the user session, we need to populate the person
-        if (userSession.User is null || userSession.User.Person != null)
-            return userSession;
-
-        Person? person = await _confluxContext.People.FindAsync(userSession.User.PersonId);
-        if (person != null) userSession.User.Person = person;
         return userSession;
-    }
-
-    public async Task<UserSession?> UpdateUser()
-    {
-        UserSession? user = await GetUser();
-        if (user is null)
-            return null;
-
-        User? person = _confluxContext.Users
-            .AsNoTracking()
-            .Include(u => u.Person)
-            .SingleOrDefault(p => p.SRAMId == user.SRAMId);
-        if (person is null)
-            return user;
-
-        user.User = person;
-        await CommitUser(user);
-
-        return user;
     }
 
     public async Task CommitUser(UserSession userSession)
@@ -108,15 +101,8 @@ public class UserSessionService : IUserSessionService
     {
         if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
         {
-            UserSession devSession = UserSession.Development();
-            User? devUser = _confluxContext.Users.AsNoTracking().SingleOrDefault(p => p.SRAMId == devSession.SRAMId);
-            if (devUser is not null)
-            {
-                devSession.User = devUser;
-                _httpContextAccessor.HttpContext?.Session.Set(UserKey, devSession);
-                return devSession;
-            }
-
+            (UserSession devSession, User _) = UserSession.Development();
+            _httpContextAccessor.HttpContext?.Session.Set(UserKey, devSession);
             return devSession;
         }
 
@@ -124,23 +110,27 @@ public class UserSessionService : IUserSessionService
             throw new UserNotAuthenticatedException();
 
 
-        UserSession? user = await GetUserSession(claims);
-        if (user is { User: null })
-            user.User = _confluxContext.Users
-                .AsNoTracking()
-                .Include(u => u.Person)
-                .SingleOrDefault(p => p.SRAMId == user.SRAMId);
+        UserSession? userSession = await GetUserSession(claims);
+        if (userSession is null)
+            throw new UserNotAuthenticatedException();
+        
+        User? user = await _confluxContext.Users
+            .Include(p => p.Person)
+            .SingleOrDefaultAsync(p => p.SRAMId == userSession.SRAMId);
 
-        if (user?.User is { PermissionLevel: PermissionLevel.User } &&
-            _superAdminEmails.Contains(user.Email))
+        if (userSession.UserId == Guid.Empty) 
+            userSession.UserId = user?.Id ?? Guid.Empty;
+
+        if (user is { PermissionLevel: PermissionLevel.User } &&
+            _superAdminEmails.Contains(userSession.Email))
         {
-            user.User.PermissionLevel = PermissionLevel.SuperAdmin;
-            _confluxContext.Users.Update(user.User);
+            user.PermissionLevel = PermissionLevel.SuperAdmin;
             await _confluxContext.SaveChangesAsync();
-        } 
-        _httpContextAccessor.HttpContext?.Session.Set(UserKey, user);
+        }
+        
+        _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
 
-        return user;
+        return userSession;
     }
 
     public void ClearUser()

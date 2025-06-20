@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.API.Controllers;
+using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Responses;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
@@ -35,8 +36,7 @@ public class UserSessionControllerTests
             Name = "Test User",
         };
 
-        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
-        mockUserSessionService.Setup(s => s.UpdateUser()).ReturnsAsync(userSession);
+        mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync(userSession);
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
@@ -72,7 +72,7 @@ public class UserSessionControllerTests
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
         var mockConfiguration = new Mock<IConfiguration>();
 
-        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession)null!);
+        mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync((UserSession)null!);
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
@@ -113,8 +113,7 @@ public class UserSessionControllerTests
             Name = "Test User",
         };
 
-        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
-        mockUserSessionService.Setup(s => s.UpdateUser()).ReturnsAsync(userSession);
+        mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync(userSession);
 
         string[] allowedRedirects = ["https://valid.example.com"];
         var mockConfigSection = new Mock<IConfigurationSection>();
@@ -287,11 +286,28 @@ public class UserSessionControllerTests
 
         UserSession userSession = new()
         {
+            UserId = Guid.CreateVersion7(),
             Email = "test@example.com",
             Name = "Test User",
         };
 
-        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(userSession);
+        User user = new()
+        {
+            Id = userSession.UserId,
+            SRAMId = "test-sram-id",
+            SCIMId = "test-scim-id",
+            PersonId = Guid.CreateVersion7(),
+            Roles = new List<UserRole>(),
+            PermissionLevel = PermissionLevel.User,
+            AssignedLectorates = new List<string>(),
+            AssignedOrganisations = new List<string>(),
+            RecentlyAccessedProjectIds = new List<Guid>(),
+            FavoriteProjectIds = new List<Guid>(),
+            Person = null
+        };
+
+        mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync(userSession);
+        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(user);
 
         // Set up configuration
         string[] allowedRedirects = ["https://valid.example.com"];
@@ -330,7 +346,24 @@ public class UserSessionControllerTests
         var mockFeatureManager = new Mock<IVariantFeatureManager>();
         var mockConfiguration = new Mock<IConfiguration>();
 
-        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession)null!);
+        mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync((UserSession)null!);
+        
+    
+        var user = new User
+        {
+            Id = Guid.CreateVersion7(),
+            SRAMId = "test-sram-id",
+            SCIMId = "test-scim-id",
+            PersonId = Guid.CreateVersion7(),
+            Roles = new List<UserRole>(),
+            PermissionLevel = PermissionLevel.User,
+            AssignedLectorates = new List<string>(),
+            AssignedOrganisations = new List<string>(),
+            RecentlyAccessedProjectIds = new List<Guid>(),
+            FavoriteProjectIds = new List<Guid>(),
+            Person = null
+        };
+        mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(user);
 
         // Set up configuration
         string[] allowedRedirects = ["https://valid.example.com"];

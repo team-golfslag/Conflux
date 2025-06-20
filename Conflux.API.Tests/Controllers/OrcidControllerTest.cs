@@ -9,6 +9,7 @@ using Conflux.API.Controllers;
 using Conflux.Data;
 using Conflux.Domain;
 using Conflux.Domain.Logic.DTOs.Requests;
+using Conflux.Domain.Logic.Exceptions;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Authentication;
@@ -59,9 +60,7 @@ public class OrcidControllerTests
             .UseInMemoryDatabase(Guid.CreateVersion7().ToString()) // Unique DB for each test run
             .Options;
 
-        // Setup Configuration mock
-        // We can't use extension method .Get<string[]>() in Moq
-        // Instead, create a new section mock specifically for the allowed redirects
+
         var mockConfigSection = new Mock<IConfigurationSection>();
         mockConfigSection.Setup(s => s.Value).Returns(string.Join(",", _allowedRedirects));
         _mockConfiguration.Setup(c => c.GetSection("Authentication:Orcid:AllowedRedirectUris"))
@@ -98,9 +97,16 @@ public class OrcidControllerTests
         };
 
         if (session != null)
-            _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(session);
+            _mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync(session);
         else
-            _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync((UserSession?)null);
+            _mockUserSessionService.Setup(s => s.GetSession()).ReturnsAsync((UserSession?)null);
+            
+        if (user != null)
+            _mockUserSessionService.Setup(s => s.GetUser()).ReturnsAsync(user);
+        else
+        {
+            _mockUserSessionService.Setup(s => s.GetUser()).ThrowsAsync(new UserNotAuthenticatedException());
+        }
     }
 
     private static User CreateUserWithPerson(string name, string scimId, string? orcid = null, Guid? userId = null,
@@ -186,7 +192,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
@@ -205,7 +212,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
@@ -218,7 +226,6 @@ public class OrcidControllerTests
 
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser?.Person?.ORCiD); // Check if hardcoded ORCID was saved
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     [Fact]
@@ -228,9 +235,7 @@ public class OrcidControllerTests
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
             .ReturnsAsync(false); // Fallback path checks session first
 
-        IActionResult result = await _controller.LinkOrcid(ValidAbsoluteRedirect);
-
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.LinkOrcid(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -238,15 +243,13 @@ public class OrcidControllerTests
     {
         UserSession session = new()
         {
-            User = null,
-        }; // Session exists, but User is null
+            // Session exists, but no user is set up in the mock
+        }; 
         InitializeController(session: session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
             .ReturnsAsync(false); // Fallback path
 
-        IActionResult result = await _controller.LinkOrcid(ValidAbsoluteRedirect);
-
-        Assert.IsType<BadRequestObjectResult>(result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.LinkOrcid(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -256,15 +259,14 @@ public class OrcidControllerTests
         User sessionUser = CreateUserWithPerson("ghost", "scimid");
         UserSession session = new()
         {
-            User = sessionUser,
+            Email = "ghost@example.com",
+            Name = "Ghost User",
         };
         InitializeController(session: session); // Don't add user to DB
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
             .ReturnsAsync(false);
 
-        IActionResult result = await _controller.LinkOrcid(ValidAbsoluteRedirect);
-
-        Assert.IsType<NotFoundObjectResult>(result);
+       await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.LinkOrcid(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -273,7 +275,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
@@ -292,7 +295,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         _mockFeatureManager.Setup(fm => fm.IsEnabledAsync("OrcidAuthentication", CancellationToken.None))
@@ -313,7 +317,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         SetupAuthentication(); // Simulate failed ORCID auth (no claim)
@@ -321,7 +326,6 @@ public class OrcidControllerTests
         IActionResult result = await _controller.OrcidFinalize(ValidAbsoluteRedirect);
 
         Assert.IsType<BadRequestObjectResult>(result);
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Never); // No update should occur
     }
 
     [Fact]
@@ -331,10 +335,7 @@ public class OrcidControllerTests
         // Need to setup auth context even if session is null, as controller checks auth first
         SetupAuthentication(ExampleOrcid);
 
-        IActionResult result = await _controller.OrcidFinalize(ValidRelativeRedirect);
-
-        // Controller checks session *after* authentication result
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.OrcidFinalize(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -342,14 +343,13 @@ public class OrcidControllerTests
     {
         UserSession session = new()
         {
-            User = null,
-        }; // Session exists, but User is null
+            Email = "test@example.com",
+            Name = "Test User",
+        }; // Session exists, but no user set up in mock
         InitializeController(session: session);
         SetupAuthentication(ExampleOrcid); // Simulate successful ORCID auth
 
-        IActionResult result = await _controller.OrcidFinalize(ValidAbsoluteRedirect);
-
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.OrcidFinalize(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -359,14 +359,13 @@ public class OrcidControllerTests
         User sessionUser = CreateUserWithPerson("ghost", "scimid");
         UserSession session = new()
         {
-            User = sessionUser,
+            Email = "ghost@example.com",
+            Name = "Ghost User",
         };
         InitializeController(session: session); // Don't add user to DB
         SetupAuthentication(ExampleOrcid);      // Simulate successful ORCID auth
 
-        IActionResult result = await _controller.OrcidFinalize(ValidAbsoluteRedirect);
-
-        Assert.IsType<NotFoundObjectResult>(result);
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.OrcidFinalize(ValidAbsoluteRedirect));
     }
 
     [Fact]
@@ -375,7 +374,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         SetupAuthentication(ExampleOrcid); // Simulate successful ORCID auth
@@ -388,7 +388,6 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
         Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser!.Person?.ORCiD); // Check ORCID update
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     [Fact]
@@ -397,7 +396,8 @@ public class OrcidControllerTests
         User user = CreateUserWithPerson("testuser", "scimid");
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
         // Claim missing but session has ORCID value
@@ -411,7 +411,6 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
         Assert.Equal("https://orcid.org/" + ExampleOrcid, dbUser!.Person?.ORCiD); // Check ORCID update
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Once);          // Verify session update
     }
 
     // --- GetPersonByQuery Tests ---
@@ -597,7 +596,8 @@ public class OrcidControllerTests
         user.Person!.ORCiD = ExampleOrcid; // Set ORCID on the Person
         UserSession session = new()
         {
-            User = user,
+            Email = "test@example.com",
+            Name = "Test User",
         };
         InitializeController(user, session);
 
@@ -609,7 +609,6 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
         Assert.Null(dbUser!.Person?.ORCiD);                                     // ORCID should be null after unlinking
-        _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Verify session update
     }
 
     [Fact]
@@ -619,7 +618,7 @@ public class OrcidControllerTests
         // user.Person.ORCiD is already null by default
         UserSession session = new()
         {
-            User = user,
+            UserId = user.Id,
         };
         InitializeController(user, session);
 
@@ -631,7 +630,6 @@ public class OrcidControllerTests
         User? dbUser = await _context.Users.Include(u => u.Person).FirstOrDefaultAsync(u => u.Id == user.Id);
         Assert.NotNull(dbUser);
         Assert.Null(dbUser!.Person?.ORCiD);                                     // ORCID should remain null
-        _mockUserSessionService.Verify(s => s.CommitUser(session), Times.Once); // Session update still occurs
     }
 
     [Fact]
@@ -639,42 +637,6 @@ public class OrcidControllerTests
     {
         InitializeController(); // No user/session
 
-        IActionResult result = await _controller.OrcidUnlink();
-
-        Assert.IsType<UnauthorizedObjectResult>(result);
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Never); // No update should occur
-    }
-
-    [Fact]
-    public async Task OrcidUnlink_WhenUserSessionHasNoUser_ReturnsUnauthorized()
-    {
-        UserSession session = new()
-        {
-            User = null,
-        };
-        InitializeController(session: session);
-
-        IActionResult result = await _controller.OrcidUnlink();
-
-        Assert.IsType<UnauthorizedObjectResult>(result);
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Never); // No update should occur
-    }
-
-    [Fact]
-    public async Task OrcidUnlink_WhenUserNotInDb_ReturnsNotFound()
-    {
-        // User exists in session but not in DB
-        User sessionUser = CreateUserWithPerson("ghost", "scimid");
-        sessionUser.Person!.ORCiD = ExampleOrcid;
-        UserSession session = new()
-        {
-            User = sessionUser,
-        };
-        InitializeController(session: session); // Don't add user to DB
-
-        IActionResult result = await _controller.OrcidUnlink();
-
-        Assert.IsType<NotFoundObjectResult>(result);
-        _mockUserSessionService.Verify(s => s.UpdateUser(), Times.Never); // No update should occur
+        await Assert.ThrowsAsync<UserNotAuthenticatedException>(() => _controller.OrcidUnlink());
     }
 }

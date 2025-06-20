@@ -13,6 +13,7 @@ public class AccessControlService(ConfluxContext context) : IAccessControlServic
     public async Task<bool> UserHasRoleInProject(Guid userId, Guid projectId, UserRoleType roleType)
     {
         User? user = await context.Users
+            .AsNoTracking()
             .Include(u => u.Roles)
             .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null) return false;

@@ -4,6 +4,7 @@
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
 using Conflux.API.Attributes;
+using Conflux.Domain;
 using Conflux.Domain.Logic.Services;
 using Conflux.Domain.Session;
 using Microsoft.AspNetCore.Http;
@@ -42,13 +43,8 @@ public class AuthorizationFilterTests : IAsyncAuthorizationFilter
             return;
 
         // Check user authentication
-        UserSession? userSession = await _userSessionService.GetUser();
-        if (userSession?.User is null)
-        {
-            context.Result = new UnauthorizedResult();
-            return;
-        }
-
+        User user = await _userSessionService.GetUser();
+        
         // Check route parameter for project ID
         RouteValueDictionary routeData = context.RouteData.Values;
         RouteParamNameAttribute? routeParamNameAttribute = endpoint?.Metadata.GetMetadata<RouteParamNameAttribute>();
@@ -65,7 +61,7 @@ public class AuthorizationFilterTests : IAsyncAuthorizationFilter
                 throw new ArgumentException("Project ID is not a valid GUID", nameof(projectIdString));
         }
 
-        Guid userId = userSession.User!.Id;
+        Guid userId = user.Id;
 
         // Check if user has the required role
         bool hasRole = await _accessControlService.UserHasRoleInProject(

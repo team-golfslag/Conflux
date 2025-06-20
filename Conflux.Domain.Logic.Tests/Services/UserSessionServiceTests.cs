@@ -161,7 +161,7 @@ public class UserSessionServiceTests : IDisposable
         SetupFeatureFlag(false);
 
         // Act
-        UserSession? result = await _service.GetUser();
+        UserSession? result = await _service.GetSession();
 
         // Assert
         Assert.NotNull(result);
@@ -196,61 +196,12 @@ public class UserSessionServiceTests : IDisposable
         SetupSessionWithUser(userSession);
 
         // Act
-        UserSession? result = await _service.GetUser();
+        UserSession? result = await _service.GetSession();
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal("test@example.com", result.Email);
         Assert.Equal("Test User", result.Name);
-    }
-
-    [Fact]
-    public async Task UpdateUser_WhenUserFoundInDatabase_UpdatesSessionUser()
-    {
-        // Arrange
-        SetupFeatureFlag(true);
-        User dbUser = await CreateAndAddUser(
-            "Database User",
-            "db@example.com",
-            "sram-id-1"
-        );
-        var userSession = new UserSession
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-            SRAMId = "sram-id-1",
-        };
-        SetupSessionWithUser(userSession);
-
-        // Act
-        UserSession? result = await _service.UpdateUser();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.User);
-        Assert.Equal(dbUser.Person.Name, result.User.Person?.Name);
-    }
-
-    [Fact]
-    public async Task UpdateUser_WhenUserNotFoundInDatabase_ReturnsUnchangedUser()
-    {
-        // Arrange
-        SetupFeatureFlag(true);
-        var userSession = new UserSession
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-            SRAMId = "sram-id-1",
-        };
-        SetupSessionWithUser(userSession);
-
-        // Act
-        UserSession? result = await _service.UpdateUser();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Null(result.User);
-        Assert.Equal("test@example.com", result.Email);
     }
 
     [Fact]
@@ -275,6 +226,32 @@ public class UserSessionServiceTests : IDisposable
     {
         // Arrange
         SetupFeatureFlag(true);
+        
+        // Create a user in the database
+        var userId = Guid.CreateVersion7();
+        var user = new User
+        {
+            Id = userId,
+            SRAMId = "test-person-id",
+            PersonId = Guid.CreateVersion7(),
+            SCIMId = "test-scim-id",
+            PermissionLevel = PermissionLevel.User
+        };
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        
+        // Create a user session and set it up
+        var userSession = new UserSession
+        {
+            SRAMId = "test-person-id",
+            Name = "Test User",
+            GivenName = "Test",
+            FamilyName = "User",
+            Email = "test@example.com",
+            UserId = userId
+        };
+        
+        // Mock GetUserSession to return our userSession
         ClaimsPrincipal principal = CreateClaimsPrincipal(
             "test-person-id",
             "Test User",
@@ -284,6 +261,9 @@ public class UserSessionServiceTests : IDisposable
         _mockCollaborationMapper
             .Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
             .ReturnsAsync(new List<Collaboration>());
+            
+        // Mock the session methods
+        SetupSessionWithUser(userSession);
 
         // Act
         UserSession? result = await _service.SetUser(principal);
@@ -307,64 +287,98 @@ public class UserSessionServiceTests : IDisposable
         _mockSession.Verify(s => s.Remove("UserProfile"), Times.Once);
     }
     
+    // Updated test with a working approach
     [Fact]
     public async Task GetUser_WhenUserEmailInSuperAdminEmails_PromotesToSuperAdmin()
     {
         // Arrange
-        // we have to setup the entire user session service because we need the admins email to be set 
+        DbContextOptions<ConfluxContext> options =
+            new DbContextOptionsBuilder<ConfluxContext>()
+                .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
+                .Options;
+        var context = new ConfluxContext(options);
+        
         SetupFeatureFlag(true);
         const string userEmail = "super@example.com";
-        List<string> superAdminEmails = [userEmail];
         
-        var mockConfigurationSection = new Mock<IConfigurationSection>();
-        var mockEmailSections = superAdminEmails.Select(email =>
-        {
-            var mockSection = new Mock<IConfigurationSection>();
-            mockSection.Setup(s => s.Value).Returns(email);
-            return mockSection.Object;
-        }).ToList();
-
+        var mockEmailSection = new Mock<IConfigurationSection>();
+        mockEmailSection.Setup(s => s.Value).Returns(userEmail);
+        
+        var sections = new List<IConfigurationSection> { mockEmailSection.Object };
+        
         var mockSuperAdminSection = new Mock<IConfigurationSection>();
-        mockSuperAdminSection.Setup(s => s.GetChildren())
-            .Returns(mockEmailSections);
-
+        mockSuperAdminSection.Setup(s => s.GetChildren()).Returns(sections);
+        
+        var mockConfigurationSection = new Mock<IConfiguration>();
         mockConfigurationSection.Setup(c => c.GetSection("SuperAdminEmails"))
             .Returns(mockSuperAdminSection.Object);
-
-        User user = await CreateAndAddUser(
-            "Test User",
-            userEmail,
-            "test-sram-id",
-            PermissionLevel.User
-        );
+        
+        // Create and add user
+        var personId = Guid.CreateVersion7();
+        var userId = Guid.CreateVersion7();
+        var person = new Person 
+        { 
+            Id = personId, 
+            Name = "Test User", 
+            Email = userEmail
+        };
+        
+        var user = new User
+        {
+            Id = userId,
+            SRAMId = "test-sram-id",
+            PersonId = personId,
+            Person = person,
+            SCIMId = "test-scim-id",
+            PermissionLevel = PermissionLevel.User
+        };
+        
+        context.People.Add(person);
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        
+        // Create user session
         var userSession = new UserSession
         {
             Email = userEmail,
             Name = "Test User",
             SRAMId = "test-sram-id",
-            User = user
+            UserId = userId
         };
-        SetupSessionWithUser(userSession);
         
+        // Mock session methods
+        var mockSession = new Mock<ISession>();
+        byte[]? serializedSession = JsonSerializer.SerializeToUtf8Bytes(userSession);
+        mockSession.Setup(s => s.TryGetValue("UserProfile", out serializedSession))
+            .Returns(true);
+        mockSession.Setup(s => s.IsAvailable).Returns(true);
+        
+        // Mock HTTP context
+        var mockHttpContext = new Mock<HttpContext>();
+        mockHttpContext.Setup(c => c.Session).Returns(mockSession.Object);
+        
+        var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
+        
+        // Create service with new dependencies
         var sessionService = new UserSessionService(
-            _context,
-            _mockHttpContextAccessor.Object,
+            context,
+            mockHttpContextAccessor.Object,
             _mockCollaborationMapper.Object,
             _mockFeatureManager.Object,
             mockConfigurationSection.Object
         );
         
         // Act
-        UserSession? result = await sessionService.GetUser();
-
+        UserSession? result = await sessionService.GetSession();
+        User updatedUser = await context.Users.FindAsync(userId);
+        
         // Assert
-        Assert.NotNull(result?.User);
-        Assert.Equal(PermissionLevel.SuperAdmin, result.User.PermissionLevel);
-    
-        // Verify the user was updated in the database as well
-        User? updatedUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(updatedUser);
         Assert.Equal(PermissionLevel.SuperAdmin, updatedUser.PermissionLevel);
+        
+        // Cleanup
+        context.Dispose();
     }
 
     [Fact]
@@ -373,24 +387,44 @@ public class UserSessionServiceTests : IDisposable
         // Arrange
         SetupFeatureFlag(true);
 
-        await CreateAndAddUser(
+        // Create and add user
+        User user = await CreateAndAddUser(
             "Test User",
             "regular@example.com",
             "test-person-id",
             PermissionLevel.User
         );
+        
+        // Create user session
+        var userSession = new UserSession
+        {
+            SRAMId = "test-person-id",
+            Name = "Test User",
+            GivenName = "Test",
+            FamilyName = "User",
+            Email = "regular@example.com",
+            UserId = user.Id
+        };
+        
+        // Set up the session
+        SetupSessionWithUser(userSession);
+        
         ClaimsPrincipal principal = CreateClaimsPrincipal(
             "test-person-id",
             "Test User",
             "regular@example.com"
         );
         _mockHttpContext.Setup(c => c.User).Returns(principal);
+        _mockCollaborationMapper
+            .Setup(m => m.Map(It.IsAny<List<CollaborationDTO>>()))
+            .ReturnsAsync(new List<Collaboration>());
 
         // Act
         UserSession? result = await _service.SetUser(principal);
+        User updatedUser = await _context.Users.FindAsync(user.Id);
 
         // Assert
-        Assert.NotNull(result?.User);
-        Assert.Equal(PermissionLevel.User, result.User.PermissionLevel);
+        Assert.NotNull(updatedUser);
+        Assert.Equal(PermissionLevel.User, updatedUser.PermissionLevel);
     }
 }

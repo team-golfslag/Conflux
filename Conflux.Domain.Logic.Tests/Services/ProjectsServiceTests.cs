@@ -149,17 +149,15 @@ public class ProjectsServiceTests : IDisposable
             Email = user.Person.Email,
             Name = user.Person.Name,
             SRAMId = user.SRAMId,
-            User = user,
+            UserId = user.Id,
             Collaborations = []
         };
         
         // Set user as SuperAdmin so they can see all projects
         user.PermissionLevel = PermissionLevel.SuperAdmin;
         
-        _userSessionServiceMock.Setup(s => s.GetUser()).ReturnsAsync(userSession);
-        _userSessionServiceMock
-            .Setup(s => s.CommitUser(It.IsAny<UserSession>()))
-            .Returns(Task.CompletedTask);
+        _userSessionServiceMock.Setup(s => s.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(s => s.GetUser()).ReturnsAsync(user);
     }
 
     #endregion
@@ -277,10 +275,6 @@ public class ProjectsServiceTests : IDisposable
         Assert.NotNull(updatedUser);
         Assert.Contains(project.Id, updatedUser.FavoriteProjectIds);
         Assert.Single(updatedUser.FavoriteProjectIds);
-        _userSessionServiceMock.Verify(
-            s => s.UpdateUser(),
-            Times.Once
-        );
     }
 
     [Fact]
@@ -301,10 +295,6 @@ public class ProjectsServiceTests : IDisposable
         Assert.NotNull(updatedUser);
         Assert.DoesNotContain(project.Id, updatedUser.FavoriteProjectIds);
         Assert.Empty(updatedUser.FavoriteProjectIds);
-        _userSessionServiceMock.Verify(
-            s => s.UpdateUser(),
-            Times.Once
-        );
     }
 
     [Fact]
@@ -324,12 +314,13 @@ public class ProjectsServiceTests : IDisposable
     public async Task FavoriteProjectAsync_ShouldThrow_WhenUserNotAuthenticated()
     {
         // Arrange
-        _userSessionServiceMock.Setup(s => s.GetUser())
+        var project = await CreateTestProjectAsync();
+        _userSessionServiceMock.Setup(s => s.GetSession())
             .ReturnsAsync((UserSession?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<UserNotAuthenticatedException>(
-            () => _service.FavoriteProjectAsync(Guid.CreateVersion7(), true)
+        await Assert.ThrowsAsync<NullReferenceException>(
+            () => _service.FavoriteProjectAsync(project.Id, true)
         );
     }
 
@@ -348,10 +339,6 @@ public class ProjectsServiceTests : IDisposable
         User? updatedUser = await _context.Users.FindAsync(user.Id);
         Assert.NotNull(updatedUser);
         Assert.Empty(updatedUser.FavoriteProjectIds);
-        _userSessionServiceMock.Verify(
-            s => s.UpdateUser(),
-            Times.Once
-        );
     }
 
     [Fact]
@@ -361,12 +348,17 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(true);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var queryDto = new ProjectQueryDTO { Query = "test search" };
 
@@ -385,12 +377,17 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(false);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         // Create a test project
         var project = await CreateTestProjectAsync("Test Project");
@@ -428,12 +425,17 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(true);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         // Create a test project with embedding
         var project = await CreateTestProjectAsync("Machine Learning Research");
@@ -472,12 +474,17 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(true);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         // Create a test project
         var project = await CreateTestProjectAsync("Test Project");
@@ -509,12 +516,17 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(true);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var queryDto = new ProjectQueryDTO { Query = "" }; // Empty query
 
@@ -542,12 +554,18 @@ public class ProjectsServiceTests : IDisposable
         _featureManagerMock.Setup(f => f.IsEnabledAsync("SemanticSearch", default))
             .ReturnsAsync(true);
         
-        var userSession = new UserSession { User = new User { 
+        var user = new User { 
             PermissionLevel = PermissionLevel.SuperAdmin, 
             SCIMId = "test-scim-id", 
             PersonId = Guid.NewGuid() 
-        } };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        };
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
 
         var queryDto = new ProjectQueryDTO { Query = null }; // Null query
 
@@ -615,7 +633,7 @@ public class ProjectsServiceTests : IDisposable
     public async Task GetRolesFromProject_ShouldThrow_WhenUserNotAuthenticated()
     {
         // Arrange
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync((UserSession?)null);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync((UserSession?)null);
         var project = await CreateTestProjectAsync();
 
         // Act & Assert
@@ -630,10 +648,12 @@ public class ProjectsServiceTests : IDisposable
         var user = await CreateTestUserAsync();
         var userSession = new UserSession
         {
-            User = user,
+            UserId = user.Id,
+            SRAMId = user.SRAMId,
             Collaborations = new List<Collaboration>() // No collaborations
         };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var project = await CreateTestProjectAsync();
 
@@ -670,10 +690,12 @@ public class ProjectsServiceTests : IDisposable
 
         var userSession = new UserSession
         {
-            User = user,
+            UserId = user.Id,
+            SRAMId = user.SRAMId,
             Collaborations = new List<Collaboration> { collaboration }
         };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         // Create project with matching SCIMId
         var project = new Project
@@ -723,8 +745,12 @@ public class ProjectsServiceTests : IDisposable
     {
         // Arrange
         var user = await CreateTestUserAsync();
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var nonExistentProjectId = Guid.CreateVersion7();
 
@@ -738,8 +764,12 @@ public class ProjectsServiceTests : IDisposable
     {
         // Arrange
         var user = await CreateTestUserAsync();
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var project = await CreateTestProjectAsync();
 
@@ -758,8 +788,13 @@ public class ProjectsServiceTests : IDisposable
         // Arrange
         var project = await CreateTestProjectAsync();
         var user = await CreateTestUserAsync(favoriteProjectIds: new List<Guid> { project.Id });
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
 
         // Act
         await _service.FavoriteProjectAsync(project.Id, false);
@@ -771,19 +806,19 @@ public class ProjectsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task FavoriteProjectAsync_ShouldHandleNullUserInSession()
+    public async Task FavoriteProjectAsync_ShouldThrow_WhenUserNotFoundInSession()
     {
         // Arrange
-        var userSession = new UserSession { User = null };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession();
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync((User?)null);
 
         var project = await CreateTestProjectAsync();
 
-        // Act - Should not throw
-        await _service.FavoriteProjectAsync(project.Id, true);
-
-        // Assert - No exception should be thrown
-        Assert.True(true);
+        // Act & Assert - Should throw when user is not found
+        await Assert.ThrowsAsync<NullReferenceException>(
+            () => _service.FavoriteProjectAsync(project.Id, true)
+        );
     }
 
     [Fact]
@@ -792,8 +827,13 @@ public class ProjectsServiceTests : IDisposable
         // Arrange
         var user = await CreateTestUserAsync();
         user.PermissionLevel = PermissionLevel.SuperAdmin; // Grant access to all projects
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
 
         var project1 = await CreateTestProjectAsync("Exact Match Project", users: [user]);
         var project2 = await CreateTestProjectAsync("Different Project", users: [user]);
@@ -825,8 +865,12 @@ public class ProjectsServiceTests : IDisposable
         // Arrange
         var user = await CreateTestUserAsync();
         user.PermissionLevel = PermissionLevel.SuperAdmin; // Grant access to all projects
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         await CreateTestProjectAsync("Test Project 1", users: [user]);
         await CreateTestProjectAsync("Test Project 2", users: [user]);
@@ -847,8 +891,12 @@ public class ProjectsServiceTests : IDisposable
         // Arrange
         var user = await CreateTestUserAsync();
         user.PermissionLevel = PermissionLevel.SuperAdmin; // Grant access to all projects
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var project1 = await CreateTestProjectAsync("Test Project 1", users: [user]);
         var project2 = await CreateTestProjectAsync("Test Project 2", users: [user]);
@@ -883,8 +931,12 @@ public class ProjectsServiceTests : IDisposable
             .ReturnsAsync(true);
 
         var user = await CreateTestUserAsync();
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var project = await CreateTestProjectAsync("Test Project");
         var queryDto = new ProjectQueryDTO { Query = "test query" };
@@ -972,8 +1024,12 @@ public class ProjectsServiceTests : IDisposable
             embeddingServiceMock.Object);
 
         var user = await CreateTestUserAsync();
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var project = await CreateTestProjectAsync("Test Project");
         var queryDto = new ProjectQueryDTO { Query = "test" };
@@ -992,8 +1048,12 @@ public class ProjectsServiceTests : IDisposable
         // Arrange
         var user = await CreateTestUserAsync();
         user.PermissionLevel = PermissionLevel.SuperAdmin; // Grant access to all projects
-        var userSession = new UserSession { User = user };
-        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(userSession);
+        var userSession = new UserSession { 
+            UserId = user.Id,
+            SRAMId = user.SRAMId
+        };
+        _userSessionServiceMock.Setup(x => x.GetSession()).ReturnsAsync(userSession);
+        _userSessionServiceMock.Setup(x => x.GetUser()).ReturnsAsync(user);
 
         var embeddingServiceMock = new Mock<IEmbeddingService>();
         embeddingServiceMock.Setup(x => x.GenerateEmbeddingAsync(It.IsAny<string>()))

@@ -13,10 +13,10 @@ public class UserSession
     public string GivenName { get; set; } = string.Empty;
     public string FamilyName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public User? User { get; set; }
+    public Guid UserId { get; set; }
     public List<Collaboration> Collaborations { get; set; } = [];
 
-    public static UserSession Development()
+    public static (UserSession, User) Development()
     {
         string sramId = DevelopmentUserId + "@sram.surf.nl";
         
@@ -44,14 +44,14 @@ public class UserSession
         // Set bidirectional reference
         developmentPerson.User = developmentUser;
         
-        return new()
+        return (new()
         {
             SRAMId = sramId,
             Name = "Development User",
             GivenName = "Development",
             FamilyName = "User",
             Email = "development@sram.surf.nl",
-            User = developmentUser,
+            UserId = DevelopmentUserId,
             Collaborations =
             [
                 new()
@@ -88,6 +88,6 @@ public class UserSession
                     ],
                 },
             ],
-        };
+        }, developmentUser);
     }
 }

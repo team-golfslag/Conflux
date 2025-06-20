@@ -71,7 +71,7 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(typeof(List<TimelineItemResponseDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<TimelineItemResponseDTO>>> GetProjectTimeline([FromQuery] Guid id)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
+        UserSession? userSession = await _userSessionService.GetSession();
         if (userSession is null)
             return Unauthorized();
         
@@ -93,7 +93,7 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
     public async Task<ActionResult> ExportToCsv([FromQuery] ProjectCsvRequestDTO projectQueryDto)
     {
-        UserSession? userSession = await _userSessionService.GetUser();
+        UserSession? userSession = await _userSessionService.GetSession();
         if (userSession is null)
             return Unauthorized();
         
@@ -111,7 +111,7 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(typeof(List<ProjectResponseDTO>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProjectResponseDTO>>> GetAllProjects()
     {
-        UserSession? userSession = await _userSessionService.GetUser();
+        UserSession? userSession = await _userSessionService.GetSession();
         if (userSession is null)
             return Unauthorized();
         return await _projectsService.GetAllProjectsAsync();

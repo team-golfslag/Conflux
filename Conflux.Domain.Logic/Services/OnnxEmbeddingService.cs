@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers; // ★ new
@@ -13,23 +14,27 @@ namespace Conflux.Domain.Logic.Services;
 public sealed class OnnxEmbeddingService : IEmbeddingService, IDisposable
 {
     private readonly ILogger<OnnxEmbeddingService> _logger;
-    private readonly InferenceSession _session;
-    private readonly Tokenizer _tokenizer; // ★ new
+    private readonly InferenceSession? _session;
+    private readonly Tokenizer? _tokenizer;
+    
 
     private readonly int _maxTokens;
     public int EmbeddingDimension { get; }
 
     public OnnxEmbeddingService(ILogger<OnnxEmbeddingService> logger,
-        IConfiguration cfg)
+        IConfiguration cfg, IVariantFeatureManager featureManager)
     {
+        bool enabled = featureManager.IsEnabledAsync("SemanticSearch").GetAwaiter().GetResult();
+        if (!enabled)
+            return;
+        
         _logger = logger;
-
         string modelPath = cfg["EmbeddingModel:Path"]
             ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "Models", "all-MiniLM-L12-v2.onnx");
+                "Models", "multilingual-e5-small.onnx");
         string tokenizerPath = cfg["EmbeddingModel:TokenizerPath"]
             ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "Models", "vocab.txt");
+                "Models", "scentencepiece.bpe.model");
 
         if (!File.Exists(modelPath))
             throw new FileNotFoundException($"ONNX model not found: {modelPath}");
@@ -42,10 +47,7 @@ public sealed class OnnxEmbeddingService : IEmbeddingService, IDisposable
         _session = new InferenceSession(modelPath, opts);
 
         using FileStream fs = File.OpenRead(tokenizerPath);
-        _tokenizer = WordPieceTokenizer.Create(tokenizerPath, new WordPieceOptions()
-        {
-            UnknownToken = "[UNK]",
-        });
+        _tokenizer = SentencePieceTokenizer.Create(fs, addBeginOfSentence: false);
 
         _maxTokens = cfg.GetValue("EmbeddingModel:MaxTokens", 512);
         EmbeddingDimension = cfg.GetValue("EmbeddingModel:Dimension", 384);
@@ -60,6 +62,12 @@ public sealed class OnnxEmbeddingService : IEmbeddingService, IDisposable
 
     public async Task<Vector[]> GenerateEmbeddingsAsync(string[] texts)
     {
+        if (_session is null || _tokenizer is null)
+        {
+            _logger.LogWarning("Embedding service is not initialized. Returning empty vectors.");
+            return [];
+        }
+        
         var vectors = new Vector[texts.Length];
 
         for (int k = 0; k < texts.Length; k++)
@@ -124,6 +132,6 @@ public sealed class OnnxEmbeddingService : IEmbeddingService, IDisposable
 
     public void Dispose()
     {
-        _session.Dispose();
+        _session?.Dispose();
     }
 }

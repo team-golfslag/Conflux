@@ -26,12 +26,12 @@ namespace Conflux.Domain.Logic.Services;
 public class ProjectsService : IProjectsService
 {
     // Hybrid search configuration constants
-    private const double TitleWeight = 0.75;       // Weight for title matches in text scoring
-    private const double DescriptionWeight = 0.25; // Weight for description matches in text scoring
-    private const double PerfectMatchBoost = 0.8;  // Score boost for perfect text matches
-    private const double TextMatchWeight = 0.6;    // Weight for text matching in hybrid score
-    private const double SemanticWeight = 0.4;     // Weight for semantic similarity in hybrid score
-    private const double NoMatchPenalty = 0.5;     // Penalty when no exact matches found
+    private const double TitleWeight = 0.7;       // Weight for title matches in text scoring
+    private const double DescriptionWeight = 0.3; // Weight for description matches in text scoring
+    private const double PerfectMatchBoost = 0.1; // Additive score boost for perfect text matches
+    private const double TextMatchWeight = 0.4;   // Weight for text matching in hybrid score
+    private const double SemanticWeight = 0.6;    // Weight for semantic similarity in hybrid score
+    private const double SemanticThreshold = 0.2; // Maximum cosine distance for semantic matches
 
     private readonly ConfluxContext _context;
     private readonly IUserSessionService _userSessionService;
@@ -134,13 +134,14 @@ public class ProjectsService : IProjectsService
             ?? throw new ProjectNotFoundException(id);
 
         FilterRolesForProject(project);
-        
+
         // Update recently accessed projects by loading the user fresh from context
         // to avoid tracking conflicts with the detached user from GetUser()
         User? trackedUser = await _context.Users.FindAsync(user.Id);
         if (trackedUser is not null)
         {
-            trackedUser.RecentlyAccessedProjectIds = trackedUser.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
+            trackedUser.RecentlyAccessedProjectIds =
+                trackedUser.RecentlyAccessedProjectIds.Prepend(project.Id).Take(10).ToList();
             await _context.SaveChangesAsync();
         }
 
@@ -218,6 +219,7 @@ public class ProjectsService : IProjectsService
                     p.Id,
                     Distance = (double)p.Embedding!.CosineDistance(queryEmbedding)
                 })
+                .Where(r => r.Distance < SemanticThreshold)
                 .ToListAsync();
 
             // Convert distance to a similarity score for later use
@@ -797,6 +799,71 @@ public class ProjectsService : IProjectsService
         }
     }
 
+    public async Task<int> RecomputeAllProjectEmbeddingsAsync()
+    {
+        if (_embeddingService == null)
+        {
+            _logger.LogWarning("Embedding service not available for recomputing project embeddings");
+            return 0;
+        }
+
+        try
+        {
+            // Get all projects regardless of their current embedding state
+            List<Project> allProjects = await _context.Projects
+                .Include(p => p.Titles)
+                .Include(p => p.Descriptions)
+                .ToListAsync();
+
+            if (allProjects.Count == 0)
+            {
+                _logger.LogInformation("No projects found to recompute embeddings for");
+                return 0;
+            }
+
+            _logger.LogInformation("Force recomputing embeddings for all {Count} projects", allProjects.Count);
+
+            int updatedCount = 0;
+            const int batchSize = 10;
+
+            for (int i = 0; i < allProjects.Count; i += batchSize)
+            {
+                List<Project> batch = allProjects.Skip(i).Take(batchSize).ToList();
+                string[] texts = batch.Select(p => p.GetEmbeddingText()).ToArray();
+
+                // Generate embeddings for the batch
+                Vector[] embeddings = await _embeddingService.GenerateEmbeddingsAsync(texts);
+
+                // Update each project (force update regardless of content hash)
+                for (int j = 0; j < batch.Count; j++)
+                {
+                    Project project = batch[j];
+                    Vector embedding = embeddings[j];
+                    string contentHash = project.GetEmbeddingContentHash();
+
+                    project.Embedding = embedding;
+                    project.EmbeddingContentHash = contentHash;
+                    project.EmbeddingLastUpdated = DateTime.UtcNow;
+                    updatedCount++;
+                }
+
+                // Save batch
+                await _context.SaveChangesAsync();
+
+                _logger.LogDebug("Recomputed embeddings for batch {BatchStart}-{BatchEnd}",
+                    i + 1, Math.Min(i + batchSize, allProjects.Count));
+            }
+
+            _logger.LogInformation("Successfully recomputed embeddings for {Count} projects", updatedCount);
+            return updatedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to recompute all project embeddings");
+            throw;
+        }
+    }
+
     /// <summary>
     /// Calculates a text match score based on exact word matches in titles and descriptions.
     /// Higher scores for matches in titles, and bonus for matching multiple words.
@@ -866,14 +933,22 @@ public class ProjectsService : IProjectsService
     /// <summary>
     /// Optimized hybrid score calculation.
     /// </summary>
-    /// <param name="semanticSimilarity">The semantic similarity score</param>
-    /// <param name="textMatchScore">The text match score</param>
+    /// <param name="semanticSimilarity">The semantic similarity score (0 to 1)</param>
+    /// <param name="textMatchScore">The text match score (0 to 1)</param>
     /// <returns>Combined hybrid score</returns>
-    private static double CalculateHybridScoreOptimized(double semanticSimilarity, double textMatchScore) =>
-        textMatchScore switch
+    private static double CalculateHybridScoreOptimized(double semanticSimilarity, double textMatchScore)
+    {
+        // Calculate the base hybrid score as a weighted average of the two components.
+        // This ensures the main score is normalized between 0 and 1.
+        double hybridScore = (textMatchScore * TextMatchWeight) + (semanticSimilarity * SemanticWeight);
+
+        // If all query words were found in the text (a perfect keyword match),
+        // apply an additive boost to ensure these results rank highest.
+        if (textMatchScore >= 1.0)
         {
-            >= 1.0 => PerfectMatchBoost + (semanticSimilarity * (1.0 - PerfectMatchBoost)),
-            > 0    => (textMatchScore * TextMatchWeight) + (semanticSimilarity * SemanticWeight),
-            _      => semanticSimilarity * NoMatchPenalty
-        };
+            hybridScore += PerfectMatchBoost;
+        }
+
+        return hybridScore;
+    }
 }

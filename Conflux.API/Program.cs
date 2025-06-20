@@ -494,7 +494,17 @@ public class Program
         ConfluxContext context = services.GetRequiredService<ConfluxContext>();
         if (context.Database.IsRelational())
             await context.Database.MigrateAsync();
-
+        ILogger<Program> logger = services.GetRequiredService<ILogger<Program>>();
+        
+        int embeddingUpdateCount;
+        bool recomputeAll = await featureManager.IsEnabledAsync("RecomputeEmbeddingsOnStartup");
+        IProjectsService projectsService = services.GetRequiredService<IProjectsService>();
+        if (recomputeAll)
+        {
+            embeddingUpdateCount = await projectsService.RecomputeAllProjectEmbeddingsAsync();
+            logger.LogInformation("Database seeded successfully. Force recomputed embeddings for {Count} projects.", embeddingUpdateCount);
+        }
+        
         if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
 
@@ -510,12 +520,7 @@ public class Program
         await context.People.AddRangeAsync(seedData.People);
 
         await context.SaveChangesAsync();
-
-        // Generate embeddings for all seeded projects
-        IProjectsService projectsService = services.GetRequiredService<IProjectsService>();
-        int embeddingUpdateCount = await projectsService.UpdateProjectEmbeddingsAsync();
-        
-        ILogger<Program> logger = services.GetRequiredService<ILogger<Program>>();
+        embeddingUpdateCount = await projectsService.UpdateProjectEmbeddingsAsync();
         logger.LogInformation("Database seeded successfully. Generated embeddings for {Count} projects.", embeddingUpdateCount);
     }
 

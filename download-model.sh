@@ -4,12 +4,12 @@ set -e
 
 ORIGINAL_DIR=$(pwd)
 MODEL_DIR="$ORIGINAL_DIR/Models"
-MODEL_FILE="all-MiniLM-L12-v2.onnx"
-TOKENIZER_FILE="vocab.txt"
+MODEL_FILE="multilingual-e5-small.onnx"
+TOKENIZER_FILE="sentencepiece.bpe.model"
 
-MODEL_REPO="sentence-transformers/all-MiniLM-L12-v2"
+MODEL_REPO="intfloat/multilingual-e5-small"
 
-echo "Downloading all-MiniLM-L12-v2 embedding model for Conflux..."
+echo "Downloading multilingual-e5-small embedding model for Conflux..."
 
 if [ ! -d "$MODEL_DIR" ]; then
     echo "Creating Models directory..."
@@ -54,8 +54,8 @@ echo "Using temporary directory: $TEMP_DIR"
 cd "$TEMP_DIR"
 
 echo "Cloning HuggingFace repository..."
-git clone "https://huggingface.co/$MODEL_REPO" all-MiniLM-L12-v2
-cd all-MiniLM-L12-v2
+git clone "https://huggingface.co/$MODEL_REPO" multilingual-e5-small
+cd multilingual-e5-small
 
 echo "Repository contents:"
 ls -la
@@ -84,15 +84,15 @@ else
     exit 1
 fi
 
-TOKENIZER_SOURCE="vocab.txt"
-if [ -f "vocab.txt" ]; then
-    echo "Found tokenizer: vocab.txt"
-    TOKENIZER_SOURCE="vocab.txt"
-elif [ -f "onnx/vocab.txt" ]; then
-    echo "Found tokenizer: onnx/vocab.txt"
-    TOKENIZER_SOURCE="onnx/vocab.txt"
+TOKENIZER_SOURCE="sentencepiece.bpe.model"
+if [ -f "sentencepiece.bpe.model" ]; then
+    echo "Found tokenizer: sentencepiece.bpe.model"
+    TOKENIZER_SOURCE="sentencepiece.bpe.model"
+elif [ -f "onnx/sentencepiece.bpe.model" ]; then
+    echo "Found tokenizer: onnx/sentencepiece.bpe.model"
+    TOKENIZER_SOURCE="onnx/sentencepiece.bpe.model"
 else
-    echo "Error: Could not find vocab.txt"
+    echo "Error: Could not find sentencepiece.bpe.model"
     echo "Available tokenizer files:"
     find . -name "*tokenizer*" -o -name "*vocab*" -type f
     exit 1
@@ -103,21 +103,21 @@ echo "Copying model files..."
 
 echo "Target directory: $MODEL_DIR"
 
-if [ -f "$TEMP_DIR/all-MiniLM-L12-v2/$ONNX_FILE" ]; then
-    cp "$TEMP_DIR/all-MiniLM-L12-v2/$ONNX_FILE" "$MODEL_DIR/$MODEL_FILE"
+if [ -f "$TEMP_DIR/multilingual-e5-small/$ONNX_FILE" ]; then
+    cp "$TEMP_DIR/multilingual-e5-small/$ONNX_FILE" "$MODEL_DIR/$MODEL_FILE"
     echo "Copied ONNX model: $MODEL_FILE"
 else
-    echo "Error: ONNX model file not found at $TEMP_DIR/all-MiniLM-L12-v2/$ONNX_FILE"
+    echo "Error: ONNX model file not found at $TEMP_DIR/multilingual-e5-small/$ONNX_FILE"
     exit 1
 fi
 
-if [ -f "$TEMP_DIR/all-MiniLM-L12-v2/$TOKENIZER_SOURCE" ]; then
-    cp "$TEMP_DIR/all-MiniLM-L12-v2/$TOKENIZER_SOURCE" "$MODEL_DIR/$TOKENIZER_FILE"
+if [ -f "$TEMP_DIR/multilingual-e5-small/$TOKENIZER_SOURCE" ]; then
+    cp "$TEMP_DIR/multilingual-e5-small/$TOKENIZER_SOURCE" "$MODEL_DIR/$TOKENIZER_FILE"
     echo "Copied tokenizer: $TOKENIZER_FILE"
 else
-    echo "Error: vocab.txt file not found at $TOKENIZER_SOURCE"
+    echo "Error: sentencepiece.bpe.model file not found at $TOKENIZER_SOURCE"
     echo "Available files in directory:"
-    ls -la "$TEMP_DIR/all-MiniLM-L12-v2/"
+    ls -la "$TEMP_DIR/multilingual-e5-small/"
     exit 1
 fi
 

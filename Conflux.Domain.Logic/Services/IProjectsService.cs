@@ -26,4 +26,5 @@ public interface IProjectsService
     public Task<ProjectResponseDTO> PutProjectAsync(Guid id, ProjectRequestDTO dto);
     public Task<bool> UpdateProjectEmbeddingAsync(Guid projectId);
     public Task<int> UpdateProjectEmbeddingsAsync();
+    public Task<int> RecomputeAllProjectEmbeddingsAsync();
 }

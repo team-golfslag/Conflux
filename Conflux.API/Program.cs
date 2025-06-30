@@ -502,6 +502,9 @@ public class Program
         if (context.Database.IsRelational())
             await context.Database.MigrateAsync();
 
+        IUserSessionService userSessionService = services.GetRequiredService<IUserSessionService>();
+        await userSessionService.ConsolidateSuperAdmins();
+
         if (!await featureManager.IsEnabledAsync("SeedDatabase") || context.ShouldSeed())
             return;
 

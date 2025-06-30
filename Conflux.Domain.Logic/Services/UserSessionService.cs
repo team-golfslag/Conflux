@@ -40,7 +40,7 @@ public class UserSessionService : IUserSessionService
             .GetSection("SuperAdminEmails")
             .Get<List<string>>() ?? [];
     }
-    
+
     public async Task<User> GetUser()
     {
         UserSession? userSession = await GetSession();
@@ -53,10 +53,10 @@ public class UserSessionService : IUserSessionService
             .SingleOrDefaultAsync(p => p.Id == userSession.UserId);
         if (user is null)
             throw new UserNotAuthenticatedException();
-        
+
         return user;
     }
-    
+
     public async Task<UserSession?> GetSession()
     {
         // if there is no http context, we are in a test
@@ -64,9 +64,9 @@ public class UserSessionService : IUserSessionService
             return UserSession.Development().Item1;
 
         if (_httpContextAccessor.HttpContext.Session is null ||
-            !_httpContextAccessor.HttpContext.Session.IsAvailable) 
+            !_httpContextAccessor.HttpContext.Session.IsAvailable)
             return null;
-            
+
         UserSession? userSession = _httpContextAccessor.HttpContext?.Session.Get<UserSession>(UserKey);
         if (userSession == null)
             return await SetUser(null);
@@ -75,10 +75,10 @@ public class UserSessionService : IUserSessionService
             .SingleOrDefaultAsync(p => p.Id == userSession.UserId);
         if (user == null || user.PermissionLevel == PermissionLevel.SuperAdmin ||
             !_superAdminEmails.Contains(userSession.Email)) return userSession;
-        
+
         user.PermissionLevel = PermissionLevel.SuperAdmin;
         await _confluxContext.SaveChangesAsync();
-        
+
         // Update the session with the changes
         user.PermissionLevel = PermissionLevel.SuperAdmin;
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
@@ -113,12 +113,12 @@ public class UserSessionService : IUserSessionService
         UserSession? userSession = await GetUserSession(claims);
         if (userSession is null)
             throw new UserNotAuthenticatedException();
-        
+
         User? user = await _confluxContext.Users
             .Include(p => p.Person)
             .SingleOrDefaultAsync(p => p.SRAMId == userSession.SRAMId);
 
-        if (userSession.UserId == Guid.Empty) 
+        if (userSession.UserId == Guid.Empty)
             userSession.UserId = user?.Id ?? Guid.Empty;
 
         if (user is { PermissionLevel: PermissionLevel.User } &&
@@ -127,7 +127,7 @@ public class UserSessionService : IUserSessionService
             user.PermissionLevel = PermissionLevel.SuperAdmin;
             await _confluxContext.SaveChangesAsync();
         }
-        
+
         _httpContextAccessor.HttpContext?.Session.Set(UserKey, userSession);
 
         return userSession;
@@ -161,5 +161,33 @@ public class UserSessionService : IUserSessionService
             Email = _httpContextAccessor.HttpContext?.User.GetClaimValue("Email")!,
             Collaborations = collaborations,
         };
+    }
+
+    public async Task ConsolidateSuperAdmins()
+    {
+        if (!await _featureManager.IsEnabledAsync("SRAMAuthentication"))
+            return;
+
+        List<User> superAdmins = await _confluxContext.Users
+            .Where(p => p.PermissionLevel == PermissionLevel.SuperAdmin)
+            .Include(user => user.Person)
+            .ToListAsync();
+
+        foreach (User superAdmin in superAdmins.Where(superAdmin =>
+            !_superAdminEmails.Contains(superAdmin.Person?.Email ?? string.Empty)))
+            superAdmin.PermissionLevel = PermissionLevel.User;
+
+        await _confluxContext.SaveChangesAsync();
+
+        // find any user with a super admin email that is not a super admin
+        List<User> usersWithSuperAdminEmail = await _confluxContext.Users
+            .Include(user => user.Person)
+            .Where(u => u.Person != null && u.Person.Email != null && _superAdminEmails.Contains(u.Person.Email))
+            .ToListAsync();
+
+        foreach (User userWithSuperAdminEmail in usersWithSuperAdminEmail)
+            userWithSuperAdminEmail.PermissionLevel = PermissionLevel.SuperAdmin;
+
+        await _confluxContext.SaveChangesAsync();
     }
 }

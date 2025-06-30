@@ -14,5 +14,6 @@ public interface IUserSessionService
     Task<User> GetUser();
     Task CommitUser(UserSession userSession);
     Task<UserSession?> SetUser(ClaimsPrincipal? claims);
+    Task ConsolidateSuperAdmins();
     void ClearUser();
 }

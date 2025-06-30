@@ -57,9 +57,9 @@ public class Program
         ConfigureCors(builder);
 
         WebApplication app = builder.Build();
-        
+
         string? basePath = builder.Configuration["Application:PathBase"];
-        if (!string.IsNullOrEmpty(basePath)) 
+        if (!string.IsNullOrEmpty(basePath))
             app.UsePathBase(new(basePath));
 
         // Configure middleware
@@ -135,7 +135,7 @@ public class Program
 
         // Register the filter factory with scoped lifetime to match its dependencies
         builder.Services.AddScoped<AccessControlFilterFactory>();
-        
+
         ConfigureRorServices(builder);
         ConfigureCrossrefServices(builder);
         ConfigureArchiveServices(builder);
@@ -164,7 +164,7 @@ public class Program
     private static void ConfigureCrossrefServices(WebApplicationBuilder builder)
     {
         builder.Services.Configure<CrossrefServiceOptions>(builder.Configuration.GetSection("ROR"));
-        
+
         builder.Services.AddHttpClient("Crossref");
         builder.Services.AddScoped<ICrossrefService, CrossrefService>(provider =>
         {
@@ -176,13 +176,14 @@ public class Program
             return new CrossrefService(httpClient, optionsAccessor, logger);
         });
     }
-    
+
     private static void ConfigureArchiveServices(WebApplicationBuilder builder)
     {
         string? accessKey = Environment.GetEnvironmentVariable("WEBARCHIVE_ACCESS_KEY");
         string? secretKey = Environment.GetEnvironmentVariable("WEBARCHIVE_SECRET_KEY");
-        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey)) 
-            Console.WriteLine("Warning: WEBARCHIVE_ACCESS_KEY and WEBARCHIVE_SECRET_KEY not set. Continuing without authentication.");
+        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey))
+            Console.WriteLine(
+                "Warning: WEBARCHIVE_ACCESS_KEY and WEBARCHIVE_SECRET_KEY not set. Continuing without authentication.");
 
         builder.Services.AddHttpClient("WebArchive");
         builder.Services.AddScoped<IWebArchiveService, WebArchiveService>(provider =>
@@ -205,7 +206,7 @@ public class Program
 
         string connectionString = builder.Configuration.GetConnectionString("Database") ??
             ConnectionStringHelper.GetConnectionStringFromEnvironment();
-        
+
         builder.Services.AddDbContext<ConfluxContext>(opt =>
             opt.UseNpgsql(connectionString,
                 npgsql => npgsql.MigrationsAssembly("Conflux.Data")
@@ -265,11 +266,11 @@ public class Program
             return raidSvc;
         });
     }
-    
+
     private static void ConfigureRorServices(WebApplicationBuilder builder)
     {
         builder.Services.Configure<OrganizationServiceOptions>(builder.Configuration.GetSection("ROR"));
-        
+
         builder.Services.AddHttpClient("ROR");
         builder.Services.AddScoped<IOrganizationService, OrganizationService>(provider =>
         {
@@ -306,6 +307,8 @@ public class Program
     private static void AddOrcidAuth(AuthenticationBuilder authBuilder, IConfiguration config)
     {
         IConfigurationSection orcidConfig = config.GetSection("Authentication:Orcid");
+        IConfigurationSection appConfig = config.GetSection("Application");
+        string basePath = appConfig["PathBase"]?.TrimEnd('/') ?? string.Empty;
 
         string? orcidSecret = Environment.GetEnvironmentVariable("ORCID_CLIENT_SECRET");
         if (string.IsNullOrEmpty(orcidSecret))
@@ -362,10 +365,10 @@ public class Program
 
                     string finalRedirectUri =
                         context.Properties.Items.TryGetValue("finalRedirect", out string? redirect)
-                            ? redirect ?? "/orcid/finalize"
-                            : "/orcid/finalize";
+                            ? redirect ?? $"{basePath}/orcid/finalize"
+                            : $"{basePath}/orcid/finalize";
                     context.Properties.Items["CustomRedirect"] =
-                        $"/orcid/finalize?redirectUri={Uri.EscapeDataString(finalRedirectUri)}";
+                        $"{basePath}/orcid/finalize?redirectUri={Uri.EscapeDataString(finalRedirectUri)}";
 
                     return Task.CompletedTask;
                 },
@@ -425,13 +428,13 @@ public class Program
                 switch (exception)
                 {
                     case ProjectNotFoundException
-                        or ProjectDescriptionNotFoundException
-                        or ProjectTitleNotFoundException
-                        or ContributorNotFoundException
-                        or ProductNotFoundException
-                        or PersonNotFoundException
-                        or OrganisationNotFoundException
-                        or ProjectOrganisationNotFoundException:
+                         or ProjectDescriptionNotFoundException
+                         or ProjectTitleNotFoundException
+                         or ContributorNotFoundException
+                         or ProductNotFoundException
+                         or PersonNotFoundException
+                         or OrganisationNotFoundException
+                         or ProjectOrganisationNotFoundException:
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -439,7 +442,7 @@ public class Program
                         });
                         break;
                     case PersonHasContributorsException
-                        or ContributorAlreadyAddedToProjectException:
+                         or ContributorAlreadyAddedToProjectException:
                         context.Response.StatusCode = 409;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -447,8 +450,8 @@ public class Program
                         });
                         break;
                     case UnauthorizedAccessException
-                        or ProjectAlreadyMintedException
-                        or ProjectNotMintedException:
+                         or ProjectAlreadyMintedException
+                         or ProjectNotMintedException:
                         context.Response.StatusCode = 403;
                         await context.Response.WriteAsJsonAsync(new ErrorResponse
                         {
@@ -518,9 +521,10 @@ public class Program
         // Generate embeddings for all seeded projects
         IProjectsService projectsService = services.GetRequiredService<IProjectsService>();
         int embeddingUpdateCount = await projectsService.UpdateProjectEmbeddingsAsync();
-        
+
         ILogger<Program> logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Database seeded successfully. Generated embeddings for {Count} projects.", embeddingUpdateCount);
+        logger.LogInformation("Database seeded successfully. Generated embeddings for {Count} projects.",
+            embeddingUpdateCount);
     }
 
     private static void SetupDevelopmentAuth(WebApplicationBuilder builder)
@@ -570,29 +574,32 @@ public class Program
 
     private static void ConfigureOpenIdConnect(
         OpenIdConnectOptions options,
-        IConfiguration    config,
-        string            secret)
+        IConfiguration config,
+        string secret)
     {
         IConfigurationSection oidcConfig = config.GetSection("Authentication:SRAM");
-        IConfigurationSection appConfig  = config.GetSection("Application");
+        IConfigurationSection appConfig = config.GetSection("Application");
 
-        string baseUrl   = appConfig["BaseUrl"]!.TrimEnd('/');
-        string pathBase  = appConfig["PathBase"]!.TrimEnd('/');
+        string baseUrl = appConfig["BaseUrl"]!.TrimEnd('/');
+        string pathBase = appConfig["PathBase"]!.TrimEnd('/');
         string callbackPath = oidcConfig["CallbackPath"]!;
-        string signoutPath    = oidcConfig["SignoutPath"]!;
+        string signoutPath = oidcConfig["SignoutPath"]!;
 
-        options.Authority      = oidcConfig["Authority"];
-        options.ClientId       = oidcConfig["ClientId"];
-        options.ClientSecret   = secret;
-        options.CallbackPath   = callbackPath;
+        options.Authority = oidcConfig["Authority"];
+        options.ClientId = oidcConfig["ClientId"];
+        options.ClientSecret = secret;
+        options.CallbackPath = callbackPath;
         options.SignedOutCallbackPath = signoutPath;
 
-        options.SignInScheme   = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.ResponseType   = OpenIdConnectResponseType.Code;
-        options.SaveTokens     = true;
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        options.SaveTokens = true;
         options.GetClaimsFromUserInfoEndpoint = true;
 
-         List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+        options.CorrelationCookie.Path = pathBase;
+        options.NonceCookie.Path = pathBase;
+
+        List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
         if (scopes != null)
             foreach (string scope in scopes)
                 options.Scope.Add(scope);
@@ -610,8 +617,7 @@ public class Program
                 redirectUriValue.Count > 0)
                 redirectUri = redirectUriValue!;
 
-            context.Response.Redirect(redirectUri);
-            context.HandleResponse();
+            context.ProtocolMessage.PostLogoutRedirectUri = redirectUri;
             return Task.CompletedTask;
         };
 

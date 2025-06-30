@@ -57,6 +57,10 @@ public class Program
         ConfigureCors(builder);
 
         WebApplication app = builder.Build();
+        
+        string? basePath = builder.Configuration["PathBase"];
+        if (!string.IsNullOrEmpty(basePath)) 
+            app.UsePathBase(new(basePath));
 
         // Configure middleware
         await ConfigureMiddleware(app, featureManager);
@@ -564,20 +568,31 @@ public class Program
         options.SlidingExpiration = true;
     }
 
-    private static void ConfigureOpenIdConnect(OpenIdConnectOptions options, ConfigurationManager config, string secret)
+    private static void ConfigureOpenIdConnect(
+        OpenIdConnectOptions options,
+        IConfiguration    config,
+        string            secret)
     {
         IConfigurationSection oidcConfig = config.GetSection("Authentication:SRAM");
+        IConfigurationSection appConfig  = config.GetSection("Application");
 
-        options.Authority = oidcConfig["Authority"];
-        options.ClientId = oidcConfig["ClientId"];
-        options.ClientSecret = secret;
-        options.CallbackPath = oidcConfig["CallbackPath"];
-        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.ResponseType = OpenIdConnectResponseType.Code;
-        options.SaveTokens = true;
+        string baseUrl   = appConfig["BaseUrl"]!.TrimEnd('/');
+        string pathBase  = appConfig["PathBase"]!.TrimEnd('/');
+        string callbackPath = oidcConfig["CallbackPath"]!;
+        string signoutPath    = oidcConfig["SignoutPath"]!;
+
+        options.Authority      = oidcConfig["Authority"];
+        options.ClientId       = oidcConfig["ClientId"];
+        options.ClientSecret   = secret;
+        options.CallbackPath   = callbackPath;
+        options.SignedOutCallbackPath = signoutPath;
+
+        options.SignInScheme   = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.ResponseType   = OpenIdConnectResponseType.Code;
+        options.SaveTokens     = true;
         options.GetClaimsFromUserInfoEndpoint = true;
 
-        List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
+         List<string>? scopes = oidcConfig.GetSection("Scopes").Get<List<string>>();
         if (scopes != null)
             foreach (string scope in scopes)
                 options.Scope.Add(scope);
@@ -590,19 +605,20 @@ public class Program
 
         options.Events.OnRedirectToIdentityProvider = context =>
         {
-            context.ProtocolMessage.RedirectUri = oidcConfig["RedirectUri"];
-            return Task.CompletedTask;
-        };
-
-        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
-        {
-            string redirectUri = oidcConfig["RedirectUri"]!;
+            string redirectUri = $"{baseUrl}{pathBase}{callbackPath}";
             if (context.Request.Query.TryGetValue("redirectUri", out StringValues redirectUriValue) &&
                 redirectUriValue.Count > 0)
                 redirectUri = redirectUriValue!;
 
             context.Response.Redirect(redirectUri);
             context.HandleResponse();
+            return Task.CompletedTask;
+        };
+
+        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+        {
+            context.ProtocolMessage.PostLogoutRedirectUri =
+                $"{baseUrl}{pathBase}{signoutPath}";
             return Task.CompletedTask;
         };
     }
